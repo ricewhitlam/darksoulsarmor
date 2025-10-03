@@ -224,10 +224,10 @@ struct armor_combo {
         bool check2 = check1 && ((weight-eps) < comparison.weight);
         bool check3 = check2 && ((poise+eps) > comparison.poise);
         return 
-            (score > comparison.score) || 
-            (check1 && (weight < comparison.weight)) || 
-            (check2 && (poise > comparison.poise)) ||
-            (check3 && (durability > comparison.durability));
+            (score > (comparison.score+eps)) || 
+            (check1 && (weight < (comparison.weight-eps))) || 
+            (check2 && (poise > (comparison.poise+eps))) ||
+            (check3 && (durability > (comparison.durability+eps)));
     }
 };
 
