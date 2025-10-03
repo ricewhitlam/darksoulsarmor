@@ -1,0 +1,13 @@
+
+useDynLib(darksoulsarmor, .registration=TRUE)
+import(data.table)
+import(Rcpp)
+import(shiny)
+import(shinyWidgets)
+import(bslib)
+import(DT)
+import(shinybusy)
+
+export(get.all.armor.combos)
+export(get.optimal.armor.combos)
+export(armor.application)
