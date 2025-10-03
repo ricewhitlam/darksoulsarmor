@@ -814,7 +814,7 @@ server <- function(input, output, session){
                         list(targets = c(1, 6:22), searchable = FALSE)
                     )
                 )
-            ) |> DT::formatPercentage(c("SCORE", "PCT_LOAD"), 2)
+            ) |> DT::formatPercentage(c("SCORE", "PCT_LOAD"), 10)
         })
 
 
