@@ -11,6 +11,7 @@ server <- function(input, output, session){
                 title = "User Guide", 
                 easyClose = TRUE,
                 footer = NULL,
+                size = "l",
                 shiny::HTML(paste0("
 
                     To use the app, adjust inputs in the sidebar at left and then click the button 'Refresh Armor Data'. <br> <br>  
