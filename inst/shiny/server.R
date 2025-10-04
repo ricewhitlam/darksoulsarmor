@@ -57,6 +57,8 @@ server <- function(input, output, session){
                     respect to the applicable mean and variance of such armor combinations. <br> <br>
 
                     Miscellaneous notes: <br> <br>
+                    Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
+                    tags$a("Stamina", href = "http://darksouls.wikidot.com/stamina#toc3 ", target = "_blank"), " <br> <br>
                     Durability is aggregated by taking the minimum i.e. the total durability for a set is the lowest durability across each component of the set. <br> <br> 
                     The impact to equip load of Mask of the Father (x1.05) is accounted for, but the impact to magic defense of Crown of Dusk (x0.7) is not. <br> <br>
                     Clicking on a row in the table will produce a set of links to the Dark Souls Wikidot site for the relevant armor pieces. <br> <br>",
