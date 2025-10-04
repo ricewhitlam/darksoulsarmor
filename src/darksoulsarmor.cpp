@@ -385,7 +385,7 @@ DataFrame optimize_armor_combinations(
         } else{
             curr_L = loop_size;
         }
-
+        
         for(int i = 0; i < curr_I; ++i){
 
             if(i != loop_size_1 && L_capped && K_capped && J_capped && !I_capped){
@@ -561,8 +561,10 @@ DataFrame optimize_armor_combinations(
                         curr_combo.durability = curr_DURABILITY; curr_combo.poise = curr_POISE; curr_combo.weight = curr_WEIGHT; curr_combo.load = curr_load;
                         
                         if(at_max_queue_size){
-                            armor_combos.push(curr_combo);
-                            armor_combos.pop();
+                            if(curr_combo < armor_combos.top()){
+                                armor_combos.push(curr_combo);
+                                armor_combos.pop();
+                            } 
                         } else{
                             armor_combos.push(curr_combo);
                         }
