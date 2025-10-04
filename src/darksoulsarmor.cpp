@@ -420,7 +420,6 @@ DataFrame optimize_armor_combinations(
             curr_head_POIS_RES = head_POIS_RES[i];
             curr_head_CURSE_RES = head_CURSE_RES[i];
             curr_head_DURABILITY = head_DURABILITY[i];
-            
 
             for(int j = 0; j < curr_J; ++j){
 
@@ -475,7 +474,6 @@ DataFrame optimize_armor_combinations(
                     curr_hands_POIS_RES = hands_POIS_RES[k];
                     curr_hands_CURSE_RES = hands_CURSE_RES[k];
                     curr_hands_DURABILITY = hands_DURABILITY[k];
-                    curr_hands_WEIGHT = hands_WEIGHT[k];
 
                     for(int l = 0; l < curr_L; ++l){
 
@@ -485,79 +483,76 @@ DataFrame optimize_armor_combinations(
 
                         curr_legs_CUMMIN_WEIGHT = legs_CUMMIN_WEIGHT[l];
                         curr_legs_WEIGHT = legs_WEIGHT[l];
-                        if(at_max_queue_size && curr_legs_WEIGHT >= curr_legs_CUMMIN_WEIGHT){
-                            continue;
-                        }
-
-                        curr_legs_SCORE = legs_SCORE[l];                        
-                        curr_legs = legs_ARMOR[l];
-                        curr_legs_PHYS_DEF = legs_PHYS_DEF[l];
-                        curr_legs_STRIKE_DEF = legs_STRIKE_DEF[l];
-                        curr_legs_SLASH_DEF = legs_SLASH_DEF[l];
-                        curr_legs_THRUST_DEF = legs_THRUST_DEF[l];
-                        curr_legs_MAG_DEF = legs_MAG_DEF[l];
-                        curr_legs_FIRE_DEF = legs_FIRE_DEF[l];
-                        curr_legs_LITNG_DEF = legs_LITNG_DEF[l];
-                        curr_legs_POISE = legs_POISE[l];
-                        curr_legs_BLEED_RES = legs_BLEED_RES[l];
-                        curr_legs_POIS_RES = legs_POIS_RES[l];
-                        curr_legs_CURSE_RES = legs_CURSE_RES[l];
-                        curr_legs_DURABILITY = legs_DURABILITY[l];
-                        curr_legs_WEIGHT = legs_WEIGHT[l];
-
-                        curr_PHYS_DEF = curr_head_PHYS_DEF+curr_chest_PHYS_DEF+curr_hands_PHYS_DEF+curr_legs_PHYS_DEF;
-                        if(curr_PHYS_DEF < (minima[0]-eps)){
-                            continue;
-                        }
-                        curr_STRIKE_DEF = curr_head_STRIKE_DEF+curr_chest_STRIKE_DEF+curr_hands_STRIKE_DEF+curr_legs_STRIKE_DEF;
-                        if(curr_STRIKE_DEF < (minima[1]-eps)){
-                            continue;
-                        }
-                        curr_SLASH_DEF = curr_head_SLASH_DEF+curr_chest_SLASH_DEF+curr_hands_SLASH_DEF+curr_legs_SLASH_DEF;
-                        if(curr_SLASH_DEF < (minima[2]-eps)){
-                            continue;
-                        }
-                        curr_THRUST_DEF = curr_head_THRUST_DEF+curr_chest_THRUST_DEF+curr_hands_THRUST_DEF+curr_legs_THRUST_DEF;
-                        if(curr_THRUST_DEF < (minima[3]-eps)){
-                            continue;
-                        }
-                        curr_MAG_DEF = curr_head_MAG_DEF+curr_chest_MAG_DEF+curr_hands_MAG_DEF+curr_legs_MAG_DEF;
-                        if(curr_MAG_DEF < (minima[4]-eps)){
-                            continue;
-                        }
-                        curr_FIRE_DEF = curr_head_FIRE_DEF+curr_chest_FIRE_DEF+curr_hands_FIRE_DEF+curr_legs_FIRE_DEF;
-                        if(curr_FIRE_DEF < (minima[5]-eps)){
-                            continue;
-                        }
-                        curr_LITNG_DEF = curr_head_LITNG_DEF+curr_chest_LITNG_DEF+curr_hands_LITNG_DEF+curr_legs_LITNG_DEF;
-                        if(curr_LITNG_DEF < (minima[6]-eps)){
-                            continue;
-                        }
-                        curr_POISE = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
-                        if((curr_POISE+extra_poise) < (minima[7]-eps)){
-                            continue;
-                        }
-                        curr_BLEED_RES = curr_head_BLEED_RES+curr_chest_BLEED_RES+curr_hands_BLEED_RES+curr_legs_BLEED_RES;
-                        if(curr_BLEED_RES < (minima[8]-eps)){
-                            continue;
-                        }
-                        curr_POIS_RES = curr_head_POIS_RES+curr_chest_POIS_RES+curr_hands_POIS_RES+curr_legs_POIS_RES;
-                        if(curr_POIS_RES < (minima[9]-eps)){
-                            continue;
-                        }
-                        curr_CURSE_RES = curr_head_CURSE_RES+curr_chest_CURSE_RES+curr_hands_CURSE_RES+curr_legs_CURSE_RES;
-                        if(curr_CURSE_RES < (minima[10]-eps)){
-                            continue;
-                        }
-                        curr_DURABILITY = std::min(curr_head_DURABILITY, std::min(curr_chest_DURABILITY, std::min(curr_hands_DURABILITY, curr_legs_DURABILITY)));
-                        if(curr_DURABILITY < (minima[11]-eps)){
+                        if(at_max_queue_size && (curr_legs_WEIGHT >= curr_legs_CUMMIN_WEIGHT)){
                             continue;
                         }
                         curr_WEIGHT = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
                         if(curr_WEIGHT > (-base_weight+curr_load_threshold+eps)){
                             continue;
                         }
+                        curr_legs_POISE = legs_POISE[l];
+                        curr_POISE = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
+                        if((curr_POISE+extra_poise) < (minima[7]-eps)){
+                            continue;
+                        }
+                        curr_legs_PHYS_DEF = legs_PHYS_DEF[l];
+                        curr_PHYS_DEF = curr_head_PHYS_DEF+curr_chest_PHYS_DEF+curr_hands_PHYS_DEF+curr_legs_PHYS_DEF;
+                        if(curr_PHYS_DEF < (minima[0]-eps)){
+                            continue;
+                        }
+                        curr_legs_STRIKE_DEF = legs_STRIKE_DEF[l];
+                        curr_STRIKE_DEF = curr_head_STRIKE_DEF+curr_chest_STRIKE_DEF+curr_hands_STRIKE_DEF+curr_legs_STRIKE_DEF;
+                        if(curr_STRIKE_DEF < (minima[1]-eps)){
+                            continue;
+                        }
+                        curr_legs_SLASH_DEF = legs_SLASH_DEF[l];
+                        curr_SLASH_DEF = curr_head_SLASH_DEF+curr_chest_SLASH_DEF+curr_hands_SLASH_DEF+curr_legs_SLASH_DEF;
+                        if(curr_SLASH_DEF < (minima[2]-eps)){
+                            continue;
+                        }
+                        curr_legs_THRUST_DEF = legs_THRUST_DEF[l];
+                        curr_THRUST_DEF = curr_head_THRUST_DEF+curr_chest_THRUST_DEF+curr_hands_THRUST_DEF+curr_legs_THRUST_DEF;
+                        if(curr_THRUST_DEF < (minima[3]-eps)){
+                            continue;
+                        }
+                        curr_legs_MAG_DEF = legs_MAG_DEF[l];
+                        curr_MAG_DEF = curr_head_MAG_DEF+curr_chest_MAG_DEF+curr_hands_MAG_DEF+curr_legs_MAG_DEF;
+                        if(curr_MAG_DEF < (minima[4]-eps)){
+                            continue;
+                        }
+                        curr_legs_FIRE_DEF = legs_FIRE_DEF[l];
+                        curr_FIRE_DEF = curr_head_FIRE_DEF+curr_chest_FIRE_DEF+curr_hands_FIRE_DEF+curr_legs_FIRE_DEF;
+                        if(curr_FIRE_DEF < (minima[5]-eps)){
+                            continue;
+                        }
+                        curr_legs_LITNG_DEF = legs_LITNG_DEF[l];
+                        curr_LITNG_DEF = curr_head_LITNG_DEF+curr_chest_LITNG_DEF+curr_hands_LITNG_DEF+curr_legs_LITNG_DEF;
+                        if(curr_LITNG_DEF < (minima[6]-eps)){
+                            continue;
+                        }
+                        curr_legs_BLEED_RES = legs_BLEED_RES[l];
+                        curr_BLEED_RES = curr_head_BLEED_RES+curr_chest_BLEED_RES+curr_hands_BLEED_RES+curr_legs_BLEED_RES;
+                        if(curr_BLEED_RES < (minima[8]-eps)){
+                            continue;
+                        }
+                        curr_legs_POIS_RES = legs_POIS_RES[l];
+                        curr_POIS_RES = curr_head_POIS_RES+curr_chest_POIS_RES+curr_hands_POIS_RES+curr_legs_POIS_RES;
+                        if(curr_POIS_RES < (minima[9]-eps)){
+                            continue;
+                        }
+                        curr_legs_CURSE_RES = legs_CURSE_RES[l];
+                        curr_CURSE_RES = curr_head_CURSE_RES+curr_chest_CURSE_RES+curr_hands_CURSE_RES+curr_legs_CURSE_RES;
+                        if(curr_CURSE_RES < (minima[10]-eps)){
+                            continue;
+                        }
+                        curr_legs_DURABILITY = legs_DURABILITY[l];
+                        curr_DURABILITY = std::min(curr_head_DURABILITY, std::min(curr_chest_DURABILITY, std::min(curr_hands_DURABILITY, curr_legs_DURABILITY)));
+                        if(curr_DURABILITY < (minima[11]-eps)){
+                            continue;
+                        }
                         
+                        curr_legs_SCORE = legs_SCORE[l];                        
+                        curr_legs = legs_ARMOR[l];
                         curr_combo.score = curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE;
                         curr_combo.head = curr_head; curr_combo.chest = curr_chest; curr_combo.hands = curr_hands; curr_combo.legs = curr_legs;
                         curr_combo.physdef = curr_PHYS_DEF; curr_combo.strikedef = curr_STRIKE_DEF; curr_combo.slashdef = curr_SLASH_DEF; curr_combo.thrustdef = curr_THRUST_DEF;
