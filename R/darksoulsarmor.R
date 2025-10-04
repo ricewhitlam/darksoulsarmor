@@ -667,17 +667,25 @@ get.optimal.armor.combos <- function(
     data.table::setorder(working.hands.data, -SCORE)
     data.table::setorder(working.legs.data, -SCORE)
 
+    ## Determine position of MOTF in head data to apply equip load benefit
+    motf.index <- which(working.head.data == "Mask of the Father")
+    if(length(motf.index) == 0){
+        motf.index <- 999
+    } 
+
     ## Identify initial looping info based on allowable weight and minima
-    ## In principle, an improvement could be to more accurately handle MOTF
-    ## However, there is some trickiness here and probably limited benefit
     n.max <- max(n.head, n.chest, n.hands, n.legs)
     weight.check <- 
-        (
-            cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))+
-            cummin(c(working.chest.data$WEIGHT, rep(0, n.max-n.chest)))+
-            cummin(c(working.hands.data$WEIGHT, rep(0, n.max-n.hands)))+
-            cummin(c(working.legs.data$WEIGHT, rep(0, n.max-n.legs)))
-        ) <= (-unarmored.weight+load.threshold.motf+1e-10) ## for simplicity, include MOTF
+        cummin(c(working.chest.data$WEIGHT, rep(0, n.max-n.chest)))+
+        cummin(c(working.hands.data$WEIGHT, rep(0, n.max-n.hands)))+
+        cummin(c(working.legs.data$WEIGHT, rep(0, n.max-n.legs)))
+    if(motf.index == 999){
+        weight.check <- ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10)) 
+    } else{
+        weight.check <- 
+            ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10)) |
+            c(rep(FALSE, motf.index-1), ((weight.check[motf.index:n.max]+1.2) <= (-unarmored.weight+load.threshold.motf+1e-10)))
+    }
     minima.check <- 
         pmin(
             cummax(c(working.head.data$DURABILITY, rep(0, n.max-n.head))),
@@ -735,14 +743,6 @@ get.optimal.armor.combos <- function(
     working.hands.data[, CUMMIN_WEIGHT := data.table::shift(cummin(WEIGHT), fill = 999)]
     working.legs.data[, CUMMIN_WEIGHT := data.table::shift(cummin(WEIGHT), fill = 999)]
 
-    ## Determine position of MOTF in head data to apply equip load benefit
-    motf.index <- which(working.head.data == "Mask of the Father")
-    if(length(motf.index) == 0){
-        motf.index <- 999
-    } else{
-        motf.index <- motf.index-1
-    }
-
     ## Create table of optimal combos
     out$data <- 
         data.table::setDT(
@@ -754,7 +754,7 @@ get.optimal.armor.combos <- function(
                 0.1*floor(10.5*base.load),
                 load.threshold,
                 load.threshold.motf,
-                motf.index,
+                motf.index-1,
                 wolf.ring,
                 minima,
                 working.head.data,
