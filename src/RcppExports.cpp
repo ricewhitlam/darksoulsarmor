@@ -25,8 +25,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // optimize_armor_combinations
-DataFrame optimize_armor_combinations(const int starting_loop_size, const int max_output_size, const double base_weight, const double load, const double load_motf, const double load_threshold, const double load_threshold_motf, const int motf_index, const bool wolf, const NumericVector& minima, const NumericVector& means, const NumericVector& scalars, const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df);
-RcppExport SEXP _darksoulsarmor_optimize_armor_combinations(SEXP starting_loop_sizeSEXP, SEXP max_output_sizeSEXP, SEXP base_weightSEXP, SEXP loadSEXP, SEXP load_motfSEXP, SEXP load_thresholdSEXP, SEXP load_threshold_motfSEXP, SEXP motf_indexSEXP, SEXP wolfSEXP, SEXP minimaSEXP, SEXP meansSEXP, SEXP scalarsSEXP, SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP) {
+DataFrame optimize_armor_combinations(const int starting_loop_size, const int max_output_size, const double base_weight, const double load, const double load_motf, const double load_threshold, const double load_threshold_motf, const int motf_index, const bool wolf, const NumericVector& minima, const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df);
+RcppExport SEXP _darksoulsarmor_optimize_armor_combinations(SEXP starting_loop_sizeSEXP, SEXP max_output_sizeSEXP, SEXP base_weightSEXP, SEXP loadSEXP, SEXP load_motfSEXP, SEXP load_thresholdSEXP, SEXP load_threshold_motfSEXP, SEXP motf_indexSEXP, SEXP wolfSEXP, SEXP minimaSEXP, SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -40,20 +40,18 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const int >::type motf_index(motf_indexSEXP);
     Rcpp::traits::input_parameter< const bool >::type wolf(wolfSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type minima(minimaSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type means(meansSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type scalars(scalarsSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type head_df(head_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type chest_df(chest_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type hands_df(hands_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type legs_df(legs_dfSEXP);
-    rcpp_result_gen = Rcpp::wrap(optimize_armor_combinations(starting_loop_size, max_output_size, base_weight, load, load_motf, load_threshold, load_threshold_motf, motf_index, wolf, minima, means, scalars, head_df, chest_df, hands_df, legs_df));
+    rcpp_result_gen = Rcpp::wrap(optimize_armor_combinations(starting_loop_size, max_output_size, base_weight, load, load_motf, load_threshold, load_threshold_motf, motf_index, wolf, minima, head_df, chest_df, hands_df, legs_df));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_darksoulsarmor_all_armor_combinations", (DL_FUNC) &_darksoulsarmor_all_armor_combinations, 5},
-    {"_darksoulsarmor_optimize_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimize_armor_combinations, 16},
+    {"_darksoulsarmor_optimize_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimize_armor_combinations, 14},
     {NULL, NULL, 0}
 };
 

@@ -246,8 +246,6 @@ DataFrame optimize_armor_combinations(
     const bool wolf,
 
     const NumericVector& minima,
-    const NumericVector& means,
-    const NumericVector& scalars,
 
     const DataFrame& head_df,
     const DataFrame& chest_df,
@@ -255,7 +253,9 @@ DataFrame optimize_armor_combinations(
     const DataFrame& legs_df
 
 ){
-
+    
+    NumericVector head_SCORE = head_df["SCORE"];
+    NumericVector head_CUMMIN_WEIGHT = head_df["CUMMIN_WEIGHT"];
     CharacterVector head_ARMOR = head_df["ARMOR"];
     NumericVector head_PHYS_DEF = head_df["PHYS_DEF"];
     NumericVector head_STRIKE_DEF = head_df["STRIKE_DEF"];
@@ -271,6 +271,8 @@ DataFrame optimize_armor_combinations(
     NumericVector head_DURABILITY = head_df["DURABILITY"];
     NumericVector head_WEIGHT = head_df["WEIGHT"];
 
+    NumericVector chest_SCORE = chest_df["SCORE"];
+    NumericVector chest_CUMMIN_WEIGHT = chest_df["CUMMIN_WEIGHT"];
     CharacterVector chest_ARMOR = chest_df["ARMOR"];
     NumericVector chest_PHYS_DEF = chest_df["PHYS_DEF"];
     NumericVector chest_STRIKE_DEF = chest_df["STRIKE_DEF"];
@@ -286,6 +288,8 @@ DataFrame optimize_armor_combinations(
     NumericVector chest_DURABILITY = chest_df["DURABILITY"];
     NumericVector chest_WEIGHT = chest_df["WEIGHT"];
 
+    NumericVector hands_SCORE = hands_df["SCORE"];
+    NumericVector hands_CUMMIN_WEIGHT = hands_df["CUMMIN_WEIGHT"];
     CharacterVector hands_ARMOR = hands_df["ARMOR"];
     NumericVector hands_PHYS_DEF = hands_df["PHYS_DEF"];
     NumericVector hands_STRIKE_DEF = hands_df["STRIKE_DEF"];
@@ -301,6 +305,8 @@ DataFrame optimize_armor_combinations(
     NumericVector hands_DURABILITY = hands_df["DURABILITY"];
     NumericVector hands_WEIGHT = hands_df["WEIGHT"];
 
+    NumericVector legs_SCORE = legs_df["SCORE"];
+    NumericVector legs_CUMMIN_WEIGHT = legs_df["CUMMIN_WEIGHT"];
     CharacterVector legs_ARMOR = legs_df["ARMOR"];
     NumericVector legs_PHYS_DEF = legs_df["PHYS_DEF"];
     NumericVector legs_STRIKE_DEF = legs_df["STRIKE_DEF"];
@@ -319,7 +325,6 @@ DataFrame optimize_armor_combinations(
     int I = head_df.nrows(); int J = chest_df.nrows(); int K = hands_df.nrows(); int L = legs_df.nrows();
 
     int curr_count = 0;
-    double score;
 
     double curr_load;
     double curr_load_threshold;
@@ -328,6 +333,8 @@ DataFrame optimize_armor_combinations(
     double extra_poise = 0.0;
     if(wolf){extra_poise = 40.0;};
 
+    double curr_head_SCORE; double curr_chest_SCORE; double curr_hands_SCORE; double curr_legs_SCORE; 
+    double curr_head_CUMMIN_WEIGHT; double curr_chest_CUMMIN_WEIGHT; double curr_hands_CUMMIN_WEIGHT; double curr_legs_CUMMIN_WEIGHT; 
     String curr_head; String curr_chest; String curr_hands; String curr_legs;
     double curr_PHYS_DEF; double curr_head_PHYS_DEF; double curr_chest_PHYS_DEF; double curr_hands_PHYS_DEF; double curr_legs_PHYS_DEF;
     double curr_STRIKE_DEF; double curr_head_STRIKE_DEF; double curr_chest_STRIKE_DEF; double curr_hands_STRIKE_DEF; double curr_legs_STRIKE_DEF;
@@ -385,6 +392,12 @@ DataFrame optimize_armor_combinations(
                 i = loop_size_1;
             }
 
+            curr_head_CUMMIN_WEIGHT = head_CUMMIN_WEIGHT[i];
+            curr_head_WEIGHT = head_WEIGHT[i];
+            if(at_max_queue_size && curr_head_WEIGHT >= curr_head_CUMMIN_WEIGHT){
+                continue;
+            }
+
             if(i == motf_index){
                 curr_load = load_motf;
                 curr_load_threshold = load_threshold_motf;
@@ -393,6 +406,7 @@ DataFrame optimize_armor_combinations(
                 curr_load_threshold = load_threshold;
             }
             
+            curr_head_SCORE = head_SCORE[i];
             curr_head = head_ARMOR[i];
             curr_head_PHYS_DEF = head_PHYS_DEF[i];
             curr_head_STRIKE_DEF = head_STRIKE_DEF[i];
@@ -406,7 +420,7 @@ DataFrame optimize_armor_combinations(
             curr_head_POIS_RES = head_POIS_RES[i];
             curr_head_CURSE_RES = head_CURSE_RES[i];
             curr_head_DURABILITY = head_DURABILITY[i];
-            curr_head_WEIGHT = head_WEIGHT[i];
+            
 
             for(int j = 0; j < curr_J; ++j){
 
@@ -414,6 +428,13 @@ DataFrame optimize_armor_combinations(
                     j = loop_size_1;
                 }
                 
+                curr_chest_CUMMIN_WEIGHT = chest_CUMMIN_WEIGHT[j];
+                curr_chest_WEIGHT = chest_WEIGHT[j];
+                if(at_max_queue_size && curr_chest_WEIGHT >= curr_chest_CUMMIN_WEIGHT){
+                    continue;
+                }
+
+                curr_chest_SCORE = chest_SCORE[j];
                 curr_chest = chest_ARMOR[j];
                 curr_chest_PHYS_DEF = chest_PHYS_DEF[j];
                 curr_chest_STRIKE_DEF = chest_STRIKE_DEF[j];
@@ -427,7 +448,6 @@ DataFrame optimize_armor_combinations(
                 curr_chest_POIS_RES = chest_POIS_RES[j];
                 curr_chest_CURSE_RES = chest_CURSE_RES[j];
                 curr_chest_DURABILITY = chest_DURABILITY[j];
-                curr_chest_WEIGHT = chest_WEIGHT[j];
 
                 for(int k = 0; k < curr_K; ++k){
 
@@ -435,6 +455,13 @@ DataFrame optimize_armor_combinations(
                         k = loop_size_1;
                     }
 
+                    curr_hands_CUMMIN_WEIGHT = hands_CUMMIN_WEIGHT[k];
+                    curr_hands_WEIGHT = hands_WEIGHT[k];
+                    if(at_max_queue_size && curr_hands_WEIGHT >= curr_hands_CUMMIN_WEIGHT){
+                        continue;
+                    }
+
+                    curr_hands_SCORE = hands_SCORE[k];
                     curr_hands = hands_ARMOR[k];
                     curr_hands_PHYS_DEF = hands_PHYS_DEF[k];
                     curr_hands_STRIKE_DEF = hands_STRIKE_DEF[k];
@@ -455,7 +482,14 @@ DataFrame optimize_armor_combinations(
                         if(i != loop_size_1 && j != loop_size_1 && k != loop_size_1 && l != loop_size_1 && !L_capped){
                             l = loop_size_1;
                         }
-                        
+
+                        curr_legs_CUMMIN_WEIGHT = legs_CUMMIN_WEIGHT[l];
+                        curr_legs_WEIGHT = legs_WEIGHT[l];
+                        if(at_max_queue_size && curr_legs_WEIGHT >= curr_legs_CUMMIN_WEIGHT){
+                            continue;
+                        }
+
+                        curr_legs_SCORE = legs_SCORE[l];                        
                         curr_legs = legs_ARMOR[l];
                         curr_legs_PHYS_DEF = legs_PHYS_DEF[l];
                         curr_legs_STRIKE_DEF = legs_STRIKE_DEF[l];
@@ -523,19 +557,8 @@ DataFrame optimize_armor_combinations(
                         if(curr_WEIGHT > (-base_weight+curr_load_threshold+eps)){
                             continue;
                         }
-
-                        score = scalars[0]*(curr_PHYS_DEF-means[0]);
-                        score += scalars[1]*(curr_STRIKE_DEF-means[1]);
-                        score += scalars[2]*(curr_SLASH_DEF-means[2]);
-                        score += scalars[3]*(curr_THRUST_DEF-means[3]);
-                        score += scalars[4]*(curr_MAG_DEF-means[4]);
-                        score += scalars[5]*(curr_FIRE_DEF-means[5]);
-                        score += scalars[6]*(curr_LITNG_DEF-means[6]);
-                        score += scalars[7]*(curr_BLEED_RES-means[7]);
-                        score += scalars[8]*(curr_POIS_RES-means[8]);
-                        score += scalars[9]*(curr_CURSE_RES-means[9]);
                         
-                        curr_combo.score = score;
+                        curr_combo.score = curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE;
                         curr_combo.head = curr_head; curr_combo.chest = curr_chest; curr_combo.hands = curr_hands; curr_combo.legs = curr_legs;
                         curr_combo.physdef = curr_PHYS_DEF; curr_combo.strikedef = curr_STRIKE_DEF; curr_combo.slashdef = curr_SLASH_DEF; curr_combo.thrustdef = curr_THRUST_DEF;
                         curr_combo.magdef = curr_MAG_DEF; curr_combo.firedef = curr_FIRE_DEF; curr_combo.litngdef = curr_LITNG_DEF; 
@@ -560,10 +583,6 @@ DataFrame optimize_armor_combinations(
 
             }
 
-        }
-
-        if(at_max_queue_size){
-            break;
         }
 
     }
