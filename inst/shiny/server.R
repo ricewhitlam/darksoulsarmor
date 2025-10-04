@@ -814,14 +814,15 @@ server <- function(input, output, session){
                         list(targets = c(1, 6:22), searchable = FALSE)
                     )
                 )
-            ) |> DT::formatPercentage(c("SCORE", "PCT_LOAD"), 2) |>
+            ) |> 
+            DT::formatPercentage(c("SCORE", "PCT_LOAD"), 2) |>
             DT::formatCurrency(c(
               "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",
                 "MAG_DEF", "FIRE_DEF", "LITNG_DEF",
                 "BLEED_RES", "POIS_RES", "CURSE_RES",
-                "DURABILITY", "ARMOR_POISE", "TOTAL_POISE",
                 "ARMOR_WEIGHT", "TOTAL_WEIGHT", "EQUIP_LOAD"
-            ), currency = "", interval = 3, mark = ",", digits = 1)
+            ), currency = "", interval = 3, mark = ",", digits = 1) |>
+            DT::formatCurrency(c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE"), currency = "", interval = 3, mark = ",", digits = 0)
         })
 
 
