@@ -202,11 +202,6 @@ void all_armor_combinations(
 
     }
 
-    PHYS_DEF = round(PHYS_DEF, 1); STRIKE_DEF = round(STRIKE_DEF, 1); SLASH_DEF = round(SLASH_DEF, 1); THRUST_DEF = round(THRUST_DEF, 1);
-    MAG_DEF = round(MAG_DEF, 1); FIRE_DEF = round(FIRE_DEF, 1); LITNG_DEF = round(LITNG_DEF, 1); POISE = round(POISE, 1);
-    BLEED_RES = round(BLEED_RES, 1); POIS_RES = round(POIS_RES, 1); CURSE_RES = round(CURSE_RES, 1); 
-    DURABILITY = round(DURABILITY, 1); WEIGHT = round(WEIGHT, 1); 
-
 }
 
 
@@ -618,12 +613,6 @@ DataFrame optimize_armor_combinations(
         ARMOR_WEIGHT[n] = curr_combo.weight; TOTAL_WEIGHT[n] = curr_combo.weight+base_weight; EQUIP_LOAD[n] = curr_combo.load; PCT_LOAD[n] = (curr_combo.weight+base_weight)/curr_combo.load;
         armor_combos.pop();
     }
-    
-    PHYS_DEF = round(PHYS_DEF, 1); STRIKE_DEF = round(STRIKE_DEF, 1); SLASH_DEF = round(SLASH_DEF, 1); THRUST_DEF = round(THRUST_DEF, 1);
-    MAG_DEF = round(MAG_DEF, 1); FIRE_DEF = round(FIRE_DEF, 1); LITNG_DEF = round(LITNG_DEF, 1); 
-    BLEED_RES = round(BLEED_RES, 1); POIS_RES = round(POIS_RES, 1); CURSE_RES = round(CURSE_RES, 1); 
-    DURABILITY = round(DURABILITY, 1); ARMOR_POISE = round(ARMOR_POISE, 1); TOTAL_POISE = round(TOTAL_POISE, 1);
-    ARMOR_WEIGHT = round(ARMOR_WEIGHT, 1); TOTAL_WEIGHT = round(TOTAL_WEIGHT, 1); EQUIP_LOAD = round(EQUIP_LOAD, 1);
 
     return out;
 
