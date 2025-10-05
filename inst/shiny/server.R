@@ -626,7 +626,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "physdefweight",
                                 label = "PHYS_DEF",
-                                value = weight.values$physdefweight,
+                                value = weight.values$weights[1],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -639,7 +639,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "magdefweight",
                                 label = "MAG_DEF",
-                                value = weight.values$magdefweight,
+                                value = weight.values$weights[5],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -652,7 +652,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "bleedresweight",
                                 label = "BLEED_RES",
-                                value = weight.values$bleedresweight,
+                                value = weight.values$weights[8],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -667,7 +667,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "strikedefweight",
                                 label = "STRIKE_DEF",
-                                value = weight.values$strikedefweight,
+                                value = weight.values$weights[2],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -680,7 +680,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "firedefweight",
                                 label = "FIRE_DEF",
-                                value = weight.values$firedefweight,
+                                value = weight.values$weights[6],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -693,7 +693,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "poisresweight",
                                 label = "POIS_RES",
-                                value = weight.values$poisresweight,
+                                value = weight.values$weights[9],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -708,7 +708,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "slashdefweight",
                                 label = "SLASH_DEF",
-                                value = weight.values$slashdefweight,
+                                value = weight.values$weights[3],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -721,7 +721,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "litngdefweight",
                                 label = "LITNG_DEF",
-                                value = weight.values$litngdefweight,
+                                value = weight.values$weights[7],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -734,7 +734,7 @@ server <- function(input, output, session){
                             shinyWidgets::autonumericInput(
                                 inputId = "curseresweight",
                                 label = "CURSE_RES",
-                                value = weight.values$curseresweight,
+                                value = weight.values$weights[10],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
@@ -747,7 +747,7 @@ server <- function(input, output, session){
                     ),
                     shiny::column(width = 3,
                             shinyWidgets::autonumericInput(
-                                inputId = "thrustdefweight",
+                                inputId = weight.values$weights[4],
                                 label = "THRUST_DEF",
                                 value = weight.values$thrustdefweight,
                                 align = "right",
