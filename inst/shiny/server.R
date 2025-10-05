@@ -614,7 +614,7 @@ server <- function(input, output, session){
     }, ignoreInit = TRUE)
 
 
-    weight.values <- shiny::reactiveValues(weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04))
+    weight.values <- shiny::reactiveValues(weights = c(16.0, 16.0, 16.0, 16.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0))
     
     shiny::observeEvent(input$weights, { 
         shiny::showModal( 
@@ -632,7 +632,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             ),
@@ -645,7 +645,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             ),
@@ -658,7 +658,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             )
@@ -673,7 +673,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             ),
@@ -686,7 +686,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             ),
@@ -699,7 +699,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             )
@@ -714,7 +714,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             ),
@@ -727,7 +727,7 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             ),
@@ -740,22 +740,22 @@ server <- function(input, output, session){
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             )
                     ),
                     shiny::column(width = 3,
                             shinyWidgets::autonumericInput(
-                                inputId = weight.values$weights[4],
+                                inputId = "thrustdefweight",
                                 label = "THRUST_DEF",
-                                value = weight.values$thrustdefweight,
+                                value = weight.values$weights[4],
                                 align = "right",
                                 currencySymbol = "%",
                                 currencySymbolPlacement = "s",
                                 decimalCharacter = ".",
                                 digitGroupSeparator = ",",
-                                decimalPlaces = 0,
+                                decimalPlaces = 1,
                                 maximumValue = 100,
                                 minimumValue = 0
                             )
@@ -780,16 +780,16 @@ server <- function(input, output, session){
             shiny::isTruthy(input$curseresweight)
         ){
             weight.values$weights <- 
-                round(c(
+                c(
                     input$physdefweight, input$strikedefweight, input$slashdefweight, input$thrustdefweight,
                     input$magdefweight, input$firedefweight, input$litngdefweight, 
                     input$bleedresweight, input$poisresweight, input$curseresweight
-                ), 6)
+                )
         }
 
         if(been.refreshed()){
-            curr.vals <- armordata()$args
-            inputs.unchanged$weight.values <- all(sapply(names(weight.values), function(name){identical(curr.vals[[name]], weight.values[[name]])}))
+            ## Custom logic here due to special nature of weights argument
+            inputs.unchanged$weight.values <- (max(abs(weight.values$weights-100*armordata()$args$weights)) < 1e-6)
         }
         shiny::removeModal()
         
@@ -927,13 +927,6 @@ server <- function(input, output, session){
             
             shinybusy::show_modal_spinner()
 
-            weights <- 
-                c(
-                    weight.values$physdefweight, weight.values$strikedefweight, weight.values$slashdefweight, weight.values$thrustdefweight, 
-                    weight.values$magdefweight, weight.values$firedefweight, weight.values$litngdefweight, 
-                    weight.values$bleedresweight, weight.values$poisresweight, weight.values$curseresweight
-                )
-
             armordata(
                 get.optimal.armor.combos(
                     max.table.size = filter.values$max.table.size,
@@ -953,7 +946,7 @@ server <- function(input, output, session){
                     fap.ring = ring.values$fap.ring,
                     wolf.ring = ring.values$wolf.ring,
                     minima = minimum.values$minima,
-                    weights = weights
+                    weights = weight.values$weights
                 )
             )
             gc()
