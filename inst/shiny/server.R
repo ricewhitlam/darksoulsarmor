@@ -620,7 +620,7 @@ server <- function(input, output, session){
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Score Inputs", 
-                footer = shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"), 
+                footer = shiny::fluidRow(shiny::column(6, shiny::actionButton(inputId = "normweights", label = "Normalize")), shiny::column(6, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))), 
                 shiny::fluidRow(
                     shiny::column(width = 3,
                             shinyWidgets::autonumericInput(
@@ -764,6 +764,63 @@ server <- function(input, output, session){
             ) 
         ) 
     })
+
+    shiny::observeEvent(input$normweights, {
+
+        if(
+            shiny::isTruthy(input$physdefweight) &&
+            shiny::isTruthy(input$strikedefweight) &&
+            shiny::isTruthy(input$slashdefweight) &&
+            shiny::isTruthy(input$thrustdefweight) &&
+            shiny::isTruthy(input$magdefweight) &&
+            shiny::isTruthy(input$firedefweight) &&
+            shiny::isTruthy(input$litngdefweight) &&
+            shiny::isTruthy(input$bleedresweight) &&
+            shiny::isTruthy(input$poisresweight) &&
+            shiny::isTruthy(input$curseresweight)
+        ){
+
+            weights <- 
+                c(
+                    input$physdefweight, input$strikedefweight, input$slashdefweight, input$thrustdefweight,
+                    input$magdefweight, input$firedefweight, input$litngdefweight, 
+                    input$bleedresweight, input$poisresweight, input$curseresweight
+                )
+            
+            ## Check weights don't sum to 0 - if they do, set all weights equal
+            if(abs(sum(weights)) < 1e-10){
+                weights <- rep(100.0, 10)
+            }
+
+            ## Perform Webster apportionment to ensure weights sum to 100%
+            pop <- round(10000*weights/sum(weights), 0)
+            size <- 1000
+            div <- floor(sum(pop)/size)
+            apprt <- round(pop/div)
+            rem <- size-sum(apprt)
+            while(rem != 0){
+                diff <- ifelse(rem < 0, 1L, -1L)
+                div <- div+diff
+                apprt <- round(pop/div)
+                rem <- size-sum(apprt)
+            }
+            weights <- 0.1*apprt
+
+            ## Update inputs
+            shinyWidgets::updateAutonumericInput(inputId = "physdefweight", value = weights[1])
+            shinyWidgets::updateAutonumericInput(inputId = "strikedefweight", value = weights[2])
+            shinyWidgets::updateAutonumericInput(inputId = "slashdefweight", value = weights[3])
+            shinyWidgets::updateAutonumericInput(inputId = "thrustdefweight", value = weights[4])
+            shinyWidgets::updateAutonumericInput(inputId = "magdefweight", value = weights[5])
+            shinyWidgets::updateAutonumericInput(inputId = "firedefweight", value = weights[6])
+            shinyWidgets::updateAutonumericInput(inputId = "litngdefweight", value = weights[7])
+            shinyWidgets::updateAutonumericInput(inputId = "bleedresweight", value = weights[8])
+            shinyWidgets::updateAutonumericInput(inputId = "poisresweight", value = weights[9])
+            shinyWidgets::updateAutonumericInput(inputId = "curseresweight", value = weights[10])
+
+        }
+        
+    }, ignoreInit = TRUE)
 
     shiny::observeEvent(input$dismiss_weight_modal, {
 
