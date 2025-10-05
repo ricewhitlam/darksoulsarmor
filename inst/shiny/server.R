@@ -620,7 +620,7 @@ server <- function(input, output, session){
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Score Inputs", 
-                footer = shiny::fluidRow(shiny::column(6, shiny::actionButton(inputId = "normweights", label = "Normalize")), shiny::column(6, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))), 
+                footer = shiny::fluidRow(shiny::column(6, shiny::actionButton(inputId = "normalize_weights", label = "Normalize")), shiny::column(6, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))), 
                 shiny::fluidRow(
                     shiny::column(width = 3,
                             shinyWidgets::autonumericInput(
@@ -765,7 +765,7 @@ server <- function(input, output, session){
         ) 
     })
 
-    shiny::observeEvent(input$normweights, {
+    shiny::observeEvent(input$normalize_weights, {
 
         if(
             shiny::isTruthy(input$physdefweight) &&
@@ -787,24 +787,16 @@ server <- function(input, output, session){
                     input$bleedresweight, input$poisresweight, input$curseresweight
                 )
             
-            ## Check weights don't sum to 0 - if they do, set all weights equal
-            if(abs(sum(weights)) < 1e-10){
-                weights <- rep(100.0, 10)
+            weights <- 1000*weights/sum(weights)
+            int.parts <- floor(weights)
+            frac.parts <- (weights-int.parts)
+            diff <- 1000-sum(int.parts)
+            weights <- int.parts
+            if(diff > 0){
+                indices <- order(frac.parts, decreasing = TRUE)[seq_len(diff)]
+                weights[indices] <- weights[indices]+1
             }
-
-            ## Perform Webster apportionment to ensure weights sum to 100%
-            pop <- round(10000*weights/sum(weights), 0)
-            size <- 1000
-            div <- floor(sum(pop)/size)
-            apprt <- round(pop/div)
-            rem <- size-sum(apprt)
-            while(rem != 0){
-                diff <- ifelse(rem < 0, 1L, -1L)
-                div <- div+diff
-                apprt <- round(pop/div)
-                rem <- size-sum(apprt)
-            }
-            weights <- 0.1*apprt
+            weights <- 0.1*weights
 
             ## Update inputs
             shinyWidgets::updateAutonumericInput(inputId = "physdefweight", value = weights[1])
@@ -818,7 +810,7 @@ server <- function(input, output, session){
             shinyWidgets::updateAutonumericInput(inputId = "poisresweight", value = weights[9])
             shinyWidgets::updateAutonumericInput(inputId = "curseresweight", value = weights[10])
 
-        }
+        } 
         
     }, ignoreInit = TRUE)
 
@@ -848,6 +840,7 @@ server <- function(input, output, session){
             ## Custom logic here due to special nature of weights argument
             inputs.unchanged$weight.values <- (max(abs(weight.values$weights-100*armordata()$args$weights)) < 1e-6)
         }
+        
         shiny::removeModal()
         
     }, ignoreInit = TRUE)
