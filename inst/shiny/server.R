@@ -3,7 +3,6 @@ server <- function(input, output, session){
     
 
     output$mode <- shiny::renderText("Mode (Light or Dark)")
-    output$rings <- shiny::renderText("Rings")
 
     shiny::observeEvent(input$guide, { 
         shiny::showModal( 
@@ -88,53 +87,54 @@ server <- function(input, output, session){
     }) 
 
 
-    filter.values <- 
+    been.refreshed <- shiny::reactiveVal(FALSE)
+
+
+    inputs.unchanged <- 
         shiny::reactiveValues(
-            tablesize = 1000,
-            class = classes[1], 
-            area = areas, 
-            upgradetype = c("Regular", "Twinkling", "None"),
-            head = head.data_00$ARMOR,
-            chest = chest.data_00$ARMOR,
-            hands = hands.data_00$ARMOR,
-            legs = legs.data_00$ARMOR
+            filter.values = TRUE,
+            upgrade.values = TRUE,
+            ring.values = TRUE,
+            constraint.values = TRUE,
+            minimum.values = TRUE,
+            weight.values = TRUE
         )
 
-    shiny::observeEvent(
-        list(input$tablesize, input$class, input$area, input$upgradetype, input$head, input$chest, input$hands, input$legs), 
-    {
-        if(shiny::isTruthy(input$tablesize)){filter.values$tablesize <- input$tablesize}
-        if(shiny::isTruthy(input$class)){filter.values$class <- input$class}
-        if(shiny::isTruthy(input$area)){filter.values$area <- input$area} else if(length(input$area) == 0){filter.values$area <- character(0)}
-        if(shiny::isTruthy(input$upgradetype)){filter.values$upgradetype <- input$upgradetype} else if(length(input$upgradetype) == 0){filter.values$upgradetype <- character(0)}
-        if(shiny::isTruthy(input$head)){filter.values$head <- input$head} else if(length(input$head) == 0){
-            filter.values$head <- "No Head"
-            shinyWidgets::updatePickerInput(inputId = "head", selected = "No Head")
+    shiny::observe({
+        if(been.refreshed()){
+            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged)))){
+                output$refreshmessage <- shiny::renderText("")
+            } else{
+                output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to pull new results")
+            }
+        } else{
+            output$refreshmessage <- shiny::renderText("Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results")
         }
-        if(shiny::isTruthy(input$chest)){filter.values$chest <- input$chest} else if(length(input$chest) == 0){
-            filter.values$chest <- "No Chest"
-            shinyWidgets::updatePickerInput(inputId = "chest", selected = "No Chest")
-        }
-        if(shiny::isTruthy(input$hands)){filter.values$hands <- input$hands} else if(length(input$hands) == 0){
-            filter.values$hands <- "No Hands"
-            shinyWidgets::updatePickerInput(inputId = "hands", selected = "No Hands")
-        }
-        if(shiny::isTruthy(input$legs)){filter.values$legs <- input$legs} else if(length(input$legs) == 0){
-            filter.values$legs <- "No Legs"
-            shinyWidgets::updatePickerInput(inputId = "legs", selected = "No Legs")
-        }
-    }, ignoreInit = TRUE)
+    })
+
+
+    filter.values <- 
+        shiny::reactiveValues(
+            max.table.size = 1000,
+            starting.class = classes[1], 
+            areas.completed = areas, 
+            upgrade.types = c("Regular", "Twinkling", "None"),
+            head.filter = head.data_00$ARMOR,
+            chest.filter = chest.data_00$ARMOR,
+            hands.filter = hands.data_00$ARMOR,
+            legs.filter = legs.data_00$ARMOR
+        )
     
     shiny::observeEvent(input$filters, { 
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Filter Inputs", 
-                footer = shiny::modalButton("Done"),
+                footer = shiny::actionButton(inputId = "dismiss_filter_modal", label = "Done"), 
                 shiny::fluidRow(
                     shinyWidgets::autonumericInput(
-                        inputId = "tablesize",
+                        inputId = "max.table.size",
                         label = "Max Table Size",
-                        value = filter.values$tablesize,
+                        value = filter.values$max.table.size,
                         align = "right",
                         decimalCharacter = ".",
                         digitGroupSeparator = ",",
@@ -143,10 +143,10 @@ server <- function(input, output, session){
                         minimumValue = 1
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "class",
+                        inputId = "starting.class",
                         label = "Starting Class",
                         choices = classes,
-                        selected = filter.values$class,
+                        selected = filter.values$starting.class,
                         multiple = FALSE,
                         options = list(size = 10),
                         choicesOpt = NULL,
@@ -156,10 +156,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "area",
+                        inputId = "areas.completed",
                         label = "Areas Completed",
                         choices = areas,
-                        selected = filter.values$area,
+                        selected = filter.values$areas.completed,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
                         choicesOpt = NULL,
@@ -169,10 +169,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "upgradetype",
+                        inputId = "upgrade.types",
                         label = "Upgrades With",
                         choices = c("Regular", "Twinkling", "None"),
-                        selected = filter.values$upgradetype,
+                        selected = filter.values$upgrade.types,
                         multiple = TRUE,
                         options = list(size = 10),
                         choicesOpt = NULL,
@@ -182,10 +182,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "head",
+                        inputId = "head.filter",
                         label = "Head",
                         choices = head.data_00$ARMOR,
-                        selected = filter.values$head,
+                        selected = filter.values$head.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
                         choicesOpt = NULL,
@@ -195,10 +195,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "chest",
+                        inputId = "chest.filter",
                         label = "Chest",
                         choices = chest.data_00$ARMOR,
-                        selected = filter.values$chest,
+                        selected = filter.values$chest.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
                         choicesOpt = NULL,
@@ -208,10 +208,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "hands",
+                        inputId = "hands.filter",
                         label = "Hands",
                         choices = hands.data_00$ARMOR,
-                        selected = filter.values$hands,
+                        selected = filter.values$hands.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
                         choicesOpt = NULL,
@@ -221,10 +221,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "legs",
+                        inputId = "legs.filter",
                         label = "Legs",
                         choices = legs.data_00$ARMOR,
-                        selected = filter.values$legs,
+                        selected = filter.values$legs.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
                         choicesOpt = NULL,
@@ -238,31 +238,55 @@ server <- function(input, output, session){
         ) 
     })
 
+    shiny::observeEvent(input$dismiss_filter_modal, {
+
+        if(shiny::isTruthy(input$max.table.size)){filter.values$max.table.size <- round(input$max.table.size, 0)}
+        if(shiny::isTruthy(input$starting.class)){filter.values$starting.class <- input$starting.class}
+        if(shiny::isTruthy(input$areas.completed)){filter.values$areas.completed <- input$areas.completed} else if(length(input$areas.completed) == 0){filter.values$areas.completed <- character(0)}
+        if(shiny::isTruthy(input$upgrade.types)){filter.values$upgrade.types <- input$upgrade.types} else if(length(input$upgrade.types) == 0){filter.values$upgrade.types <- character(0)}
+        if(shiny::isTruthy(input$head.filter)){filter.values$head.filter <- input$head.filter} else if(length(input$head.filter) == 0){
+            filter.values$head.filter <- "No Head"
+            shinyWidgets::updatePickerInput(inputId = "head.filter", selected = "No Head")
+        }
+        if(shiny::isTruthy(input$chest.filter)){filter.values$chest.filter <- input$chest.filter} else if(length(input$chest.filter) == 0){
+            filter.values$chest.filter <- "No Chest"
+            shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = "No Chest")
+        }
+        if(shiny::isTruthy(input$hands.filter)){filter.values$hands.filter <- input$hands.filter} else if(length(input$hands.filter) == 0){
+            filter.values$hands.filter <- "No Hands"
+            shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = "No Hands")
+        }
+        if(shiny::isTruthy(input$legs.filter)){filter.values$legs.filter <- input$legs.filter} else if(length(input$legs.filter) == 0){
+            filter.values$legs.filter <- "No Legs"
+            shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = "No Legs")
+        }
+
+        if(been.refreshed()){
+            curr.vals <- armordata()$args
+            inputs.unchanged$filter.values <- all(sapply(names(filter.values), function(name){identical(curr.vals[[name]], filter.values[[name]])}))
+        }
+        shiny::removeModal()
+        
+    }, ignoreInit = TRUE)
+
 
     upgrade.values <- 
         shiny::reactiveValues(
-            reglvl = "+0", 
-            twinklvl = "+0"
+            regular.level = "+0", 
+            twinkling.level = "+0"
         )
-
-    shiny::observeEvent(
-        list(input$reglvl, input$twinklvl), 
-    {
-        if(shiny::isTruthy(input$reglvl)){upgrade.values$reglvl <- input$reglvl}
-        if(shiny::isTruthy(input$twinklvl)){upgrade.values$twinklvl <- input$twinklvl}
-    }, ignoreInit = TRUE)
     
     shiny::observeEvent(input$upgrades, { 
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Upgrade Inputs", 
-                footer = shiny::modalButton("Done"),
+                footer = shiny::actionButton(inputId = "dismiss_upgrade_modal", label = "Done"), 
                 shiny::fluidRow(
                     shinyWidgets::pickerInput(
-                        inputId = "reglvl",
+                        inputId = "regular.level",
                         label = "Armor Level (Regular)",
                         choices = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10"),
-                        selected = upgrade.values$reglvl,
+                        selected = upgrade.values$regular.level,
                         multiple = FALSE,
                         options = list(size = 11),
                         choicesOpt = NULL,
@@ -272,10 +296,10 @@ server <- function(input, output, session){
                         autocomplete = FALSE
                     ),
                     shinyWidgets::pickerInput(
-                        inputId = "twinklvl",
+                        inputId = "twinkling.level",
                         label = "Armor Level (Twinkling)",
                         choices = c("+0", "+1", "+2", "+3", "+4", "+5"),
-                        selected = upgrade.values$twinklvl,
+                        selected = upgrade.values$twinkling.level,
                         multiple = FALSE,
                         options = list(size = 10),
                         choicesOpt = NULL,
@@ -289,62 +313,68 @@ server <- function(input, output, session){
         ) 
     })
 
+    shiny::observeEvent(input$dismiss_upgrade_modal, {
+
+        if(shiny::isTruthy(input$regular.level)){upgrade.values$regular.level <- input$regular.level}
+        if(shiny::isTruthy(input$twinkling.level)){upgrade.values$twinkling.level <- input$twinkling.level}
+
+        if(been.refreshed()){
+            curr.vals <- armordata()$args
+            inputs.unchanged$upgrade.values <- all(sapply(names(upgrade.values), function(name){identical(curr.vals[[name]], upgrade.values[[name]])}))
+        }
+        shiny::removeModal()
+        
+    }, ignoreInit = TRUE)
+
 
     ring.values <- 
         shiny::reactiveValues(
-            havel = FALSE,
-            fap = FALSE,
-            wolf = FALSE
+            havel.ring = FALSE,
+            fap.ring = FALSE,
+            wolf.ring = FALSE
         )
-
-    shiny::observeEvent(
-        list(input$havel, input$fap, input$wolf), 
-    {
-        if(shiny::isTruthy(input$havel)){constraint.values$havel <- input$havel} else if(length(input$havel) == 1){if(!is.na(input$havel) && is.logical(input$havel)){constraint.values$havel <- input$havel}}
-        if(shiny::isTruthy(input$fap)){constraint.values$fap <- input$fap} else if(length(input$fap) == 1){if(!is.na(input$fap) && is.logical(input$fap)){constraint.values$fap <- input$fap}}
-        if(shiny::isTruthy(input$wolf)){constraint.values$wolf <- input$wolf} else if(length(input$wolf) == 1){if(!is.na(input$wolf) && is.logical(input$wolf)){constraint.values$wolf <- input$wolf}}
-    }, ignoreInit = TRUE)
     
     shiny::observeEvent(input$rings, { 
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Ring Inputs", 
-                footer = shiny::modalButton("Done"),
+                footer = shiny::actionButton(inputId = "dismiss_ring_modal", label = "Done"), 
                 shiny::fluidRow(
-                    # shiny::textOutput(outputId = "rings"),
-                    bslib::input_switch(id = "havel", label = "Havel's Ring (+50% Eq Load)", value = constraint.values$havel, width = NULL),
-                    bslib::input_switch(id = "fap", label = "Ring of Favor (+20% Eq Load)", value = constraint.values$fap, width = NULL),
-                    bslib::input_switch(id = "wolf", label = "Wolf Ring (+40 Poise)", value = constraint.values$wolf, width = NULL)
+                    bslib::input_switch(id = "havel.ring", label = "Havel's Ring (+50% Eq Load)", value = ring.values$havel.ring, width = NULL),
+                    bslib::input_switch(id = "fap.ring", label = "Ring of Favor (+20% Eq Load)", value = ring.values$fap.ring, width = NULL),
+                    bslib::input_switch(id = "wolf.ring", label = "Wolf Ring (+40 Poise)", value = ring.values$wolf.ring, width = NULL)
                 )
             ) 
         ) 
     })
 
+    shiny::observeEvent(input$dismiss_ring_modal, {
+
+        if(shiny::isTruthy(input$havel.ring)){ring.values$havel.ring <- input$havel.ring} else if(length(input$havel.ring) == 1){if(!is.na(input$havel.ring) && is.logical(input$havel.ring)){ring.values$havel.ring <- input$havel.ring}}
+        if(shiny::isTruthy(input$fap.ring)){ring.values$fap.ring <- input$fap.ring} else if(length(input$fap.ring) == 1){if(!is.na(input$fap.ring) && is.logical(input$fap.ring)){ring.values$fap.ring <- input$fap.ring}}
+        if(shiny::isTruthy(input$wolf.ring)){ring.values$wolf.ring <- input$wolf.ring} else if(length(input$wolf.ring) == 1){if(!is.na(input$wolf.ring) && is.logical(input$wolf.ring)){ring.values$wolf.ring <- input$wolf.ring}}
+
+        if(been.refreshed()){
+            curr.vals <- armordata()$args
+            inputs.unchanged$ring.values <- all(sapply(names(ring.values), function(name){identical(curr.vals[[name]], ring.values[[name]])}))
+        }
+        shiny::removeModal()
+        
+    }, ignoreInit = TRUE)
+
 
     constraint.values <- 
         shiny::reactiveValues(
             roll = "Fast",
-            baseweight = 10, 
-            endurance = 10, 
-            havel = FALSE,
-            fap = FALSE,
-            wolf = FALSE,
-            minpoise = 0
+            unarmored.weight = 10, 
+            endurance.level = 10
         )
-
-    shiny::observeEvent(
-        list(input$roll, input$baseweight, input$endurance), 
-    {
-        if(shiny::isTruthy(input$roll)){constraint.values$roll <- input$roll}
-        if(shiny::isTruthy(input$baseweight)){constraint.values$baseweight <- input$baseweight}
-        if(shiny::isTruthy(input$endurance)){constraint.values$endurance <- input$endurance}
-    }, ignoreInit = TRUE)
     
     shiny::observeEvent(input$constraints, { 
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Load Inputs", 
-                footer = shiny::modalButton("Done"),
+                footer = shiny::actionButton(inputId = "dismiss_constraint_modal", label = "Done"), 
                 shiny::fluidRow(
                     shiny::radioButtons(
                         inputId = "roll",
@@ -357,9 +387,9 @@ server <- function(input, output, session){
                         choiceValues = NULL
                     ),
                     shinyWidgets::autonumericInput(
-                        inputId = "baseweight",
+                        inputId = "unarmored.weight",
                         label = "Weight without Armor",
-                        value = constraint.values$baseweight,
+                        value = constraint.values$unarmored.weight,
                         align = "right",
                         decimalCharacter = ".",
                         digitGroupSeparator = ",",
@@ -368,9 +398,9 @@ server <- function(input, output, session){
                         minimumValue = 0
                     ),
                     shinyWidgets::autonumericInput(
-                        inputId = "endurance",
+                        inputId = "endurance.level",
                         label = "Endurance Level",
-                        value = constraint.values$endurance,
+                        value = constraint.values$endurance.level,
                         align = "right",
                         decimalCharacter = ".",
                         digitGroupSeparator = ",",
@@ -383,51 +413,34 @@ server <- function(input, output, session){
         ) 
     })
 
+    shiny::observeEvent(input$dismiss_constraint_modal, {
 
-    minimum.values <- 
-        shiny::reactiveValues(
-            minphysdef = 0, 
-            minstrikedef = 0, 
-            minslashdef = 0, 
-            minthrustdef = 0, 
-            minmagdef = 0, 
-            minfiredef = 0, 
-            minlitngdef = 0, 
-            minbleedres = 0, 
-            minpoisres = 0, 
-            mincurseres = 0, 
-            minpoise = 0, 
-            mindurability = 0
-        )
+        if(shiny::isTruthy(input$roll)){constraint.values$roll <- input$roll}
+        if(shiny::isTruthy(input$unarmored.weight)){constraint.values$unarmored.weight <- round(input$unarmored.weight, 0)}
+        if(shiny::isTruthy(input$endurance.level)){constraint.values$endurance.level <- round(input$endurance.level, 0)}
 
-    shiny::observeEvent(
-        list(input$minphysdef, input$minstrikedef, input$minslashdef, input$minthrustdef, input$minmagdef, input$minfiredef, input$minlitngdef, input$minbleedres, input$minpoisres, input$mincurseres, input$minpoise, input$mindurability), 
-    {
-        if(shiny::isTruthy(input$minphysdef)){minimum.values$minphysdef <- input$minphysdef}
-        if(shiny::isTruthy(input$minstrikedef)){minimum.values$minstrikedef <- input$minstrikedef}
-        if(shiny::isTruthy(input$minslashdef)){minimum.values$minslashdef <- input$minslashdef}
-        if(shiny::isTruthy(input$minthrustdef)){minimum.values$minthrustdef <- input$minthrustdef}
-        if(shiny::isTruthy(input$minmagdef)){minimum.values$minmagdef <- input$minmagdef}
-        if(shiny::isTruthy(input$minfiredef)){minimum.values$minfiredef <- input$minfiredef}
-        if(shiny::isTruthy(input$minlitngdef)){minimum.values$minlitngdef <- input$minlitngdef}
-        if(shiny::isTruthy(input$minbleedres)){minimum.values$minbleedres <- input$minbleedres}
-        if(shiny::isTruthy(input$minpoisres)){minimum.values$minpoisres <- input$minpoisres}
-        if(shiny::isTruthy(input$mincurseres)){minimum.values$mincurseres <- input$mincurseres}
-        if(shiny::isTruthy(input$minpoise)){minimum.values$minpoise <- input$minpoise}
-        if(shiny::isTruthy(input$mindurability)){minimum.values$mindurability <- input$mindurability} 
+        if(been.refreshed()){
+            curr.vals <- armordata()$args
+            inputs.unchanged$constraint.values <- all(sapply(names(constraint.values), function(name){identical(curr.vals[[name]], constraint.values[[name]])}))
+        }
+        shiny::removeModal()
+        
     }, ignoreInit = TRUE)
-    
+
+
+    minimum.values <- shiny::reactiveValues(minima = rep(0.0, 12))
+
     shiny::observeEvent(input$minima, { 
       shiny::showModal( 
         shiny::modalDialog( 
           title = "Minimum Inputs", 
-          footer = shiny::modalButton("Done"),
+          footer = shiny::actionButton(inputId = "dismiss_minimum_modal", label = "Done"), 
           shiny::fluidRow(
             shiny::column(width = 3,
                    shinyWidgets::autonumericInput(
                      inputId = "minphysdef",
                      label = "PHYS_DEF",
-                     value = minimum.values$minphysdef,
+                     value = minimum.values$minima[1],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -438,7 +451,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minmagdef",
                      label = "MAG_DEF",
-                     value = minimum.values$minmagdef,
+                     value = minimum.values$minima[5],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -449,7 +462,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minbleedres",
                      label = "BLEED_RES",
-                     value = minimum.values$minbleedres,
+                     value = minimum.values$minima[9],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -462,7 +475,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minstrikedef",
                      label = "STRIKE_DEF",
-                     value = minimum.values$minstrikedef,
+                     value = minimum.values$minima[2],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -473,7 +486,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minfiredef",
                      label = "FIRE_DEF",
-                     value = minimum.values$minfiredef,
+                     value = minimum.values$minima[6],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -484,7 +497,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minpoisres",
                      label = "POIS_RES",
-                     value = minimum.values$minpoisres,
+                     value = minimum.values$minima[10],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -497,7 +510,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minslashdef",
                      label = "SLASH_DEF",
-                     value = minimum.values$minslashdef,
+                     value = minimum.values$minima[3],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -508,7 +521,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minlitngdef",
                      label = "LITNG_DEF",
-                     value = minimum.values$minlitngdef,
+                     value = minimum.values$minima[7],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -519,7 +532,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "mincurseres",
                      label = "CURSE_RES",
-                     value = minimum.values$mincurseres,
+                     value = minimum.values$minima[11],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -532,7 +545,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minthrustdef",
                      label = "THRUST_DEF",
-                     value = minimum.values$minthrustdef,
+                     value = minimum.values$minima[4],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -543,7 +556,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "minpoise",
                      label = "POISE",
-                     value = minimum.values$minpoise,
+                     value = minimum.values$minima[8],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -554,7 +567,7 @@ server <- function(input, output, session){
                    shinyWidgets::autonumericInput(
                      inputId = "mindurability",
                      label = "DURABILITY",
-                     value = minimum.values$mindurability,
+                     value = minimum.values$minima[12],
                      align = "right",
                      decimalCharacter = ".",
                      digitGroupSeparator = ",",
@@ -568,41 +581,46 @@ server <- function(input, output, session){
       ) 
     })
 
+    shiny::observeEvent(input$dismiss_minimum_modal, {
 
-    weight.values <- 
-        shiny::reactiveValues(
-            physdefweight = 16, 
-            strikedefweight = 16, 
-            slashdefweight = 16, 
-            thrustdefweight = 16, 
-            magdefweight = 8, 
-            firedefweight = 8, 
-            litngdefweight = 8, 
-            bleedresweight = 4, 
-            poisresweight = 4, 
-            curseresweight = 4
-        )
+        if(
+            shiny::isTruthy(input$minphysdef) &&
+            shiny::isTruthy(input$minstrikedef) &&
+            shiny::isTruthy(input$minslashdef) &&
+            shiny::isTruthy(input$minthrustdef) &&
+            shiny::isTruthy(input$minmagdef) &&
+            shiny::isTruthy(input$minfiredef) &&
+            shiny::isTruthy(input$minlitngdef) &&
+            shiny::isTruthy(input$minpoise) &&
+            shiny::isTruthy(input$minbleedres) &&
+            shiny::isTruthy(input$minpoisres) &&
+            shiny::isTruthy(input$mincurseres) &&
+            shiny::isTruthy(input$mindurability)
+        ){
+            minimum.values$minima <- 
+                round(c(
+                    input$minphysdef, input$minstrikedef, input$minslashdef, input$minthrustdef,
+                    input$minmagdef, input$minfiredef, input$minlitngdef, input$minpoise,
+                    input$minbleedres, input$minpoisres, input$mincurseres, input$mindurability
+                ), 1)
+        }
 
-    shiny::observeEvent(
-        list(input$physdefweight, input$strikedefweight, input$slashdefweight, input$thrustdefweight, input$magdefweight, input$firedefweight, input$litngdefweight, input$bleedresweight, input$poisresweight, input$curseresweight), 
-    {
-        if(shiny::isTruthy(input$physdefweight)){weight.values$physdefweight <- input$physdefweight}
-        if(shiny::isTruthy(input$strikedefweight)){weight.values$strikedefweight <- input$strikedefweight}
-        if(shiny::isTruthy(input$slashdefweight)){weight.values$slashdefweight <- input$slashdefweight}
-        if(shiny::isTruthy(input$thrustdefweight)){weight.values$thrustdefweight <- input$thrustdefweight}
-        if(shiny::isTruthy(input$magdefweight)){weight.values$magdefweight <- input$magdefweight}
-        if(shiny::isTruthy(input$firedefweight)){weight.values$firedefweight <- input$firedefweight}
-        if(shiny::isTruthy(input$litngdefweight)){weight.values$litngdefweight <- input$litngdefweight}
-        if(shiny::isTruthy(input$bleedresweight)){weight.values$bleedresweight <- input$bleedresweight}
-        if(shiny::isTruthy(input$poisresweight)){weight.values$poisresweight <- input$poisresweight}
-        if(shiny::isTruthy(input$curseresweight)){weight.values$curseresweight <- input$curseresweight}
+        if(been.refreshed()){
+            curr.vals <- armordata()$args
+            inputs.unchanged$minimum.values <- all(sapply(names(minimum.values), function(name){identical(curr.vals[[name]], minimum.values[[name]])}))
+        }
+        shiny::removeModal()
+        
     }, ignoreInit = TRUE)
+
+
+    weight.values <- shiny::reactiveValues(weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04))
     
     shiny::observeEvent(input$weights, { 
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Score Inputs", 
-                footer = shiny::modalButton("Done"),
+                footer = shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"), 
                 shiny::fluidRow(
                     shiny::column(width = 3,
                             shinyWidgets::autonumericInput(
@@ -747,6 +765,36 @@ server <- function(input, output, session){
         ) 
     })
 
+    shiny::observeEvent(input$dismiss_weight_modal, {
+
+        if(
+            shiny::isTruthy(input$physdefweight) &&
+            shiny::isTruthy(input$strikedefweight) &&
+            shiny::isTruthy(input$slashdefweight) &&
+            shiny::isTruthy(input$thrustdefweight) &&
+            shiny::isTruthy(input$magdefweight) &&
+            shiny::isTruthy(input$firedefweight) &&
+            shiny::isTruthy(input$litngdefweight) &&
+            shiny::isTruthy(input$bleedresweight) &&
+            shiny::isTruthy(input$poisresweight) &&
+            shiny::isTruthy(input$curseresweight)
+        ){
+            weight.values$weights <- 
+                round(c(
+                    input$physdefweight, input$strikedefweight, input$slashdefweight, input$thrustdefweight,
+                    input$magdefweight, input$firedefweight, input$litngdefweight, 
+                    input$bleedresweight, input$poisresweight, input$curseresweight
+                ), 6)
+        }
+
+        if(been.refreshed()){
+            curr.vals <- armordata()$args
+            inputs.unchanged$weight.values <- all(sapply(names(weight.values), function(name){identical(curr.vals[[name]], weight.values[[name]])}))
+        }
+        shiny::removeModal()
+        
+    }, ignoreInit = TRUE)
+
 
     armordata <- 
         shiny::reactiveVal(
@@ -799,6 +847,7 @@ server <- function(input, output, session){
                     )
             )
         )
+
     
     output$table <- 
         DT::renderDataTable({
@@ -877,13 +926,6 @@ server <- function(input, output, session){
         {   
             
             shinybusy::show_modal_spinner()
-      
-            minima <-             
-                c(
-                    minimum.values$minphysdef, minimum.values$minstrikedef, minimum.values$minslashdef, minimum.values$minthrustdef,
-                    minimum.values$minmagdef, minimum.values$minfiredef, minimum.values$minlitngdef, minimum.values$minpoise, 
-                    minimum.values$minbleedres, minimum.values$minpoisres, minimum.values$mincurseres, minimum.values$mindurability
-                )
 
             weights <- 
                 c(
@@ -894,23 +936,23 @@ server <- function(input, output, session){
 
             armordata(
                 get.optimal.armor.combos(
-                    max.table.size = filter.values$tablesize,
-                    starting.class = filter.values$class,
-                    areas.completed = filter.values$area,
-                    upgrade.types = filter.values$upgradetype,
-                    head.filter = filter.values$head,
-                    chest.filter = filter.values$chest,
-                    hands.filter = filter.values$hands,
-                    legs.filter = filter.values$legs,
-                    regular.level = upgrade.values$reglvl,
-                    twinkling.level = upgrade.values$twinklvl,
+                    max.table.size = filter.values$max.table.size,
+                    starting.class = filter.values$starting.class,
+                    areas.completed = filter.values$areas.completed,
+                    upgrade.types = filter.values$upgrade.types,
+                    head.filter = filter.values$head.filter,
+                    chest.filter = filter.values$chest.filter,
+                    hands.filter = filter.values$hands.filter,
+                    legs.filter = filter.values$legs.filter,
+                    regular.level = upgrade.values$regular.level,
+                    twinkling.level = upgrade.values$twinkling.level,
                     roll = constraint.values$roll,
-                    unarmored.weight = constraint.values$baseweight,
-                    endurance.level = constraint.values$endurance,
-                    havel.ring = constraint.values$havel,
-                    fap.ring = constraint.values$fap,
-                    wolf.ring = constraint.values$wolf,
-                    minima = minima,
+                    unarmored.weight = constraint.values$unarmored.weight,
+                    endurance.level = constraint.values$endurance.level,
+                    havel.ring = ring.values$havel.ring,
+                    fap.ring = ring.values$fap.ring,
+                    wolf.ring = ring.values$wolf.ring,
+                    minima = minimum.values$minima,
                     weights = weights
                 )
             )
@@ -918,6 +960,16 @@ server <- function(input, output, session){
 
             armordata()$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := lapply(.SD, as.factor), .SDcols = c("HEAD", "CHEST", "HANDS", "LEGS")]
 
+            been.refreshed(TRUE)
+
+            inputs.unchanged$filter.values <- TRUE
+            inputs.unchanged$upgrade.values <- TRUE
+            inputs.unchanged$ring.values <- TRUE
+            inputs.unchanged$constraint.values <- TRUE
+            inputs.unchanged$minimum.values <- TRUE
+            inputs.unchanged$weight.values <- TRUE
+
+            output$refreshmessage <- shiny::renderText("")
             output$errormessage <- shiny::renderText("")
 
         },
@@ -945,40 +997,6 @@ server <- function(input, output, session){
             data.table::fwrite(armordata()$data, file)
         }
     )
-  
-    # shiny::observeEvent(
-    #     list(
-    #         input$tablesize, 
-    #         input$class,
-    #         input$area,
-    #         input$head,
-    #         input$chest,
-    #         input$hands,
-    #         input$legs,
-    #         input$upgradetype,
-    #         input$reglvl,
-    #         input$twinklvl,
-    #         input$roll,
-    #         input$baseweight,
-    #         input$endurance,
-    #         input$havel,
-    #         input$fap,
-    #         input$wolf,
-    #         input$minpoise,
-    #         input$physdefweight,
-    #         input$strikedefweight,
-    #         input$slashdefweight,
-    #         input$thrustdefweight,
-    #         input$magdefweight,
-    #         input$firedefweight,
-    #         input$litngdefweight,
-    #         input$bleedresweight,
-    #         input$poisresweight,
-    #         input$curseresweight
-    #     ), 
-    # {
-    #     output$refreshmessage <- shiny::renderText("Inputs have changed: click 'Refresh Armor Data' to see new results.")
-    # }, ignoreInit = TRUE)
 
 
 }

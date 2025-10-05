@@ -2,7 +2,7 @@
 useDynLib(darksoulsarmor, .registration=TRUE)
 import(data.table)
 import(Rcpp)
-import(shiny)
+import(shiny, except = c(renderDataTable, dataTableOutput))
 import(shinyWidgets)
 import(bslib)
 import(DT)

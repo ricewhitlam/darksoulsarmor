@@ -48,7 +48,18 @@ bslib::page_sidebar(
             ")
         ),
 
+        shiny::tags$head(
+            shiny::tags$style("
+                #refreshmessage{
+                    color: yellow;
+                    font-size: 20px;
+                    font-style: bold;
+                }
+            ")
+        ),
+
         shiny::textOutput("errormessage"),
+        shiny::textOutput("refreshmessage"),
         DT::dataTableOutput(outputId = "table")
     
     )

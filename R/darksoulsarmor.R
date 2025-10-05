@@ -529,7 +529,7 @@ get.optimal.armor.combos <- function(
     } else if(is.na(max.table.size) || is.nan(max.table.size)){
         stop("Invalid argument 'max.table.size'")
     } else{
-        max.table.size <- as.integer(median(c(1, max.table.size, 1e8)))
+        max.table.size <- round(median(c(1, max.table.size, 1e8)), 0)
     }
 
     ## Initialize output
