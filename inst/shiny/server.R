@@ -620,7 +620,7 @@ server <- function(input, output, session){
         shiny::showModal( 
             shiny::modalDialog( 
                 title = "Score Inputs", 
-                footer = shiny::fluidRow(shiny::column(6, shiny::actionButton(inputId = "normalize_weights", label = "Normalize")), shiny::column(6, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))), 
+                footer = shiny::fluidRow(shiny::column(8, shiny::actionButton(inputId = "normalize_weights", label = "Normalize to 100%")), shiny::column(4, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))), 
                 shiny::fluidRow(
                     shiny::column(width = 3,
                             shinyWidgets::autonumericInput(
