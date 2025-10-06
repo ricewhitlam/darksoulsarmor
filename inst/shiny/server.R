@@ -838,7 +838,7 @@ server <- function(input, output, session){
 
         if(been.refreshed()){
             ## Custom logic here due to special nature of weights argument
-            inputs.unchanged$weight.values <- (abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 0.001001) 
+            inputs.unchanged$weight.values <- (abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 1e-10) 
         }
         
         shiny::removeModal()
