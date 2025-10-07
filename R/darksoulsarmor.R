@@ -666,13 +666,6 @@ get.optimal.armor.combos <- function(
     data.table::setorder(working.chest.data, -SCORE, WEIGHT)
     data.table::setorder(working.hands.data, -SCORE, WEIGHT)
     data.table::setorder(working.legs.data, -SCORE, WEIGHT)
-
-    ## Sort data such that it is in "optimal chunks"
-    ## Within each chunk, each entry has the best score for its weight in the remaining data
-    working.head.data <- working.head.data[optimized_search_order(SCORE, WEIGHT)]
-    working.chest.data <- working.chest.data[optimized_search_order(SCORE, WEIGHT)]
-    working.hands.data <- working.hands.data[optimized_search_order(SCORE, WEIGHT)]
-    working.legs.data <- working.legs.data[optimized_search_order(SCORE, WEIGHT)]
   
     ## Determine position of MOTF in head data to apply equip load benefit
     motf.index <- which(working.head.data == "Mask of the Father")

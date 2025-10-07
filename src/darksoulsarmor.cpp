@@ -5,58 +5,6 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-List extract_indices(const NumericVector& scores, const NumericVector& weights, const IntegerVector& indices){
-    int n = scores.size();
-    IntegerVector indices_in(1); indices_in[0] = indices[0]; 
-    IntegerVector indices_out(0); 
-    double prior_saved_score = scores[0]; double prior_saved_weight = weights[0];
-    for(int i = 1; i < n; ++i){
-        if((weights[i] < prior_saved_weight) || ((std::abs(weights[i]-prior_saved_weight)+std::abs(scores[i]-prior_saved_score)) < 1.0e-10)){
-            indices_in.push_back(indices[i]);
-            prior_saved_score = scores[i]; prior_saved_weight = weights[i];
-        } else{
-            indices_out.push_back(indices[i]);
-        }
-    }
-    List out = List::create(indices_in, indices_out);
-    return out;
-}
-
-// [[Rcpp::export(optimized_search_order)]]
-IntegerVector optimized_search_order(const NumericVector& scores, const NumericVector& weights){
-    if(scores.size() < 1 || weights.size() < 1 || scores.size() != weights.size()){
-        stop("Empty vectors - check data process");
-    }
-    int n = scores.size();
-    NumericVector scores_copy = clone(scores);
-    NumericVector weights_copy = clone(weights);
-    IntegerVector indices = seq(0, n-1);
-    IntegerVector out(n);
-    int curr_count = 0;
-    int m;
-    while(indices.size() > 0){
-        List extracted_indices = extract_indices(scores_copy, weights_copy, indices);
-        IntegerVector indices_in = extracted_indices[0];
-        IntegerVector indices_out = extracted_indices[1];
-        m = indices_in.size();
-        for(int i = 0; i < m; ++i){
-            out[curr_count] = indices_in[i]+1;
-            ++curr_count;
-        }
-        m = indices_out.size();
-        scores_copy = rep(0.0, m);
-        weights_copy = rep(0.0, m);
-        indices = rep(0, m);
-        for(int i = 0; i < m; ++i){
-            int index = indices_out[i];
-            scores_copy[i] = scores[index];
-            weights_copy[i] = weights[index];
-            indices[i] = index;
-        }
-    }
-    return out;
-}
-
 // [[Rcpp::export(all_armor_combinations)]]
 void all_armor_combinations(
     const DataFrame& head_df,
