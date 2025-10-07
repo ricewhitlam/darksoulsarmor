@@ -538,11 +538,10 @@ DataFrame optimize_armor_combinations(
                             }
                         } else{
                             armor_combos.push(curr_combo);
-                        }
-                        ++curr_count;
-
-                        if(curr_count >= max_output_size){
-                            at_max_queue_size = true;
+                            ++curr_count;
+                            if(curr_count >= max_output_size){
+                                at_max_queue_size = true;
+                            }
                         }
 
                     }
