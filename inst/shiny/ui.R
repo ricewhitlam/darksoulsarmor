@@ -51,7 +51,7 @@ bslib::page_sidebar(
         shiny::tags$head(
             shiny::tags$style("
                 #refreshmessage{
-                    color: yellow;
+                    color: red;
                     font-size: 20px;
                     font-style: bold;
                 }
