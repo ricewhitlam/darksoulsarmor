@@ -5,6 +5,58 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+List extract_indices(const NumericVector& scores, const NumericVector& weights, const IntegerVector& indices){
+    int n = scores.size();
+    IntegerVector indices_in(1); indices_in[0] = indices[0]; 
+    IntegerVector indices_out(0); 
+    double prior_saved_score = scores[0]; double prior_saved_weight = weights[0];
+    for(int i = 1; i < n; ++i){
+        if((weights[i] < prior_saved_weight) || ((std::abs(weights[i]-prior_saved_weight)+std::abs(scores[i]-prior_saved_score)) < 1.0e-10)){
+            indices_in.push_back(indices[i]);
+            prior_saved_score = scores[i]; prior_saved_weight = weights[i];
+        } else{
+            indices_out.push_back(indices[i]);
+        }
+    }
+    List out = List::create(indices_in, indices_out);
+    return out;
+}
+
+// [[Rcpp::export(optimized_search_order)]]
+IntegerVector optimized_search_order(const NumericVector& scores, const NumericVector& weights){
+    if(scores.size() < 1 || weights.size() < 1 || scores.size() != weights.size()){
+        stop("Empty vectors - check data process");
+    }
+    int n = scores.size();
+    NumericVector scores_copy = clone(scores);
+    NumericVector weights_copy = clone(weights);
+    IntegerVector indices = seq(0, n-1);
+    IntegerVector out(n);
+    int curr_count = 0;
+    int m;
+    while(indices.size() > 0){
+        List extracted_indices = extract_indices(scores_copy, weights_copy, indices);
+        IntegerVector indices_in = extracted_indices[0];
+        IntegerVector indices_out = extracted_indices[1];
+        m = indices_in.size();
+        for(int i = 0; i < m; ++i){
+            out[curr_count] = indices_in[i]+1;
+            ++curr_count;
+        }
+        m = indices_out.size();
+        scores_copy = rep(0.0, m);
+        weights_copy = rep(0.0, m);
+        indices = rep(0, m);
+        for(int i = 0; i < m; ++i){
+            int index = indices_out[i];
+            scores_copy[i] = scores[index];
+            weights_copy[i] = weights[index];
+            indices[i] = index;
+        }
+    }
+    return out;
+}
+
 // [[Rcpp::export(all_armor_combinations)]]
 void all_armor_combinations(
     const DataFrame& head_df,
@@ -250,7 +302,6 @@ DataFrame optimize_armor_combinations(
 ){
     
     NumericVector head_SCORE = head_df["SCORE"];
-    NumericVector head_CUMMIN_WEIGHT = head_df["CUMMIN_WEIGHT"];
     CharacterVector head_ARMOR = head_df["ARMOR"];
     NumericVector head_PHYS_DEF = head_df["PHYS_DEF"];
     NumericVector head_STRIKE_DEF = head_df["STRIKE_DEF"];
@@ -267,7 +318,6 @@ DataFrame optimize_armor_combinations(
     NumericVector head_WEIGHT = head_df["WEIGHT"];
 
     NumericVector chest_SCORE = chest_df["SCORE"];
-    NumericVector chest_CUMMIN_WEIGHT = chest_df["CUMMIN_WEIGHT"];
     CharacterVector chest_ARMOR = chest_df["ARMOR"];
     NumericVector chest_PHYS_DEF = chest_df["PHYS_DEF"];
     NumericVector chest_STRIKE_DEF = chest_df["STRIKE_DEF"];
@@ -284,7 +334,6 @@ DataFrame optimize_armor_combinations(
     NumericVector chest_WEIGHT = chest_df["WEIGHT"];
 
     NumericVector hands_SCORE = hands_df["SCORE"];
-    NumericVector hands_CUMMIN_WEIGHT = hands_df["CUMMIN_WEIGHT"];
     CharacterVector hands_ARMOR = hands_df["ARMOR"];
     NumericVector hands_PHYS_DEF = hands_df["PHYS_DEF"];
     NumericVector hands_STRIKE_DEF = hands_df["STRIKE_DEF"];
@@ -301,7 +350,6 @@ DataFrame optimize_armor_combinations(
     NumericVector hands_WEIGHT = hands_df["WEIGHT"];
 
     NumericVector legs_SCORE = legs_df["SCORE"];
-    NumericVector legs_CUMMIN_WEIGHT = legs_df["CUMMIN_WEIGHT"];
     CharacterVector legs_ARMOR = legs_df["ARMOR"];
     NumericVector legs_PHYS_DEF = legs_df["PHYS_DEF"];
     NumericVector legs_STRIKE_DEF = legs_df["STRIKE_DEF"];
@@ -329,7 +377,6 @@ DataFrame optimize_armor_combinations(
     if(wolf){extra_poise = 40.0;};
 
     double curr_head_SCORE; double curr_chest_SCORE; double curr_hands_SCORE; double curr_legs_SCORE; 
-    double curr_head_CUMMIN_WEIGHT; double curr_chest_CUMMIN_WEIGHT; double curr_hands_CUMMIN_WEIGHT; double curr_legs_CUMMIN_WEIGHT; 
     String curr_head; String curr_chest; String curr_hands; String curr_legs;
     double curr_PHYS_DEF; double curr_head_PHYS_DEF; double curr_chest_PHYS_DEF; double curr_hands_PHYS_DEF; double curr_legs_PHYS_DEF;
     double curr_STRIKE_DEF; double curr_head_STRIKE_DEF; double curr_chest_STRIKE_DEF; double curr_hands_STRIKE_DEF; double curr_legs_STRIKE_DEF;
@@ -387,12 +434,6 @@ DataFrame optimize_armor_combinations(
                 i = loop_size_1;
             }
 
-            curr_head_CUMMIN_WEIGHT = head_CUMMIN_WEIGHT[i];
-            curr_head_WEIGHT = head_WEIGHT[i];
-            if(at_max_queue_size && curr_head_WEIGHT >= curr_head_CUMMIN_WEIGHT){
-                continue;
-            }
-
             if(i == motf_index){
                 curr_load = load_motf;
                 curr_load_threshold = load_threshold_motf;
@@ -415,17 +456,12 @@ DataFrame optimize_armor_combinations(
             curr_head_POIS_RES = head_POIS_RES[i];
             curr_head_CURSE_RES = head_CURSE_RES[i];
             curr_head_DURABILITY = head_DURABILITY[i];
+            curr_head_WEIGHT = head_WEIGHT[i];
 
             for(int j = 0; j < curr_J; ++j){
 
                 if(i != loop_size_1 && j != loop_size_1 && L_capped && K_capped && !J_capped){
                     j = loop_size_1;
-                }
-                
-                curr_chest_CUMMIN_WEIGHT = chest_CUMMIN_WEIGHT[j];
-                curr_chest_WEIGHT = chest_WEIGHT[j];
-                if(at_max_queue_size && curr_chest_WEIGHT >= curr_chest_CUMMIN_WEIGHT){
-                    continue;
                 }
 
                 curr_chest_SCORE = chest_SCORE[j];
@@ -442,17 +478,12 @@ DataFrame optimize_armor_combinations(
                 curr_chest_POIS_RES = chest_POIS_RES[j];
                 curr_chest_CURSE_RES = chest_CURSE_RES[j];
                 curr_chest_DURABILITY = chest_DURABILITY[j];
+                curr_chest_WEIGHT = chest_WEIGHT[j];
 
                 for(int k = 0; k < curr_K; ++k){
 
                     if(i != loop_size_1 && j != loop_size_1 && k != loop_size_1 && L_capped && !K_capped){
                         k = loop_size_1;
-                    }
-
-                    curr_hands_CUMMIN_WEIGHT = hands_CUMMIN_WEIGHT[k];
-                    curr_hands_WEIGHT = hands_WEIGHT[k];
-                    if(at_max_queue_size && curr_hands_WEIGHT >= curr_hands_CUMMIN_WEIGHT){
-                        continue;
                     }
 
                     curr_hands_SCORE = hands_SCORE[k];
@@ -469,6 +500,7 @@ DataFrame optimize_armor_combinations(
                     curr_hands_POIS_RES = hands_POIS_RES[k];
                     curr_hands_CURSE_RES = hands_CURSE_RES[k];
                     curr_hands_DURABILITY = hands_DURABILITY[k];
+                    curr_hands_WEIGHT = hands_WEIGHT[k];
 
                     for(int l = 0; l < curr_L; ++l){
 
@@ -476,11 +508,7 @@ DataFrame optimize_armor_combinations(
                             l = loop_size_1;
                         }
 
-                        curr_legs_CUMMIN_WEIGHT = legs_CUMMIN_WEIGHT[l];
                         curr_legs_WEIGHT = legs_WEIGHT[l];
-                        if(at_max_queue_size && (curr_legs_WEIGHT >= curr_legs_CUMMIN_WEIGHT)){
-                            continue;
-                        }
                         curr_WEIGHT = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
                         if(curr_WEIGHT > (-base_weight+curr_load_threshold+eps)){
                             continue;
@@ -559,7 +587,7 @@ DataFrame optimize_armor_combinations(
                             if(curr_combo < armor_combos.top()){
                                 armor_combos.push(curr_combo);
                                 armor_combos.pop();
-                            } 
+                            }
                         } else{
                             armor_combos.push(curr_combo);
                         }

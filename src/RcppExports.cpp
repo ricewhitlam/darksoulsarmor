@@ -10,6 +10,18 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// optimized_search_order
+IntegerVector optimized_search_order(const NumericVector& scores, const NumericVector& weights);
+RcppExport SEXP _darksoulsarmor_optimized_search_order(SEXP scoresSEXP, SEXP weightsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type scores(scoresSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type weights(weightsSEXP);
+    rcpp_result_gen = Rcpp::wrap(optimized_search_order(scores, weights));
+    return rcpp_result_gen;
+END_RCPP
+}
 // all_armor_combinations
 void all_armor_combinations(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df, DataFrame& full_df);
 RcppExport SEXP _darksoulsarmor_all_armor_combinations(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP, SEXP full_dfSEXP) {
@@ -50,6 +62,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_darksoulsarmor_optimized_search_order", (DL_FUNC) &_darksoulsarmor_optimized_search_order, 2},
     {"_darksoulsarmor_all_armor_combinations", (DL_FUNC) &_darksoulsarmor_all_armor_combinations, 5},
     {"_darksoulsarmor_optimize_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimize_armor_combinations, 14},
     {NULL, NULL, 0}
