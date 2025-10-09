@@ -10,55 +10,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// get_metric_mean
-double get_metric_mean(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df, const int index);
-RcppExport SEXP _darksoulsarmor_get_metric_mean(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP, SEXP indexSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const DataFrame& >::type head_df(head_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type chest_df(chest_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type hands_df(hands_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type legs_df(legs_dfSEXP);
-    Rcpp::traits::input_parameter< const int >::type index(indexSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_metric_mean(head_df, chest_df, hands_df, legs_df, index));
-    return rcpp_result_gen;
-END_RCPP
-}
-// get_metric_var
-double get_metric_var(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df, const int index, const double metric_mean);
-RcppExport SEXP _darksoulsarmor_get_metric_var(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP, SEXP indexSEXP, SEXP metric_meanSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const DataFrame& >::type head_df(head_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type chest_df(chest_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type hands_df(hands_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type legs_df(legs_dfSEXP);
-    Rcpp::traits::input_parameter< const int >::type index(indexSEXP);
-    Rcpp::traits::input_parameter< const double >::type metric_mean(metric_meanSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_metric_var(head_df, chest_df, hands_df, legs_df, index, metric_mean));
-    return rcpp_result_gen;
-END_RCPP
-}
-// get_metrics_covar
-double get_metrics_covar(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df, const int index_1, const int index_2, const double metric_mean_1, const double metric_mean_2);
-RcppExport SEXP _darksoulsarmor_get_metrics_covar(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP, SEXP index_1SEXP, SEXP index_2SEXP, SEXP metric_mean_1SEXP, SEXP metric_mean_2SEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const DataFrame& >::type head_df(head_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type chest_df(chest_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type hands_df(hands_dfSEXP);
-    Rcpp::traits::input_parameter< const DataFrame& >::type legs_df(legs_dfSEXP);
-    Rcpp::traits::input_parameter< const int >::type index_1(index_1SEXP);
-    Rcpp::traits::input_parameter< const int >::type index_2(index_2SEXP);
-    Rcpp::traits::input_parameter< const double >::type metric_mean_1(metric_mean_1SEXP);
-    Rcpp::traits::input_parameter< const double >::type metric_mean_2(metric_mean_2SEXP);
-    rcpp_result_gen = Rcpp::wrap(get_metrics_covar(head_df, chest_df, hands_df, legs_df, index_1, index_2, metric_mean_1, metric_mean_2));
-    return rcpp_result_gen;
-END_RCPP
-}
 // all_armor_combinations
 void all_armor_combinations(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df, DataFrame& full_df);
 RcppExport SEXP _darksoulsarmor_all_armor_combinations(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP, SEXP full_dfSEXP) {
@@ -99,9 +50,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_darksoulsarmor_get_metric_mean", (DL_FUNC) &_darksoulsarmor_get_metric_mean, 5},
-    {"_darksoulsarmor_get_metric_var", (DL_FUNC) &_darksoulsarmor_get_metric_var, 6},
-    {"_darksoulsarmor_get_metrics_covar", (DL_FUNC) &_darksoulsarmor_get_metrics_covar, 8},
     {"_darksoulsarmor_all_armor_combinations", (DL_FUNC) &_darksoulsarmor_all_armor_combinations, 5},
     {"_darksoulsarmor_optimize_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimize_armor_combinations, 14},
     {NULL, NULL, 0}

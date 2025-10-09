@@ -614,7 +614,8 @@ get.optimal.armor.combos <- function(
     n.hands <- nrow(working.hands.data)
     n.legs <- nrow(working.legs.data)
     if(n.head == 0 || n.chest == 0 || n.hands == 0 || n.legs == 0){
-        out$data[, SCORE := numeric(0)]
+        out$data[, SCORE_RAW := numeric(0)]
+        out$data[, SCORE_PCT := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
             c(
@@ -708,7 +709,8 @@ get.optimal.armor.combos <- function(
 
     ## If there are no allowable combos, return empty data
     if(is.na(init.size)){
-        out$data[, SCORE := numeric(0)]
+        out$data[, SCORE_RAW := numeric(0)]
+        out$data[, SCORE_PCT := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
             c(

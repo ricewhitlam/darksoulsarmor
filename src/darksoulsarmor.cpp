@@ -555,7 +555,7 @@ DataFrame optimize_armor_combinations(
     }
 
     int out_size = armor_combos.size();
-    NumericVector SCORE(out_size);
+    NumericVector SCORE_RAW(out_size); NumericVector SCORE_PCT(out_size);
     CharacterVector HEAD(out_size); CharacterVector CHEST(out_size); CharacterVector HANDS(out_size); CharacterVector LEGS(out_size);
     NumericVector PHYS_DEF(out_size); NumericVector STRIKE_DEF(out_size); NumericVector SLASH_DEF(out_size); NumericVector THRUST_DEF(out_size);
     NumericVector MAG_DEF(out_size); NumericVector FIRE_DEF(out_size); NumericVector LITNG_DEF(out_size);
@@ -564,7 +564,7 @@ DataFrame optimize_armor_combinations(
     NumericVector ARMOR_WEIGHT(out_size); NumericVector TOTAL_WEIGHT(out_size); NumericVector EQUIP_LOAD(out_size); NumericVector PCT_LOAD(out_size);
 
     DataFrame out = DataFrame::create( 
-        Named("SCORE") = SCORE , 
+        Named("SCORE_RAW") = SCORE_RAW , _["SCORE_PCT"] = SCORE_PCT ,
         _["HEAD"] = HEAD , _["CHEST"] = CHEST , _["HANDS"] = HANDS , _["LEGS"] = LEGS ,
         _["PHYS_DEF"] = PHYS_DEF , _["STRIKE_DEF"] = STRIKE_DEF , _["SLASH_DEF"] = SLASH_DEF , _["THRUST_DEF"] = THRUST_DEF ,
         _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF , 
@@ -579,7 +579,7 @@ DataFrame optimize_armor_combinations(
 
     for(int n = (out_size-1); n > -1; --n){
         curr_combo = armor_combos.top();
-        SCORE[n] = R::pnorm(curr_combo.score, 0.0, 1.0, true, false);
+        SCORE_RAW[n] = curr_combo.score; SCORE_PCT[n] = R::pnorm(curr_combo.score, 0.0, 1.0, true, false);
         HEAD[n] = curr_combo.head; CHEST[n] = curr_combo.chest; HANDS[n] = curr_combo.hands; LEGS[n] = curr_combo.legs;
         PHYS_DEF[n] = curr_combo.physdef; STRIKE_DEF[n] = curr_combo.strikedef; SLASH_DEF[n] = curr_combo.slashdef; THRUST_DEF[n] = curr_combo.thrustdef;
         MAG_DEF[n] = curr_combo.magdef; FIRE_DEF[n] = curr_combo.firedef; LITNG_DEF[n] = curr_combo.litngdef; 

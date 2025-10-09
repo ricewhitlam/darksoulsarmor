@@ -49,11 +49,10 @@ server <- function(input, output, session){
                     Weight Inputs: <br>  
                     Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
                     (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
-                    This overall score is then transformed to an approximate percentile between 0 and 1 to make interpretation easier. 
+                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed to an approximate percentile between 0 and 1 and presented as 'SCORE_PCT'.  
                     A value of 100% is the best possible for the set of weights specified and a value of 0% is the worst possible.
-                    The value is created by (1) standardizing the scores (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n) and (2) applying the standard normal cumulative distribution function. 
-                    Important note: values should only be compared within the same selections of 'Armor Level (Regular)' and 'Armor Level (Twinkling)', since they are calculated with 
-                    respect to the applicable mean and variance of such armor combinations. <br> <br>
+                    The percentage is computed by  applying the standard normal cumulative distribution function to SCORE_RAW. 
+                    These scores are global within the same set of weights: direct comparisons can be made across different upgrade levels. <br> <br>
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
@@ -872,7 +871,8 @@ server <- function(input, output, session){
                     ),
                 data = 
                     data.table::data.table(
-                        SCORE = numeric(0),
+                        SCORE_RAW = numeric(0),
+                        SCORE_PCT = numeric(0),
                         HEAD = factor(0),
                         CHEST = factor(0),
                         HANDS = factor(0),
@@ -912,18 +912,19 @@ server <- function(input, output, session){
                     scrollCollapse = TRUE, 
                     columnDefs = 
                     list(
-                        list(targets = c(1, 6:22), searchable = FALSE)
+                        list(targets = c(1, 2, 7:23), searchable = FALSE)
                     )
                 )
             ) |> 
-            DT::formatPercentage(c("SCORE", "PCT_LOAD"), 2) |>
+            DT::formatPercentage(c("SCORE_PCT", "PCT_LOAD"), 2) |>
             DT::formatCurrency(c(
               "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",
                 "MAG_DEF", "FIRE_DEF", "LITNG_DEF",
                 "BLEED_RES", "POIS_RES", "CURSE_RES",
                 "ARMOR_WEIGHT", "TOTAL_WEIGHT", "EQUIP_LOAD"
             ), currency = "", interval = 3, mark = ",", digits = 1) |>
-            DT::formatCurrency(c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE"), currency = "", interval = 3, mark = ",", digits = 0)
+            DT::formatCurrency(c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE"), currency = "", interval = 3, mark = ",", digits = 0) |>
+            DT::formatCurrency("SCORE_RAW", currency = "", interval = 3, mark = ",", digits = 3)
         })
 
 
