@@ -20,14 +20,32 @@ NULL
 #' @keywords data
 NULL
 
-#' List of metrics for every possible upgrade combination 
+#' Vector of means for every possible armor combination 
 #'
-#' @name mean.stddev.corr.list
+#' @name means
 #' @format 
-#' This is a list of length (10+1)*(5+1) = 66. Each entry in this list is itself a list. 
-#' Each of these lists holds a vector of means, a vector of standard deviations, and a correlation matrix for the following ten metrics:
+#' This is a numeric vector of means across every possible armor combination including upgrades for the following ten metrics:
 #' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
-#' The length of 66 reflects all possible upgrade combinations between regular titanite and twinkling titanite.
+#' @docType data
+#' @keywords data
+NULL
+
+#' Vector of standard deviations for every possible armor combination 
+#'
+#' @name stddevs
+#' @format 
+#' This is a numeric vector of standard deviations across every possible armor combination including upgrades for the following ten metrics:
+#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
+#' @docType data
+#' @keywords data
+NULL
+
+#' Correlation matrix for every possible armor combination 
+#'
+#' @name corrs
+#' @format 
+#' This is a correlation matrix across every possible armor combination including upgrades for the following ten metrics:
+#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
 #' @docType data
 #' @keywords data
 NULL

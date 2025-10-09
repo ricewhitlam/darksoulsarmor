@@ -1,0 +1,10 @@
+Package: dsa.rda
+Type: Package
+Title: Helper package for darksoulsarmor .RDA creation
+Version: 0.0.1
+Date: 2025-10-09
+Description: Used to get summary stats (mean, sd, and corr) for ten metrics across all possible armor combos including upgrades 
+License: GPL (>= 2)
+Imports: Rcpp (>= 1.1.0)
+LinkingTo: Rcpp
+RoxygenNote: 7.3.3

@@ -1,0 +1,7 @@
+
+useDynLib(dsa.rda, .registration=TRUE)
+importFrom(Rcpp, evalCpp)
+
+export(dsa_get_metric_mean)
+export(dsa_get_metric_var)
+export(dsa_get_metrics_covar)

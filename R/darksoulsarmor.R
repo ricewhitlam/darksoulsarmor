@@ -564,7 +564,6 @@ get.optimal.armor.combos <- function(
     working.chest.data <- get.interp.data(chest.data_00, chest.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
     working.hands.data <- get.interp.data(hands.data_00, hands.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
     working.legs.data <- get.interp.data(legs.data_00, legs.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.mean.stddev.corr <- mean.stddev.corr.list[[paste0(as.numeric(regular.level), "_", as.numeric(twinkling.level))]]
 
     ## Calc equip load values
     base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(fap.ring, 1.2, 1)
@@ -648,8 +647,7 @@ get.optimal.armor.combos <- function(
     working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "AREAFILTER") := NULL]
 
     ## Calc scores for each dataset and sort on these
-    score.means <- working.mean.stddev.corr$means
-    score.scalars <- (weights)/(working.mean.stddev.corr$stddevs*sqrt((t(weights) %*% working.mean.stddev.corr$corrs %*% weights)[1, 1]))
+    score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
     score.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
     
     working.head.data[, SCORE := 0]
@@ -657,10 +655,10 @@ get.optimal.armor.combos <- function(
     working.hands.data[, SCORE := 0]
     working.legs.data[, SCORE := 0]
     for(i in seq_along(score.cols)){
-        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
+        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
+        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
+        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
+        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
     }
     data.table::setorder(working.head.data, -SCORE, WEIGHT)
     data.table::setorder(working.chest.data, -SCORE, WEIGHT)
@@ -757,9 +755,9 @@ get.optimal.armor.combos <- function(
             )
         )
 
-    rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data", "working.mean.stddev.corr"))
+    rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.motf"))
-    rm(list = c("score.means", "score.scalars", "score.cols"))
+    rm(list = c("score.scalars", "score.cols"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
     rm(list = c("weight.check", "minima.check", "min.cols", "init.size"))
     rm(list = c("motf.index"))
