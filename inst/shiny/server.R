@@ -19,8 +19,7 @@ server <- function(input, output, session){
                     'Max Table Size' is used to specify how large the created table can be and is used to avoid unnecessary slowness - it cannot be set higher than 100,000. <br> 
                     'Starting Class' is used to specify the character's starting class. This indicates that the associated armor set is available. <br>  
                     'Areas Completed' is used to specify which areas have been completed. This loosely indicates which armor pieces are available. 
-                    Please note: the tool will not infer that one area has been completed because another later area has been completed. <br>  
-                    'Upgrades With' is used to specify which upgrade materials to consider. For example, only armor pieces that upgrade with twinkling titanite could be considered. <br>  
+                    Please note: the tool will not infer that one area has been completed because another later area has been completed.
                     For example, indicating that Anor Londo has been completed will not result in Sens Fortress being assumed complete. <br>  
                     'Head' is used to specify which head armor pieces can be included in the created table - 'Chest', 'Hands' and 'Legs' are used similarly. <br> <br>
 
@@ -34,8 +33,7 @@ server <- function(input, output, session){
                     'Havel's Ring', 'Ring of Favor', and 'Wolf Ring' are used to specify whether the player has the relevant ring equipped.
                     The app will allow all three to be selected, but this is obviously not possible in game. <br>  
                     Havel's Ring and the Ring of Favor both boost equip load which is helpful when trying to achieve a faster roll speed. 
-                    The Wolf Ring gives 40 poise and is immensely helpful in hitting key poise breakpoints. 
-                    Some useful breakpoints are 21/46/61 for PVE and 31/61 for PVP, as explained here: ", 
+                    The Wolf Ring gives 40 poise and is immensely helpful in hitting key poise breakpoints. These are 21/46/61 for PVE and 31/61 for PVP, as explained here: ", 
                     tags$a("Dark Souls Dissected #13 - Poise Mechanics (and glitches!)", href = "https://www.youtube.com/watch?v=pwffSOSzcAM", target = "_blank"), " . <br> <br>
 
                     Load Inputs: <br>  
