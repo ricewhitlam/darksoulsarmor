@@ -52,7 +52,7 @@ server <- function(input, output, session){
                     This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed to an approximate percentile between 0 and 1 and presented as 'SCORE_PCT'.  
                     A value of 100% is the best possible for the set of weights specified and a value of 0% is the worst possible.
                     The percentage is computed by  applying the standard normal cumulative distribution function to SCORE_RAW. 
-                    These scores are global within the same set of weights: direct comparisons can be made across different upgrade levels. <br> <br>
+                    These scores are global within the same set of weights: direct comparisons can be made across different inputs. <br> <br>
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
