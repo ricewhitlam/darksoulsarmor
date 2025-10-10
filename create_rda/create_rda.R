@@ -1,8 +1,9 @@
 
 ## Load packages and set up for parallel calcs
-devtools::load_all()
+require("devtools")
 require("dsa.rda")
 require("doParallel")
+load_all()
 registerDoParallel(cores = detectCores()-1)
 
 ## Create datasets inclusive of all upgrades 
@@ -73,7 +74,7 @@ colnames(corrs) <- names(sel.head.data)[metric.indices+1]
 stopImplicitCluster()
 
 ## Function to check behavior given set of weights - mean should always be 0 and sd should always be 1
-test.meansdcorr <- function(){
+test.meansd <- function(){
     weights <- runif(10)
     weights <- weights/sum(weights)
     score.means <- means
@@ -97,7 +98,7 @@ test.meansdcorr <- function(){
     print(sqrt(N_inv*dsa_get_metric_var(working.head.data, working.chest.data, working.hands.data, working.legs.data, which(colnames(working.head.data) == "SCORE")-1, 0)))
 }
 
-test.meansdcorr()
+test.meansd()
 
 ## Misc Data
 data_00 <- fread("create_rda/armor_00.csv", header = TRUE, sep = ",")
@@ -133,7 +134,7 @@ setcolorder(hands.data_10, colorder)
 setcolorder(legs.data_10, colorder)
 
 ## Save out to rda files
-usethis::use_data(
+use_data(
     head.data_00, 
     chest.data_00, 
     hands.data_00, 
