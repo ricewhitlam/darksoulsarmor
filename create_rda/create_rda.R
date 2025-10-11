@@ -1,10 +1,12 @@
 
+
 ## Load packages and set up for parallel calcs
 require("devtools")
 require("dsa.rda")
 require("doParallel")
 load_all()
 registerDoParallel(cores = detectCores()-1)
+
 
 ## Create datasets inclusive of all upgrades 
 total.head.data <- head.data_00[UPGRADE_TYPE == "None"]
@@ -25,6 +27,7 @@ for(twink in 0:5){
     total.hands.data <- rbind(total.hands.data, get.interp.data(hands.data_00[UPGRADE_TYPE == "Twinkling"], hands.data_10[UPGRADE_TYPE == "Twinkling"], 0, twink)[, ARMOR := paste0(ARMOR, " +", twink)])
     total.legs.data <- rbind(total.legs.data, get.interp.data(legs.data_00[UPGRADE_TYPE == "Twinkling"], legs.data_10[UPGRADE_TYPE == "Twinkling"], 0, twink)[, ARMOR := paste0(ARMOR, " +", twink)])
 }
+
 
 ## Calc mean, sd, and corr data
 sel.head.data <- copy(total.head.data)
@@ -71,11 +74,9 @@ for(i in seq_along(indices)){
 rownames(corrs) <- names(sel.head.data)[metric.indices+1]
 colnames(corrs) <- names(sel.head.data)[metric.indices+1]
 
-stopImplicitCluster()
 
 ## Function to check behavior given set of weights - mean should always be 0 and sd should always be 1
-test.meansd <- function(){
-    weights <- runif(10)
+test.meansd <- function(weights = runif(10)){
     weights <- weights/sum(weights)
     score.means <- means
     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
@@ -94,11 +95,75 @@ test.meansd <- function(){
         working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
         working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
     }
+    print(weights)
     print(N_inv*dsa_get_metric_mean(working.head.data, working.chest.data, working.hands.data, working.legs.data, which(colnames(working.head.data) == "SCORE")-1))
     print(sqrt(N_inv*dsa_get_metric_var(working.head.data, working.chest.data, working.hands.data, working.legs.data, which(colnames(working.head.data) == "SCORE")-1, 0)))
 }
 
 test.meansd()
+
+
+## Get weight mean, sd, covariances with metrics -> linear model where weight predicts score
+## This gives a way to identify which combos have high scores relative to their weight
+weight.index <- 17
+mean.weight <- N_inv*dsa_get_metric_mean(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, weight.index)
+stddev.weight <- sqrt(N_inv*dsa_get_metric_var(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, weight.index, mean.weight))
+covars.weight <- 
+    foreach(i = seq_along(metric.indices), .combine = c, .packages = "dsa.rda") %dopar% {
+        N_inv*dsa_get_metrics_covar(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, weight.index, metric.indices[i], mean.weight, means[i])
+    }
+
+
+## Function to check weight model
+test.weightlm <- function(weights = runif(10)){
+    weights <- weights/sum(weights)
+    score.means <- means
+    score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
+    lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
+    lm.alpha <- -lm.beta*weight.mean
+    lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
+    working.head.data <- copy(total.head.data)
+    working.chest.data <- copy(total.chest.data)
+    working.hands.data <- copy(total.hands.data)
+    working.legs.data <- copy(total.legs.data)
+    working.head.data[, SCORE := 0]
+    working.chest.data[, SCORE := 0]
+    working.hands.data[, SCORE := 0]
+    working.legs.data[, SCORE := 0]
+    score.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
+    for(i in seq_along(score.cols)){
+        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
+        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
+        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
+        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
+    }
+    head.sample <- sample(seq_len(nrow(working.head.data)), 10000, replace = TRUE)
+    chest.sample <- sample(seq_len(nrow(working.chest.data)), 10000, replace = TRUE)
+    hands.sample <- sample(seq_len(nrow(working.hands.data)), 10000, replace = TRUE)
+    legs.sample <- sample(seq_len(nrow(working.legs.data)), 10000, replace = TRUE)
+    out <- working.head.data[head.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
+    out <- out+working.chest.data[chest.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
+    out <- out+working.hands.data[hands.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
+    out <- out+working.legs.data[legs.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
+    out[, FITTED_SCORE := lm.alpha+lm.beta*WEIGHT]
+    print(weights)
+    print(lm.beta)
+    print(lm.alpha)
+    print(lm.rsqd)
+    return(out)
+}
+
+d <- test.weightlm()
+d[, plot(WEIGHT, SCORE)]
+d[, lines(WEIGHT, FITTED_SCORE)]
+d[, summary(lm(SCORE ~ WEIGHT))]
+d[, plot(WEIGHT, SCORE-FITTED_SCORE)]
+d[, qqnorm(SCORE-FITTED_SCORE)]
+
+
+## Stop parallel computing
+stopImplicitCluster()
+
 
 ## Misc Data
 data_00 <- fread("create_rda/armor_00.csv", header = TRUE, sep = ",")
@@ -133,6 +198,7 @@ setcolorder(chest.data_10, colorder)
 setcolorder(hands.data_10, colorder)
 setcolorder(legs.data_10, colorder)
 
+
 ## Save out to rda files
 use_data(
     head.data_00, 
@@ -148,5 +214,9 @@ use_data(
     means,
     stddevs,
     corrs,
+    mean.weight,
+    stddev.weight,
+    covars.weight,
     overwrite = TRUE
 )
+
