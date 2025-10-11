@@ -4,7 +4,7 @@
 \alias{get.optimal.armor.combos}
 \title{Create a \code{data.table} of optimized Dark Souls armor combinations}
 \usage{
-optimal.armor.combos <- get.optimal.armor.combos(upgraded = TRUE, endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
 }
 \arguments{
 \item{max.table.size}{A length 1 \code{numeric} indicating how large the produced table should be.
@@ -50,7 +50,7 @@ These approximations should be very accurate but will differ from true values sl
 Defaults to \code{"+0"}.}
 
 \item{roll}{A length 1 \code{character} indicating desired roll speed. 
-Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50% of max equip load), \code{"Fat"} (weight at or below 100% of max equip load), and \code{"None"} (weight above 100% of max equip load).
+Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (weight above 100\% of max equip load).
 Defaults to \code{"Fast"}.}
 
 \item{unarmored.weight}{A length 1 \code{numeric} indicating the unarmored weight of the character i.e. weight of weapons.

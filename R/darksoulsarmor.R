@@ -241,7 +241,7 @@ get.all.armor.combos <- function(regular.level = c("+0", "+1", "+2", "+3", "+4",
 #' 
 #' @param 
 #' roll A length 1 \code{character} indicating desired roll speed. 
-#' Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50% of max equip load), \code{"Fat"} (weight at or below 100% of max equip load), and \code{"None"} (weight above 100% of max equip load).
+#' Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (weight above 100\% of max equip load).
 #' Defaults to \code{"Fast"}.
 #' 
 #' @param 
