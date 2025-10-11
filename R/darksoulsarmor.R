@@ -185,7 +185,7 @@ get.all.armor.combos <- function(regular.level = c("+0", "+1", "+2", "+3", "+4",
 #' The table can be tailored to satisfy various constraints.
 #' 
 #' @usage 
-#' optimal.armor.combos <- get.optimal.armor.combos(upgraded = TRUE, endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
 #' 
 #' @param 
 #' max.table.size A length 1 \code{numeric} indicating how large the produced table should be.
