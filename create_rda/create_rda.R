@@ -120,7 +120,7 @@ test.weightlm <- function(weights = runif(10)){
     score.means <- means
     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
     lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
-    lm.alpha <- -lm.beta*weight.mean
+    lm.alpha <- -lm.beta*mean.weight
     lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
     working.head.data <- copy(total.head.data)
     working.chest.data <- copy(total.chest.data)
