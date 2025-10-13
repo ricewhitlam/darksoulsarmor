@@ -21,6 +21,7 @@ server <- function(input, output, session){
                     'Areas Completed' is used to specify which areas have been completed. This loosely indicates which armor pieces are available. 
                     Please note: the tool will not infer that one area has been completed because another later area has been completed.
                     For example, indicating that Anor Londo has been completed will not result in Sens Fortress being assumed complete. <br>  
+                    'Upgrades With' is used to specify which upgrade materials to consider. For example, only armor pieces that upgrade with twinkling titanite could be considered. <br>  
                     'Head' is used to specify which head armor pieces can be included in the created table - 'Chest', 'Hands' and 'Legs' are used similarly. <br> <br>
 
                     Upgrade Inputs: <br>  
