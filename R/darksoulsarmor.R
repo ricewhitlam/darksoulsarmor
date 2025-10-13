@@ -193,7 +193,7 @@ get.all.armor.combos <- function(regular.level = c("+0", "+1", "+2", "+3", "+4",
 #' 
 #' @param 
 #' starting.class A length 1 \code{character} indicating whether to consider unupgraded or fully upgraded armor.
-#' Defaults to \code{"Bandit"}. The vector of available classes is stored as \code{classes}.
+#' Defaults to \code{"Warrior"}. The vector of available classes is stored as \code{classes}.
 #' 
 #' @param 
 #' areas.completed A \code{character} vector indicating which areas have been completed.

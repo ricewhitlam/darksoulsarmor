@@ -11,7 +11,7 @@ optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored
 Defaults to \code{1000}. Passed values will be clamped between 1 and 100,000,000 and cast to an integer.}
 
 \item{starting.class}{A length 1 \code{character} indicating whether to consider unupgraded or fully upgraded armor.
-Defaults to \code{"Bandit"}. The vector of available classes is stored as \code{classes}.}
+Defaults to \code{"Warrior"}. The vector of available classes is stored as \code{classes}.}
 
 \item{areas.completed}{A \code{character} vector indicating which areas have been completed.
 Defaults to all areas being complete. The vector of available areas is stored as \code{areas}.}
