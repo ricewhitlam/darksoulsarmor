@@ -168,8 +168,6 @@ stopImplicitCluster()
 ## Misc Data
 data_00 <- fread("create_rda/armor_00.csv", header = TRUE, sep = ",")
 data_10 <- fread("create_rda/armor_10.csv", header = TRUE, sep = ",")
-areas <- fread("create_rda/areas.csv", header = TRUE, sep = ",")$AREA
-classes <- data_00[STARTING_CLASS != "N/A", sort(unique(STARTING_CLASS))]
 
 colorder <- 
     c(
@@ -198,6 +196,18 @@ setcolorder(chest.data_10, colorder)
 setcolorder(hands.data_10, colorder)
 setcolorder(legs.data_10, colorder)
 
+areas <- 
+    c(
+        "Undead Burg", "Undead Parish", "Lower Undead Burg", 
+        "Depths", "Blighttown", "Valley of Drakes",
+        "Sens Fortress", "Anor Londo", "Painted World of Ariamis",
+        "Darkroot Basin", "Darkroot Garden", "New Londo Ruins",
+        "Demon Ruins", "Lost Izalith", 
+        "Catacombs", "Tomb of the Giants",
+        "The Dukes Archives", "Artorias of the Abyss",
+        "Kiln of the First Flame"
+    )
+classes <- c("Warrior", "Knight", "Wanderer", "Thief", "Bandit", "Hunter", "Sorcerer", "Pyromancer", "Cleric", "Deprived")
 
 ## Save out to rda files
 use_data(
@@ -220,3 +230,9 @@ use_data(
     overwrite = TRUE
 )
 
+use_data(
+
+    areas, 
+
+    overwrite = TRUE
+)

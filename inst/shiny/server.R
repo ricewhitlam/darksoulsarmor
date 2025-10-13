@@ -158,7 +158,7 @@ server <- function(input, output, session){
                         choices = areas,
                         selected = filter.values$areas.completed,
                         multiple = TRUE,
-                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
+                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 19),
                         choicesOpt = NULL,
                         width = NULL,
                         inline = FALSE,
