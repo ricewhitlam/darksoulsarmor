@@ -230,9 +230,3 @@ use_data(
     overwrite = TRUE
 )
 
-use_data(
-
-    areas, 
-
-    overwrite = TRUE
-)
