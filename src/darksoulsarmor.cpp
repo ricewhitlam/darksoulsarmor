@@ -211,7 +211,8 @@ struct armor_combo {
     double physdef; double strikedef; double slashdef; double thrustdef;
     double magdef; double firedef; double litngdef;
     double bleedres; double poisres; double curseres;
-    double durability; double poise; double weight; double load; 
+    double durability; double poise; int poise_count; 
+    double weight; double load; 
     bool operator<(const armor_combo& comparison) const
     {
         double eps = 1.0e-6;
@@ -534,7 +535,8 @@ DataFrame optimize_armor_combinations(
                         curr_combo.physdef = curr_PHYS_DEF; curr_combo.strikedef = curr_STRIKE_DEF; curr_combo.slashdef = curr_SLASH_DEF; curr_combo.thrustdef = curr_THRUST_DEF;
                         curr_combo.magdef = curr_MAG_DEF; curr_combo.firedef = curr_FIRE_DEF; curr_combo.litngdef = curr_LITNG_DEF; 
                         curr_combo.bleedres = curr_BLEED_RES; curr_combo.poisres = curr_POIS_RES; curr_combo.curseres = curr_CURSE_RES; 
-                        curr_combo.durability = curr_DURABILITY; curr_combo.poise = curr_POISE; curr_combo.weight = curr_WEIGHT; curr_combo.load = curr_load;
+                        curr_combo.durability = curr_DURABILITY; curr_combo.poise = curr_POISE; curr_combo.poise_count = (curr_head_POISE > 1.0e-10)+(curr_chest_POISE > 1.0e-10)+(curr_hands_POISE > 1.0e-10)+(curr_legs_POISE > 1.0e-10);
+                        curr_combo.weight = curr_WEIGHT; curr_combo.load = curr_load;
                         
                         if(at_max_queue_size){
                             if(curr_combo < armor_combos.top()){
@@ -566,7 +568,7 @@ DataFrame optimize_armor_combinations(
     NumericVector PHYS_DEF(out_size); NumericVector STRIKE_DEF(out_size); NumericVector SLASH_DEF(out_size); NumericVector THRUST_DEF(out_size);
     NumericVector MAG_DEF(out_size); NumericVector FIRE_DEF(out_size); NumericVector LITNG_DEF(out_size);
     NumericVector BLEED_RES(out_size); NumericVector POIS_RES(out_size); NumericVector CURSE_RES(out_size);
-    NumericVector DURABILITY(out_size); NumericVector ARMOR_POISE(out_size); NumericVector TOTAL_POISE(out_size);
+    NumericVector DURABILITY(out_size); NumericVector ARMOR_POISE(out_size); NumericVector TOTAL_POISE(out_size); NumericVector POISE_TIMER(out_size);
     NumericVector ARMOR_WEIGHT(out_size); NumericVector TOTAL_WEIGHT(out_size); NumericVector EQUIP_LOAD(out_size); NumericVector PCT_LOAD(out_size);
 
     DataFrame out = DataFrame::create( 
@@ -576,13 +578,15 @@ DataFrame optimize_armor_combinations(
         _["PHYS_DEF"] = PHYS_DEF , _["STRIKE_DEF"] = STRIKE_DEF , _["SLASH_DEF"] = SLASH_DEF , _["THRUST_DEF"] = THRUST_DEF ,
         _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF , 
         _["BLEED_RES"] = BLEED_RES , _["POIS_RES"] = POIS_RES , _["CURSE_RES"] = CURSE_RES , 
-        _["DURABILITY"] = DURABILITY , _["ARMOR_POISE"] = ARMOR_POISE , _["TOTAL_POISE"] = TOTAL_POISE , 
+        _["DURABILITY"] = DURABILITY , _["ARMOR_POISE"] = ARMOR_POISE , _["TOTAL_POISE"] = TOTAL_POISE , _["POISE_TIMER"] = POISE_TIMER , 
         _["ARMOR_WEIGHT"] = ARMOR_WEIGHT , _["TOTAL_WEIGHT"] = TOTAL_WEIGHT , _["EQUIP_LOAD"] = EQUIP_LOAD , _["PCT_LOAD"] = PCT_LOAD 
     );
 
     if(out_size == 0){
         return out;
     }
+
+    double timer_0 = 5.0; double timer_1 = timer_0*0.9; double timer_2 = timer_1*0.9; double timer_3 = timer_2*0.9; double timer_4 = timer_3*0.9;
 
     for(int n = (out_size-1); n > -1; --n){
         curr_combo = armor_combos.top();
@@ -592,7 +596,24 @@ DataFrame optimize_armor_combinations(
         PHYS_DEF[n] = curr_combo.physdef; STRIKE_DEF[n] = curr_combo.strikedef; SLASH_DEF[n] = curr_combo.slashdef; THRUST_DEF[n] = curr_combo.thrustdef;
         MAG_DEF[n] = curr_combo.magdef; FIRE_DEF[n] = curr_combo.firedef; LITNG_DEF[n] = curr_combo.litngdef; 
         BLEED_RES[n] = curr_combo.bleedres; POIS_RES[n] = curr_combo.poisres; CURSE_RES[n] = curr_combo.curseres; 
-        DURABILITY[n] = curr_combo.durability; ARMOR_POISE[n] = curr_combo.poise; TOTAL_POISE[n] = curr_combo.poise+extra_poise;
+        DURABILITY[n] = curr_combo.durability; ARMOR_POISE[n] = curr_combo.poise; TOTAL_POISE[n] = curr_combo.poise+extra_poise; 
+        switch(curr_combo.poise_count){
+            case 0:
+                POISE_TIMER[n] = timer_0;
+                break;
+            case 1:
+                POISE_TIMER[n] = timer_1;
+                break;
+            case 2:
+                POISE_TIMER[n] = timer_2;
+                break;
+            case 3:
+                POISE_TIMER[n] = timer_3;
+                break;
+            case 4:
+                POISE_TIMER[n] = timer_4;
+                break;
+        }
         ARMOR_WEIGHT[n] = curr_combo.weight; TOTAL_WEIGHT[n] = curr_combo.weight+base_weight; EQUIP_LOAD[n] = curr_combo.load; PCT_LOAD[n] = (curr_combo.weight+base_weight)/curr_combo.load;
         armor_combos.pop();
     }

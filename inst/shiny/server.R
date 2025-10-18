@@ -230,10 +230,18 @@ server <- function(input, output, session){
                         inline = FALSE,
                         stateInput = TRUE,
                         autocomplete = FALSE
-                    )
+                    ),
+                    shiny::column(6, shiny::actionButton(inputId = "poise_only", label = "Poise Armor Only"))
                 )
             ) 
         ) 
+    })
+
+    shiny::observeEvent(input$poise_only, {
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = head.data_00[POISE > 0]$ARMOR)
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = chest.data_00[POISE > 0]$ARMOR)
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = hands.data_00[POISE > 0]$ARMOR)
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = legs.data_00[POISE > 0]$ARMOR)
     })
 
     shiny::observeEvent(input$dismiss_filter_modal, {
@@ -414,7 +422,7 @@ server <- function(input, output, session){
     shiny::observeEvent(input$dismiss_constraint_modal, {
 
         if(shiny::isTruthy(input$roll)){constraint.values$roll <- input$roll}
-        if(shiny::isTruthy(input$unarmored.weight)){constraint.values$unarmored.weight <- round(input$unarmored.weight, 0)}
+        if(shiny::isTruthy(input$unarmored.weight)){constraint.values$unarmored.weight <- round(input$unarmored.weight, 1)}
         if(shiny::isTruthy(input$endurance.level)){constraint.values$endurance.level <- round(input$endurance.level, 0)}
 
         if(been.refreshed()){
@@ -891,6 +899,7 @@ server <- function(input, output, session){
                         DURABILITY = numeric(0),
                         ARMOR_POISE = numeric(0),
                         TOTAL_POISE = numeric(0),
+                        POISE_TIMER = numeric(0),
                         ARMOR_WEIGHT = numeric(0),
                         TOTAL_WEIGHT = numeric(0),
                         EQUIP_LOAD = numeric(0),
@@ -927,7 +936,7 @@ server <- function(input, output, session){
                 "ARMOR_WEIGHT", "TOTAL_WEIGHT", "EQUIP_LOAD"
             ), currency = "", interval = 3, mark = ",", digits = 1) |>
             DT::formatCurrency(c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE"), currency = "", interval = 3, mark = ",", digits = 0) |>
-            DT::formatCurrency("SCORE_RAW", currency = "", interval = 3, mark = ",", digits = 3)
+            DT::formatCurrency(c("SCORE_RAW", "POISE_TIMER"), currency = "", interval = 3, mark = ",", digits = 3)
         })
 
 
