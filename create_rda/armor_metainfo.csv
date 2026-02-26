@@ -1,0 +1,237 @@
+INDEX,ARMOR,TYPE,SET,UPGRADE_TYPE,STARTING_CLASS,AREA_FORMULA,LINK
+1,Standard Helm,Head,Warrior,Regular,Warrior,function(x){any(c('Depths')%in%x)},http://darksouls.wikidot.com/Standard-Helm
+2,Hard Leather Armor,Chest,Warrior,Regular,Warrior,function(x){any(c('Depths')%in%x)},http://darksouls.wikidot.com/Hard-Leather-Armor
+3,Hard Leather Gauntlets,Hands,Warrior,Regular,Warrior,function(x){any(c('Depths')%in%x)},http://darksouls.wikidot.com/Hard-Leather-Gauntlets
+4,Hard Leather Boots,Legs,Warrior,Regular,Warrior,function(x){any(c('Depths')%in%x)},http://darksouls.wikidot.com/Hard-Leather-Boots
+5,Chain Helm,Head,Chain,Regular,N/A,"function(x){any(c('Undead Burg','Artorias of the Abyss')%in%x)}",http://darksouls.wikidot.com/Chain-Helm
+6,Chain Armor,Chest,Chain,Regular,N/A,"function(x){any(c('Undead Burg','Artorias of the Abyss')%in%x)}",http://darksouls.wikidot.com/Chain-Armor
+7,Leather Gauntlets,Hands,Chain,Regular,N/A,"function(x){any(c('Undead Burg','Artorias of the Abyss')%in%x)}",http://darksouls.wikidot.com/Leather-Gauntlets
+8,Chain Leggings,Legs,Chain,Regular,N/A,"function(x){any(c('Undead Burg','Artorias of the Abyss')%in%x)}",http://darksouls.wikidot.com/Chain-Leggings
+9,Knight Helm,Head,Knight,Regular,Knight,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Knight-Helm
+10,Knight Armor,Chest,Knight,Regular,Knight,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Knight-Armor
+11,Knight Gauntlets,Hands,Knight,Regular,Knight,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Knight-Gauntlets
+12,Knight Leggings,Legs,Knight,Regular,Knight,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Knight-Leggings
+13,Elite Knight Helm,Head,Elite Knight,Regular,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Elite-Knight-Helm
+14,Elite Knight Armor,Chest,Elite Knight,Regular,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Elite-Knight-Armor
+15,Elite Knight Gauntlets,Hands,Elite Knight,Regular,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Elite-Knight-Gauntlets
+16,Elite Knight Leggings,Legs,Elite Knight,Regular,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Elite-Knight-Leggings
+17,Wanderer Hood,Head,Wanderer,Regular,Wanderer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Wanderer-Hood
+18,Wanderer Coat,Chest,Wanderer,Regular,Wanderer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Wanderer-Coat
+19,Wanderer Manchette,Hands,Wanderer,Regular,Wanderer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Wanderer-Manchette
+20,Wanderer Boots,Legs,Wanderer,Regular,Wanderer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Wanderer-Boots
+21,Thief Mask,Head,Thief,Regular,Thief,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Thief-Mask
+22,Black Leather Armor,Chest,Thief,Regular,Thief,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Black-Leather-Armor
+23,Black Leather Gloves,Hands,Thief,Regular,Thief,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Black-Leather-Gloves
+24,Black Leather Boots,Legs,Thief,Regular,Thief,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Black-Leather-Boots
+25,Brigand Hood,Head,Bandit,Regular,Bandit,function(x){any(c('Valley of Drakes')%in%x)},http://darksouls.wikidot.com/Brigand-Hood
+26,Brigand Armor,Chest,Bandit,Regular,Bandit,function(x){any(c('Valley of Drakes')%in%x)},http://darksouls.wikidot.com/Brigand-Armor
+27,Brigand Gauntlets,Hands,Bandit,Regular,Bandit,function(x){any(c('Valley of Drakes')%in%x)},http://darksouls.wikidot.com/Brigand-Gauntlets
+28,Brigand Trousers,Legs,Bandit,Regular,Bandit,function(x){any(c('Valley of Drakes')%in%x)},http://darksouls.wikidot.com/Brigand-Trousers
+29,Leather Armor,Chest,Hunter,Regular,Hunter,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Leather-Armor
+30,Leather Gloves,Hands,Hunter,Regular,Hunter,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Leather-Gloves
+31,Leather Boots,Legs,Hunter,Regular,Hunter,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Leather-Boots
+32,Sorcerer Hat,Head,Sorcerer,Regular,Sorcerer,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Sorcerer-Hat
+33,Sorcerer Cloak,Chest,Sorcerer,Regular,Sorcerer,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Sorcerer-Cloak
+34,Sorcerer Gauntlets,Hands,Sorcerer,Regular,Sorcerer,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Sorcerer-Gauntlets
+35,Sorcerer Boots,Legs,Sorcerer,Regular,Sorcerer,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Sorcerer-Boots
+36,Black Sorcerer Hat,Head,Black Sorcerer,Regular,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Black-Sorcerer-Hat
+37,Black Sorcerer Cloak,Chest,Black Sorcerer,Regular,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Black-Sorcerer-Cloak
+38,Black Sorcerer Gauntlets,Hands,Black Sorcerer,Regular,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Black-Sorcerer-Gauntlets
+39,Black Sorcerer Boots,Legs,Black Sorcerer,Regular,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Black-Sorcerer-Boots
+40,Tattered Cloth Hood,Head,Pyromancer,Regular,Pyromancer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Tattered-Cloth-Hood
+41,Tattered Cloth Robe,Chest,Pyromancer,Regular,Pyromancer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Tattered-Cloth-Robe
+42,Tattered Cloth Manchette,Hands,Pyromancer,Regular,Pyromancer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Tattered-Cloth-Manchette
+43,Heavy Boots,Legs,Pyromancer,Regular,Pyromancer,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Heavy-Boots
+44,Priest's Hat,Head,Holy,Regular,Cleric,function(x){any(c('Catacombs')%in%x)},http://darksouls.wikidot.com/Priest's-Hat
+45,Holy Robe,Chest,Holy,Regular,Cleric,function(x){any(c('Catacombs')%in%x)},http://darksouls.wikidot.com/Holy-Robe
+46,Traveling Gloves (Holy),Hands,Holy,Regular,Cleric,function(x){any(c('Catacombs')%in%x)},http://darksouls.wikidot.com/Traveling-Gloves
+47,Holy Trousers,Legs,Holy,Regular,Cleric,function(x){any(c('Catacombs')%in%x)},http://darksouls.wikidot.com/Holy-Trousers
+48,Cleric Helm,Head,Cleric,Regular,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Cleric-Helm
+49,Cleric Armor,Chest,Cleric,Regular,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Cleric-Armor
+50,Cleric Gauntlets,Hands,Cleric,Regular,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Cleric-Gauntlets
+51,Cleric Leggings,Legs,Cleric,Regular,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Cleric-Leggings
+52,Iron Helm,Head,Iron,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish','Anor Londo','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Iron-Helm
+53,Armor of the Sun,Chest,Iron,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish','Anor Londo','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Armor-of-the-Sun
+54,Iron Bracelet,Hands,Iron,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish','Anor Londo','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Iron-Bracelet
+55,Iron Leggings,Legs,Iron,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish','Anor Londo','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Iron-Leggings
+56,Black Iron Helm,Head,Black Iron,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Black-Iron-Helm
+57,Black Iron Armor,Chest,Black Iron,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Black-Iron-Armor
+58,Black Iron Gauntlets,Hands,Black Iron,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Black-Iron-Gauntlets
+59,Black Iron Leggings,Legs,Black Iron,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Black-Iron-Leggings
+60,Helm of the Wise,Head,Adventurer,None,N/A,"function(x){any(c('Depths')%in%x)||all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Helm-of-the-Wise
+61,Armor of the Glorious,Chest,Adventurer,None,N/A,"function(x){any(c('Depths')%in%x)||all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Armor-of-the-Glorious
+62,Gauntlets of the Vanquisher,Hands,Adventurer,None,N/A,"function(x){any(c('Depths')%in%x)||all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Gauntlets-of-the-Vanquisher
+63,Boots of the Explorer,Legs,Adventurer,None,N/A,"function(x){any(c('Depths')%in%x)||all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Boots-of-the-Explorer
+64,Catarina Helm,Head,Catarina,Twinkling,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Catarina-Helm
+65,Catarina Armor,Chest,Catarina,Twinkling,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Catarina-Armor
+66,Catarina Gauntlets,Hands,Catarina,Twinkling,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Catarina-Gauntlets
+67,Catarina Leggings,Legs,Catarina,Twinkling,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Catarina-Leggings
+68,Crystalline Helm,Head,Crystalline,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Crystalline-Helm
+69,Crystalline Armor,Chest,Crystalline,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Crystalline-Armor
+70,Crystalline Gauntlets,Hands,Crystalline,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Crystalline-Gauntlets
+71,Crystalline Leggings,Legs,Crystalline,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Crystalline-Leggings
+72,Brass Helm,Head,Brass,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Brass-Helm
+73,Brass Armor,Chest,Brass,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Brass-Armor
+74,Brass Gauntlets,Hands,Brass,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Brass-Gauntlets
+75,Brass Leggings,Legs,Brass,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Brass-Leggings
+76,Pharis's Hat,Head,Hunter,Regular,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Pharis's-Hat
+77,Big Hat,Head,Big Hat,Twinkling,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Big-Hat
+78,Sage Robe,Chest,Big Hat,Twinkling,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Sage-Robe
+79,Traveling Gloves (Big Hat),Hands,Big Hat,Regular,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Traveling-Gloves-Logan
+80,Traveling Boots,Legs,Big Hat,Regular,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Traveling-Boots
+81,Mask of the Sealer,Head,Crimson,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Mask-of-the-Sealer
+82,Crimson Robe,Chest,Crimson,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Crimson-Robe
+83,Crimson Gloves,Hands,Crimson,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Crimson-Gloves
+84,Crimson Waistcloth,Legs,Crimson,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Crimson-Waistcloth
+85,Witch Hat,Head,Witch,Twinkling,N/A,"function(x){all(c('New Londo Ruins','Valley of Drakes')%in%x)}",http://darksouls.wikidot.com/Witch-Hat
+86,Crown of Dusk,Head,Antiquated,None,N/A,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Crown-of-Dusk
+87,Antiquated Dress,Chest,Antiquated,Twinkling,N/A,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Antiquated-Dress
+88,Antiquated Gloves,Hands,Antiquated,Twinkling,N/A,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Antiquated-Gloves
+89,Antiquated Skirt,Legs,Antiquated,Twinkling,N/A,function(x){any(c('Darkroot Basin')%in%x)},http://darksouls.wikidot.com/Antiquated-Skirt
+90,Witch Cloak,Chest,Witch,Twinkling,N/A,"function(x){all(c('New Londo Ruins','Valley of Drakes')%in%x)}",http://darksouls.wikidot.com/Witch-Cloak
+91,Witch Gloves,Hands,Witch,Twinkling,N/A,"function(x){all(c('New Londo Ruins','Valley of Drakes')%in%x)}",http://darksouls.wikidot.com/Witch-Gloves
+92,Witch Skirt,Legs,Witch,Twinkling,N/A,"function(x){all(c('New Londo Ruins','Valley of Drakes')%in%x)}",http://darksouls.wikidot.com/Witch-Skirt
+93,Gold-Hemmed Black Hood,Head,Gold-Hemmed Black,None,N/A,function(x){any(c('Demon Ruins')%in%x)},http://darksouls.wikidot.com/Gold-Hemmed-Black-Hood
+94,Gold-Hemmed Black Cloak,Chest,Gold-Hemmed Black,None,N/A,function(x){any(c('Demon Ruins')%in%x)},http://darksouls.wikidot.com/Gold-Hemmed-Black-Cloak
+95,Gold-Hemmed Black Gloves,Hands,Gold-Hemmed Black,None,N/A,function(x){any(c('Demon Ruins')%in%x)},http://darksouls.wikidot.com/Gold-Hemmed-Black-Gloves
+96,Gold-Hemmed Black Skirt,Legs,Gold-Hemmed Black,None,N/A,function(x){any(c('Demon Ruins')%in%x)},http://darksouls.wikidot.com/Gold-Hemmed-Black-Skirt
+97,Mask of Velka,Head,Black,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Mask-of-Velka
+98,Black Cleric Robe,Chest,Black,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Black-Cleric-Robe
+99,Black Manchette,Hands,Black,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Black-Manchette
+100,Black Tights,Legs,Black,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Black-Tights
+101,Snickering Top Hat,Head,Chester,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Snickering-Top-Hat
+102,Chester's Long Coat,Chest,Chester,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Chester's-Long-Coat
+103,Chester's Gloves,Hands,Chester,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Chester's-Gloves
+104,Chester's Trousers,Legs,Chester,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Chester's-Trousers
+105,Maiden Hood,Head,Maiden,Regular,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Maiden-Hood
+106,Maiden Robe,Chest,Maiden,Regular,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Maiden-Robe
+107,Maiden Gloves,Hands,Maiden,Regular,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Maiden-Gloves
+108,Maiden Skirt,Legs,Maiden,Regular,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Maiden-Skirt
+109,Dingy Hood,Head,Dingy,Regular,N/A,"function(x){all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Dingy-Hood
+110,Dingy Robe,Chest,Dingy,Regular,N/A,"function(x){all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Dingy-Robe
+111,Dingy Gloves,Hands,Dingy,Regular,N/A,"function(x){all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Dingy-Gloves
+112,Blood-Stained Skirt,Legs,Dingy,Regular,N/A,"function(x){all(c('Undead Parish','Blighttown')%in%x)}",http://darksouls.wikidot.com/Blood-Stained-Skirt
+113,Eastern Helm,Head,Eastern,Twinkling,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Eastern-Helm
+114,Eastern Armor,Chest,Eastern,Twinkling,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Eastern-Armor
+115,Eastern Gauntlets,Hands,Eastern,Twinkling,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Eastern-Gauntlets
+116,Eastern Leggings,Legs,Eastern,Twinkling,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Eastern-Leggings
+117,Shadow Mask,Head,Shadow,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Shadow-Mask
+118,Shadow Garb,Chest,Shadow,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Shadow-Garb
+119,Shadow Gauntlets,Hands,Shadow,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Shadow-Gauntlets
+120,Shadow Leggings,Legs,Shadow,Twinkling,N/A,function(x){any(c('Blighttown')%in%x)},http://darksouls.wikidot.com/Shadow-Leggings
+121,Hollow Warrior Helm,Head,Hollow Warrior,Regular,N/A,function(x){any(c('Undead Burg')%in%x)},http://darksouls.wikidot.com/Hollow-Warrior-Helm
+122,Hollow Warrior Armor,Chest,Hollow Warrior,Regular,N/A,function(x){any(c('Undead Burg')%in%x)},http://darksouls.wikidot.com/Hollow-Warrior-Armor
+123,Hollow Warrior Waistcloth,Legs,Hollow Warrior,Regular,N/A,function(x){any(c('Undead Burg')%in%x)},http://darksouls.wikidot.com/Hollow-Warrior-Waistcloth
+124,Hollow Soldier Helm,Head,Hollow Soldier,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish')%in%x)}",http://darksouls.wikidot.com/Hollow-Soldier-Helm
+125,Hollow Soldier Armor,Chest,Hollow Soldier,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish')%in%x)}",http://darksouls.wikidot.com/Hollow-Soldier-Armor
+126,Hollow Soldier Waistcloth,Legs,Hollow Soldier,Regular,N/A,"function(x){any(c('Undead Burg','Undead Parish')%in%x)}",http://darksouls.wikidot.com/Hollow-Soldier-Waistcloth
+127,Balder Helm,Head,Balder,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress')%in%x)}",http://darksouls.wikidot.com/Balder-Helm
+128,Balder Armor,Chest,Balder,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress')%in%x)}",http://darksouls.wikidot.com/Balder-Armor
+129,Balder Gauntlets,Hands,Balder,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress')%in%x)}",http://darksouls.wikidot.com/Balder-Gauntlets
+130,Balder Leggings,Legs,Balder,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress')%in%x)}",http://darksouls.wikidot.com/Balder-Leggings
+131,Steel Helm,Head,Steel,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress','Painted World of Ariamis')%in%x)}",http://darksouls.wikidot.com/Steel-Helm
+132,Steel Armor,Chest,Steel,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress','Painted World of Ariamis')%in%x)}",http://darksouls.wikidot.com/Steel-Armor
+133,Steel Gauntlets,Hands,Steel,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress','Painted World of Ariamis')%in%x)}",http://darksouls.wikidot.com/Steel-Gauntlets
+134,Steel Leggings,Legs,Steel,Regular,N/A,"function(x){any(c('Undead Parish','Sens Fortress','Painted World of Ariamis')%in%x)}",http://darksouls.wikidot.com/Steel-Leggings
+135,Hollow Thief's Hood,Head,Hollow Thief,Regular,N/A,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Hollow-Thief's-Hood
+136,Hollow Thief's Leather Armor,Chest,Hollow Thief,Regular,N/A,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Hollow-Thief's-Leather-Armor
+137,Hollow Thief's Tights,Legs,Hollow Thief,Regular,N/A,function(x){any(c('Lower Undead Burg')%in%x)},http://darksouls.wikidot.com/Hollow-Thief's-Tights
+138,Silver Knight Helm,Head,Silver Knight,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Silver-Knight-Helm
+139,Silver Knight Armor,Chest,Silver Knight,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Silver-Knight-Armor
+140,Silver Knight Gauntlets,Hands,Silver Knight,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Silver-Knight-Gauntlets
+141,Silver Knight Leggings,Legs,Silver Knight,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Silver-Knight-Leggings
+142,Black Knight Helm,Head,Black Knight,Twinkling,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Black-Knight-Helm
+143,Black Knight Armor,Chest,Black Knight,Twinkling,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Black-Knight-Armor
+144,Black Knight Gauntlets,Hands,Black Knight,Twinkling,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Black-Knight-Gauntlets
+145,Black Knight Leggings,Legs,Black Knight,Twinkling,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Black-Knight-Leggings
+146,Giant Helm,Head,Giant Armor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Giant-Helm
+147,Giant Armor,Chest,Giant Armor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Giant-Armor
+148,Giant Gauntlets,Hands,Giant Armor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Giant-Gauntlets
+149,Giant Leggings,Legs,Giant Armor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Giant-Leggings
+150,Six-Eyed Helm of the Channelers,Head,Channeler,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Six-Eyed-Helm-of-the-Channelers
+151,Robe of the Channelers,Chest,Channeler,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Robe-of-the-Channelers
+152,Gauntlets of the Channelers,Hands,Channeler,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Gauntlets-of-the-Channelers
+153,Waistcloth of the Channelers,Legs,Channeler,None,N/A,function(x){any(c('The Dukes Archives')%in%x)},http://darksouls.wikidot.com/Waistcloth-of-the-Channelers
+154,Painting Guardian Hood,Head,Painting Guardian,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Painting-Guardian-Hood
+155,Painting Guardian Robe,Chest,Painting Guardian,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Painting-Guardian-Robe
+156,Painting Guardian Gloves,Hands,Painting Guardian,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Painting-Guardian-Gloves
+157,Painting Guardian Waistcloth,Legs,Painting Guardian,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Painting-Guardian-Waistcloth
+158,Fang Boar Helm,Head,N/A,Twinkling,N/A,"function(x){any(c('Undead Parish','The Dukes Archives')%in%x)}",http://darksouls.wikidot.com/Fang-Boar-Helm
+159,Golem Helm,Head,Iron Golem,None,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Golem-Helm
+160,Golem Armor,Chest,Iron Golem,None,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Golem-Armor
+161,Golem Gauntlets,Hands,Iron Golem,None,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Golem-Gauntlets
+162,Golem Leggings,Legs,Iron Golem,None,N/A,function(x){any(c('Sens Fortress')%in%x)},http://darksouls.wikidot.com/Golem-Leggings
+163,Smough's Helm,Head,Smough,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Smough's-Helm
+164,Smough's Armor,Chest,Smough,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Smough's-Armor
+165,Smough's Gauntlets,Hands,Smough,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Smough's-Gauntlets
+166,Smough's Leggings,Legs,Smough,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Smough's-Leggings
+167,Ornstein's Helm,Head,Ornstein,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Ornstein's-Helm
+168,Ornstein's Armor,Chest,Ornstein,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Ornstein's-Armor
+169,Ornstein's Gauntlets,Hands,Ornstein,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Ornstein's-Gauntlets
+170,Ornstein's Leggings,Legs,Ornstein,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Ornstein's-Leggings
+171,Helm of Artorias,Head,Artorias,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Helm-of-Artorias
+172,Armor of Artorias,Chest,Artorias,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Armor-of-Artorias
+173,Gauntlets of Artorias,Hands,Artorias,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Gauntlets-of-Artorias
+174,Leggings of Artorias,Legs,Artorias,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Leggings-of-Artorias
+175,Gough's Helm,Head,Gough,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Gough's-Helm
+176,Gough's Armor,Chest,Gough,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Gough's-Armor
+177,Gough's Gauntlets,Hands,Gough,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Gough's-Gauntlets
+178,Gough's Leggings,Legs,Gough,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Gough's-Leggings
+179,Porcelain Mask,Head,Lord's Blade,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Porcelain-Mask
+180,Lord's Blade Robe,Chest,Lord's Blade,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Lord's-Blade-Robe
+181,Lord's Blade Gloves,Hands,Lord's Blade,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Lord's-Blade-Gloves
+182,Lord's Blade Waistcloth,Legs,Lord's Blade,Twinkling,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Lord's-Blade-Waistcloth
+183,Crown of the Dark Sun,Head,Gwyndolin Moonlight,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Crown-of-the-Dark-Sun
+184,Moonlight Robe,Chest,Gwyndolin Moonlight,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Moonlight-Robe
+185,Moonlight Gloves,Hands,Gwyndolin Moonlight,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Moonlight-Gloves
+186,Moonlight Waistcloth,Legs,Gwyndolin Moonlight,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Moonlight-Waistcloth
+187,Crown of the Great Lord,Head,Great Lord,None,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Crown-of-the-Great-Lord
+188,Robe of the Great Lord,Chest,Great Lord,None,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Robe-of-the-Great-Lord
+189,Bracelet of the Great Lord,Hands,Great Lord,None,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Bracelet-of-the-Great-Lord
+190,Anklet of the Great Lord,Legs,Great Lord,None,N/A,function(x){any(c('Kiln of the First Flame')%in%x)},http://darksouls.wikidot.com/Anklet-of-the-Great-Lord
+191,Dark Mask,Head,Dark,Twinkling,N/A,function(x){any(c('New Londo Ruins')%in%x)},http://darksouls.wikidot.com/Dark-Mask
+192,Dark Armor,Chest,Dark,Twinkling,N/A,function(x){any(c('New Londo Ruins')%in%x)},http://darksouls.wikidot.com/Dark-Armor
+193,Dark Gauntlets,Hands,Dark,Twinkling,N/A,function(x){any(c('New Londo Ruins')%in%x)},http://darksouls.wikidot.com/Dark-Gauntlets
+194,Dark Leggings,Legs,Dark,Twinkling,N/A,function(x){any(c('New Londo Ruins')%in%x)},http://darksouls.wikidot.com/Dark-Leggings
+195,Helm of Thorns,Head,Thorns,Twinkling,N/A,"function(x){all(c('Depths','Demon Ruins','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Helm-of-Thorns
+196,Armor of Thorns,Chest,Thorns,Twinkling,N/A,"function(x){all(c('Depths','Demon Ruins','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Armor-of-Thorns
+197,Gauntlets of Thorns,Hands,Thorns,Twinkling,N/A,"function(x){all(c('Depths','Demon Ruins','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Gauntlets-of-Thorns
+198,Leggings of Thorns,Legs,Thorns,Twinkling,N/A,"function(x){all(c('Depths','Demon Ruins','Lost Izalith')%in%x)}",http://darksouls.wikidot.com/Leggings-of-Thorns
+199,Helm of Favor,Head,Favor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Helm-of-Favor
+200,Embraced Armor of Favor,Chest,Favor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Embraced-Armor-of-Favor
+201,Gauntlets of Favor,Hands,Favor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Gauntlets-of-Favor
+202,Leggings of Favor,Legs,Favor,Twinkling,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Leggings-of-Favor
+203,Paladin Helm,Head,Paladin,Twinkling,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Paladin-Helm
+204,Paladin Armor,Chest,Paladin,Twinkling,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Paladin-Armor
+205,Paladin Gauntlets,Hands,Paladin,Twinkling,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Paladin-Gauntlets
+206,Paladin Leggings,Legs,Paladin,Twinkling,N/A,function(x){any(c('Tomb of the Giants')%in%x)},http://darksouls.wikidot.com/Paladin-Leggings
+207,Stone Helm,Head,Stone Knight,None,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Stone-Helm
+208,Stone Armor,Chest,Stone Knight,None,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Stone-Armor
+209,Stone Gauntlets,Hands,Stone Knight,None,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Stone-Gauntlets
+210,Stone Leggings,Legs,Stone Knight,None,N/A,function(x){any(c('Darkroot Garden')%in%x)},http://darksouls.wikidot.com/Stone-Leggings
+211,Guardian Helm,Head,Guardian,None,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Guardian-Helm
+212,Guardian Armor,Chest,Guardian,None,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Guardian-Armor
+213,Guardian Gauntlets,Hands,Guardian,None,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Guardian-Gauntlets
+214,Guardian Leggings,Legs,Guardian,None,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Guardian-Leggings
+215,Havel's Helm,Head,Havel,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Havel's-Helm
+216,Havel's Armor,Chest,Havel,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Havel's-Armor
+217,Havel's Gauntlets,Hands,Havel,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Havel's-Gauntlets
+218,Havel's Leggings,Legs,Havel,None,N/A,function(x){any(c('Anor Londo')%in%x)},http://darksouls.wikidot.com/Havel's-Leggings
+219,Xanthous Crown,Head,Xanthous,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Xanthous-Crown
+220,Xanthous Overcoat,Chest,Xanthous,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Xanthous-Overcoat
+221,Xanthous Gloves,Hands,Xanthous,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Xanthous-Gloves
+222,Xanthous Waistcloth,Legs,Xanthous,Twinkling,N/A,function(x){any(c('Painted World of Ariamis')%in%x)},http://darksouls.wikidot.com/Xanthous-Waistcloth
+223,Mask of the Father,Head,N/A,None,N/A,"function(x){any(c('Catacombs','Tomb of the Giants')%in%x)}",http://darksouls.wikidot.com/Mask-of-the-Father
+224,Mask of the Mother,Head,N/A,None,N/A,"function(x){any(c('Catacombs','Tomb of the Giants')%in%x)}",http://darksouls.wikidot.com/Mask-of-the-Mother
+225,Mask of the Child,Head,N/A,None,N/A,"function(x){any(c('Catacombs','Tomb of the Giants')%in%x)}",http://darksouls.wikidot.com/Mask-of-the-Child
+226,Royal Helm,Head,N/A,Regular,N/A,function(x){any(c('Catacombs')%in%x)},http://darksouls.wikidot.com/Royal-Helm
+227,Sack,Head,N/A,Regular,N/A,function(x){any(c('Depths')%in%x)},http://darksouls.wikidot.com/Sack
+228,Sunlight Maggot,Head,N/A,None,N/A,function(x){any(c('Lost Izalith')%in%x)},http://darksouls.wikidot.com/Sunlight-Maggot
+229,Symbol of Avarice,Head,N/A,None,N/A,"function(x){any(c('Sens Fortress','Anor Londo','The Dukes Archives','Artorias of the Abyss')%in%x)}",http://darksouls.wikidot.com/Symbol-of-Avarice
+230,Bloated Head,Head,N/A,None,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Bloated-Head
+231,Bloated Sorcerer Head,Head,N/A,None,N/A,function(x){any(c('Artorias of the Abyss')%in%x)},http://darksouls.wikidot.com/Bloated-Sorcerer-Head
+232,Gargoyle Helm,Head,N/A,Twinkling,N/A,function(x){any(c('Undead Parish')%in%x)},http://darksouls.wikidot.com/Gargoyle-Helm
+233,No Head,Head,No Armor,None,Deprived,function(x){TRUE},N/A
+234,No Chest,Chest,No Armor,None,Deprived,function(x){TRUE},N/A
+235,No Hands,Hands,No Armor,None,Deprived,function(x){TRUE},N/A
+236,No Legs,Legs,No Armor,None,Deprived,function(x){TRUE},N/A

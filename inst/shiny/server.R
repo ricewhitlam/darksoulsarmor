@@ -22,7 +22,13 @@ server <- function(input, output, session){
                     Please note: the tool will not infer that one area has been completed because another later area has been completed.
                     For example, indicating that Anor Londo has been completed will not result in Sens Fortress being assumed complete. <br>  
                     'Upgrades With' is used to specify which upgrade materials to consider. For example, only armor pieces that upgrade with twinkling titanite could be considered. <br>  
-                    'Head' is used to specify which head armor pieces can be included in the created table - 'Chest', 'Hands' and 'Legs' are used similarly. <br> <br>
+                    'Head' is used to specify which head armor pieces can be included in the created table - 'Chest', 'Hands' and 'Legs' are used similarly. <br> 
+                    'Poise Armor Only' filters the current selections in 'Head', 'Chest', 'Hands', and 'Legs' down to only those entries with positive Poise. 
+                    Each equipped armor piece with positive Poise reduces the Poise cooldown timer. <br> 
+                    'Efficient Armor Only' filters the current selections in 'Head', 'Chest', 'Hands', and 'Legs' down to only those entries which do not penalize Stamina recovery. <br>
+                    'Quiet Armor Only' filters the current selections in 'Chest' down to only those entries which are quiet. This helps with stealth, 
+                    since enemies detect the player via sound, as explained here: ", 
+                    tags$a("How Enemies Detect You in Dark Souls: Part 1 - Sound", href = "https://www.youtube.com/watch?v=mdL75pAvt8I", target = "_blank"), " <br> <br>
 
                     Upgrade Inputs: <br>  
                     'Armor Level (Regular)' is used to specify the upgrade level of armor pieces ascended via regular titanite. Options are +0 thru +10. <br>  
@@ -231,17 +237,35 @@ server <- function(input, output, session){
                         stateInput = TRUE,
                         autocomplete = FALSE
                     ),
-                    shiny::column(6, shiny::actionButton(inputId = "poise_only", label = "Poise Armor Only"))
+                    shiny::column(6, p(),
+                        shiny::actionButton(inputId = "poise_only", label = "Poise Armor Only"), p(), 
+                        shiny::actionButton(inputId = "stam_only", label = "Efficient Armor Only"), p(), 
+                        shiny::actionButton(inputId = "quiet_only", label = "Quiet Armor Only"), p()
+                    )
                 )
             ) 
         ) 
     })
 
     shiny::observeEvent(input$poise_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = head.data_00[POISE > 0]$ARMOR)
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = chest.data_00[POISE > 0]$ARMOR)
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = hands.data_00[POISE > 0]$ARMOR)
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = legs.data_00[POISE > 0]$ARMOR)
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data_00[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data_00[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data_00[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data_00[POISE > 0]$ARMOR])
+    })
+
+    shiny::observeEvent(input$stam_only, {
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data_00[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data_00[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data_00[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data_00[STAM_MOD >= 0]$ARMOR])
+    })
+
+    shiny::observeEvent(input$quiet_only, {
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data_00[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data_00[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data_00[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data_00[SOUND_MOD <= 1]$ARMOR])
     })
 
     shiny::observeEvent(input$dismiss_filter_modal, {

@@ -12,6 +12,8 @@
   \item{AREA_FORMULA}{An R expression stored as a character which can be applied to a list of areas via \code{eval(parse())} to determine whether the armor piece is available.}
   \item{LINK}{A link to the armor piece on darksouls.wikidot.com.}
   \item{PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES, DURABILITY, WEIGHT}{The value of the relevant metric.}
+  \item{STAM_MOD}{The additive modifier to the base stamina regeneration rate of 45 per second.}
+  \item{SOUND_MOD}{The multiplicative modifier to base character loudness.}
 }
 }
 \description{
