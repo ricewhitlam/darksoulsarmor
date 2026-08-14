@@ -5,14 +5,13 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-struct armor_combo { 
-    double score; 
-    String head; String chest; String hands; String legs;
-    double physdef; double strikedef; double slashdef; double thrustdef;
-    double magdef; double firedef; double litngdef;
-    double bleedres; double poisres; double curseres;
-    double durability; double poise; int poise_count; 
-    double weight; double load; 
+// Only the score and the four per-slot row indices are cached per candidate: every other
+// metric can be recomputed from the indices, and only needs to be for the (at most
+// max_output_size) combos that survive to the output loop, rather than for every candidate
+// that touches the heap.
+struct armor_combo {
+    double score;
+    int32_t h; int32_t c; int32_t g; int32_t l;
     bool operator<(const armor_combo& comparison) const
     {
         return score > comparison.score;
@@ -46,7 +45,7 @@ DataFrame optimal_armor_combinations(
     // const double lm_beta,
     // const double lm_alpha,
     // const double lm_resid_se_inv
-    
+
     NumericVector head_SCORE = head_df["SCORE"];
     CharacterVector head_ARMOR = head_df["ARMOR"];
     NumericVector head_PHYS_DEF = head_df["PHYS_DEF"];
@@ -126,15 +125,13 @@ DataFrame optimal_armor_combinations(
 
     int curr_count = 0;
 
-    double curr_load;
     double curr_load_threshold;
     double eps = 1.0e-10;
 
     double extra_poise = 0.0;
     if(wolf){extra_poise = 40.0;};
 
-    double curr_head_SCORE; double curr_chest_SCORE; double curr_hands_SCORE; double curr_legs_SCORE; 
-    String curr_head; String curr_chest; String curr_hands; String curr_legs;
+    double curr_head_SCORE; double curr_chest_SCORE; double curr_hands_SCORE; double curr_legs_SCORE;
     double curr_PHYS_DEF; double curr_head_PHYS_DEF; double curr_chest_PHYS_DEF; double curr_hands_PHYS_DEF; double curr_legs_PHYS_DEF;
     double curr_STRIKE_DEF; double curr_head_STRIKE_DEF; double curr_chest_STRIKE_DEF; double curr_hands_STRIKE_DEF; double curr_legs_STRIKE_DEF;
     double curr_SLASH_DEF; double curr_head_SLASH_DEF; double curr_chest_SLASH_DEF; double curr_hands_SLASH_DEF; double curr_legs_SLASH_DEF;
@@ -149,7 +146,7 @@ DataFrame optimal_armor_combinations(
     double curr_DURABILITY; double curr_head_DURABILITY; double curr_chest_DURABILITY; double curr_hands_DURABILITY; double curr_legs_DURABILITY;
     double curr_WEIGHT; double curr_head_WEIGHT; double curr_chest_WEIGHT; double curr_hands_WEIGHT; double curr_legs_WEIGHT;
 
-    int curr_I; int curr_J; int curr_K; int curr_L; 
+    int curr_I; int curr_J; int curr_K; int curr_L;
     bool I_capped = false; bool J_capped = false; bool K_capped = false; bool L_capped = false;
     int max_loop_size = std::max(I, std::max(J, std::max(K, L)));
     armor_combo curr_combo;
@@ -157,7 +154,7 @@ DataFrame optimal_armor_combinations(
     bool at_max_queue_size = false;
     int loop_size_1;
     for(int loop_size = starting_loop_size; loop_size <= max_loop_size; ++loop_size){
-        
+
         loop_size_1 = loop_size-1;
 
         if(I < loop_size){
@@ -184,7 +181,7 @@ DataFrame optimal_armor_combinations(
         } else{
             curr_L = loop_size;
         }
-        
+
         for(int i = 0; i < curr_I; ++i){
 
             if(i != loop_size_1 && L_capped && K_capped && J_capped && !I_capped){
@@ -192,20 +189,17 @@ DataFrame optimal_armor_combinations(
             }
 
             if(i == motf_index){
-                curr_load = load_motf;
                 curr_load_threshold = load_threshold_motf;
             } else{
-                curr_load = load;
                 curr_load_threshold = load_threshold;
             }
-            
+
             curr_head_SCORE = head_SCORE[i];
 
             if(at_max_queue_size && (curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
                 break;
             }
 
-            curr_head = head_ARMOR[i];
             curr_head_PHYS_DEF = head_PHYS_DEF[i];
             curr_head_STRIKE_DEF = head_STRIKE_DEF[i];
             curr_head_SLASH_DEF = head_SLASH_DEF[i];
@@ -232,7 +226,6 @@ DataFrame optimal_armor_combinations(
                     break;
                 }
 
-                curr_chest = chest_ARMOR[j];
                 curr_chest_PHYS_DEF = chest_PHYS_DEF[j];
                 curr_chest_STRIKE_DEF = chest_STRIKE_DEF[j];
                 curr_chest_SLASH_DEF = chest_SLASH_DEF[j];
@@ -259,7 +252,6 @@ DataFrame optimal_armor_combinations(
                         break;
                     }
 
-                    curr_hands = hands_ARMOR[k];
                     curr_hands_PHYS_DEF = hands_PHYS_DEF[k];
                     curr_hands_STRIKE_DEF = hands_STRIKE_DEF[k];
                     curr_hands_SLASH_DEF = hands_SLASH_DEF[k];
@@ -352,15 +344,9 @@ DataFrame optimal_armor_combinations(
                             continue;
                         }
 
-                        curr_legs = legs_ARMOR[l];
                         curr_combo.score = curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE;
-                        curr_combo.head = curr_head; curr_combo.chest = curr_chest; curr_combo.hands = curr_hands; curr_combo.legs = curr_legs;
-                        curr_combo.physdef = curr_PHYS_DEF; curr_combo.strikedef = curr_STRIKE_DEF; curr_combo.slashdef = curr_SLASH_DEF; curr_combo.thrustdef = curr_THRUST_DEF;
-                        curr_combo.magdef = curr_MAG_DEF; curr_combo.firedef = curr_FIRE_DEF; curr_combo.litngdef = curr_LITNG_DEF; 
-                        curr_combo.bleedres = curr_BLEED_RES; curr_combo.poisres = curr_POIS_RES; curr_combo.curseres = curr_CURSE_RES; 
-                        curr_combo.durability = curr_DURABILITY; curr_combo.poise = curr_POISE; curr_combo.poise_count = (curr_head_POISE > 1.0e-10)+(curr_chest_POISE > 1.0e-10)+(curr_hands_POISE > 1.0e-10)+(curr_legs_POISE > 1.0e-10);
-                        curr_combo.weight = curr_WEIGHT; curr_combo.load = curr_load;
-                        
+                        curr_combo.h = i; curr_combo.c = j; curr_combo.g = k; curr_combo.l = l;
+
                         if(at_max_queue_size){
                             if(curr_combo < armor_combos.top()){
                                 armor_combos.push(curr_combo);
@@ -385,7 +371,7 @@ DataFrame optimal_armor_combinations(
     }
 
     int out_size = armor_combos.size();
-    NumericVector SCORE_RAW(out_size); NumericVector SCORE_PCT(out_size); 
+    NumericVector SCORE_RAW(out_size); NumericVector SCORE_PCT(out_size);
     // NumericVector SCORE_RESID_RAW(out_size); NumericVector SCORE_RESID_PCT(out_size);
     CharacterVector HEAD(out_size); CharacterVector CHEST(out_size); CharacterVector HANDS(out_size); CharacterVector LEGS(out_size);
     NumericVector PHYS_DEF(out_size); NumericVector STRIKE_DEF(out_size); NumericVector SLASH_DEF(out_size); NumericVector THRUST_DEF(out_size);
@@ -394,15 +380,15 @@ DataFrame optimal_armor_combinations(
     NumericVector DURABILITY(out_size); NumericVector ARMOR_POISE(out_size); NumericVector TOTAL_POISE(out_size); NumericVector POISE_TIMER(out_size);
     NumericVector ARMOR_WEIGHT(out_size); NumericVector TOTAL_WEIGHT(out_size); NumericVector EQUIP_LOAD(out_size); NumericVector PCT_LOAD(out_size);
 
-    DataFrame out = DataFrame::create( 
-        Named("SCORE_RAW") = SCORE_RAW , _["SCORE_PCT"] = SCORE_PCT ,  
+    DataFrame out = DataFrame::create(
+        Named("SCORE_RAW") = SCORE_RAW , _["SCORE_PCT"] = SCORE_PCT ,
         // _["SCORE_RESID_RAW"] = SCORE_RESID_RAW ,  _["SCORE_RESID_PCT"] = SCORE_RESID_PCT ,
         _["HEAD"] = HEAD , _["CHEST"] = CHEST , _["HANDS"] = HANDS , _["LEGS"] = LEGS ,
         _["PHYS_DEF"] = PHYS_DEF , _["STRIKE_DEF"] = STRIKE_DEF , _["SLASH_DEF"] = SLASH_DEF , _["THRUST_DEF"] = THRUST_DEF ,
-        _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF , 
-        _["BLEED_RES"] = BLEED_RES , _["POIS_RES"] = POIS_RES , _["CURSE_RES"] = CURSE_RES , 
-        _["DURABILITY"] = DURABILITY , _["ARMOR_POISE"] = ARMOR_POISE , _["TOTAL_POISE"] = TOTAL_POISE , _["POISE_TIMER"] = POISE_TIMER , 
-        _["ARMOR_WEIGHT"] = ARMOR_WEIGHT , _["TOTAL_WEIGHT"] = TOTAL_WEIGHT , _["EQUIP_LOAD"] = EQUIP_LOAD , _["PCT_LOAD"] = PCT_LOAD 
+        _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF ,
+        _["BLEED_RES"] = BLEED_RES , _["POIS_RES"] = POIS_RES , _["CURSE_RES"] = CURSE_RES ,
+        _["DURABILITY"] = DURABILITY , _["ARMOR_POISE"] = ARMOR_POISE , _["TOTAL_POISE"] = TOTAL_POISE , _["POISE_TIMER"] = POISE_TIMER ,
+        _["ARMOR_WEIGHT"] = ARMOR_WEIGHT , _["TOTAL_WEIGHT"] = TOTAL_WEIGHT , _["EQUIP_LOAD"] = EQUIP_LOAD , _["PCT_LOAD"] = PCT_LOAD
     );
 
     if(out_size == 0){
@@ -411,16 +397,34 @@ DataFrame optimal_armor_combinations(
 
     double timer_0 = 5.0; double timer_1 = timer_0*0.9; double timer_2 = timer_1*0.9; double timer_3 = timer_2*0.9; double timer_4 = timer_3*0.9;
 
+    int out_h; int out_c; int out_g; int out_l;
+    double out_head_POISE; double out_chest_POISE; double out_hands_POISE; double out_legs_POISE; double out_POISE;
+    double out_WEIGHT; double out_load; int out_poise_count;
+
     for(int n = (out_size-1); n > -1; --n){
         curr_combo = armor_combos.top();
+        out_h = curr_combo.h; out_c = curr_combo.c; out_g = curr_combo.g; out_l = curr_combo.l;
+
         SCORE_RAW[n] = curr_combo.score; SCORE_PCT[n] = R::pnorm(curr_combo.score, 0.0, 1.0, true, false);
-        // SCORE_RESID_RAW[n] = lm_resid_se_inv*((lm_beta*curr_combo.weight+lm_alpha)-curr_combo.score); SCORE_RESID_PCT[n] = R::pnorm(SCORE_RESID_RAW[n], 0.0, 1.0, true, false);
-        HEAD[n] = curr_combo.head; CHEST[n] = curr_combo.chest; HANDS[n] = curr_combo.hands; LEGS[n] = curr_combo.legs;
-        PHYS_DEF[n] = curr_combo.physdef; STRIKE_DEF[n] = curr_combo.strikedef; SLASH_DEF[n] = curr_combo.slashdef; THRUST_DEF[n] = curr_combo.thrustdef;
-        MAG_DEF[n] = curr_combo.magdef; FIRE_DEF[n] = curr_combo.firedef; LITNG_DEF[n] = curr_combo.litngdef; 
-        BLEED_RES[n] = curr_combo.bleedres; POIS_RES[n] = curr_combo.poisres; CURSE_RES[n] = curr_combo.curseres; 
-        DURABILITY[n] = curr_combo.durability; ARMOR_POISE[n] = curr_combo.poise; TOTAL_POISE[n] = curr_combo.poise+extra_poise; 
-        switch(curr_combo.poise_count){
+        // SCORE_RESID_RAW[n] = lm_resid_se_inv*((lm_beta*out_WEIGHT+lm_alpha)-curr_combo.score); SCORE_RESID_PCT[n] = R::pnorm(SCORE_RESID_RAW[n], 0.0, 1.0, true, false);
+        HEAD[n] = head_ARMOR[out_h]; CHEST[n] = chest_ARMOR[out_c]; HANDS[n] = hands_ARMOR[out_g]; LEGS[n] = legs_ARMOR[out_l];
+        PHYS_DEF[n] = head_PHYS_DEF[out_h]+chest_PHYS_DEF[out_c]+hands_PHYS_DEF[out_g]+legs_PHYS_DEF[out_l];
+        STRIKE_DEF[n] = head_STRIKE_DEF[out_h]+chest_STRIKE_DEF[out_c]+hands_STRIKE_DEF[out_g]+legs_STRIKE_DEF[out_l];
+        SLASH_DEF[n] = head_SLASH_DEF[out_h]+chest_SLASH_DEF[out_c]+hands_SLASH_DEF[out_g]+legs_SLASH_DEF[out_l];
+        THRUST_DEF[n] = head_THRUST_DEF[out_h]+chest_THRUST_DEF[out_c]+hands_THRUST_DEF[out_g]+legs_THRUST_DEF[out_l];
+        MAG_DEF[n] = head_MAG_DEF[out_h]+chest_MAG_DEF[out_c]+hands_MAG_DEF[out_g]+legs_MAG_DEF[out_l];
+        FIRE_DEF[n] = head_FIRE_DEF[out_h]+chest_FIRE_DEF[out_c]+hands_FIRE_DEF[out_g]+legs_FIRE_DEF[out_l];
+        LITNG_DEF[n] = head_LITNG_DEF[out_h]+chest_LITNG_DEF[out_c]+hands_LITNG_DEF[out_g]+legs_LITNG_DEF[out_l];
+        BLEED_RES[n] = head_BLEED_RES[out_h]+chest_BLEED_RES[out_c]+hands_BLEED_RES[out_g]+legs_BLEED_RES[out_l];
+        POIS_RES[n] = head_POIS_RES[out_h]+chest_POIS_RES[out_c]+hands_POIS_RES[out_g]+legs_POIS_RES[out_l];
+        CURSE_RES[n] = head_CURSE_RES[out_h]+chest_CURSE_RES[out_c]+hands_CURSE_RES[out_g]+legs_CURSE_RES[out_l];
+        DURABILITY[n] = std::min(head_DURABILITY[out_h], std::min(chest_DURABILITY[out_c], std::min(hands_DURABILITY[out_g], legs_DURABILITY[out_l])));
+
+        out_head_POISE = head_POISE[out_h]; out_chest_POISE = chest_POISE[out_c]; out_hands_POISE = hands_POISE[out_g]; out_legs_POISE = legs_POISE[out_l];
+        out_POISE = out_head_POISE+out_chest_POISE+out_hands_POISE+out_legs_POISE;
+        ARMOR_POISE[n] = out_POISE; TOTAL_POISE[n] = out_POISE+extra_poise;
+        out_poise_count = (out_head_POISE > 1.0e-10)+(out_chest_POISE > 1.0e-10)+(out_hands_POISE > 1.0e-10)+(out_legs_POISE > 1.0e-10);
+        switch(out_poise_count){
             case 0:
                 POISE_TIMER[n] = timer_0;
                 break;
@@ -437,7 +441,10 @@ DataFrame optimal_armor_combinations(
                 POISE_TIMER[n] = timer_4;
                 break;
         }
-        ARMOR_WEIGHT[n] = curr_combo.weight; TOTAL_WEIGHT[n] = curr_combo.weight+base_weight; EQUIP_LOAD[n] = curr_combo.load; PCT_LOAD[n] = (curr_combo.weight+base_weight)/curr_combo.load;
+
+        out_WEIGHT = head_WEIGHT[out_h]+chest_WEIGHT[out_c]+hands_WEIGHT[out_g]+legs_WEIGHT[out_l];
+        out_load = (out_h == motf_index) ? load_motf : load;
+        ARMOR_WEIGHT[n] = out_WEIGHT; TOTAL_WEIGHT[n] = out_WEIGHT+base_weight; EQUIP_LOAD[n] = out_load; PCT_LOAD[n] = (out_WEIGHT+base_weight)/out_load;
         armor_combos.pop();
     }
 
