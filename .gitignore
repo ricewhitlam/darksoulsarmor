@@ -1,0 +1,6 @@
+*.o
+*.so
+*.dll
+*.tar.gz
+.Rproj.user/
+*.Rcheck/
