@@ -15,15 +15,7 @@ struct armor_combo {
     double weight; double load; 
     bool operator<(const armor_combo& comparison) const
     {
-        double eps = 1.0e-6;
-        bool check1 = ((score+eps) > comparison.score);
-        bool check2 = check1 && ((weight-eps) < comparison.weight);
-        bool check3 = check2 && ((poise+eps) > comparison.poise);
-        return 
-            (score > (comparison.score+eps)) || 
-            (check1 && (weight < (comparison.weight-eps))) || 
-            (check2 && (poise > (comparison.poise+eps))) ||
-            (check3 && (durability > (comparison.durability+eps)));
+        return score > comparison.score;
     }
 };
 
