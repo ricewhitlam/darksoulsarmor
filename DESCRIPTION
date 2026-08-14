@@ -3,22 +3,25 @@ Type: Package
 Title: Explore and Optimize Armor Combinations
 Version: 1.0
 Date: 2025-09-18
-Description: 
-    This packages contains full datasets for the unupgraded and fully upgraded armor pieces of Dark Souls. 
+Authors@R: person("Package", "Maintainer", email = "package-maintainer@example.com", role = c("aut", "cre"))
+Description:
+    This package contains full datasets for the unupgraded and fully upgraded armor pieces of Dark Souls.
     It also has a function which can be used to produce a table of armor combinations with an associated score.
-    This functionality is available in an interactive Shiny application. 
+    This functionality is available in an interactive Shiny application.
 License: GPL (>= 2)
+Encoding: UTF-8
 LazyData: true
-Imports: 
-    data.table, 
-    Rcpp, 
-    shiny, 
-    shinyWidgets, 
-    bslib, 
+URL: https://github.com/ricewhitlam/darksoulsarmor
+BugReports: https://github.com/ricewhitlam/darksoulsarmor/issues
+Imports:
+    data.table,
+    Rcpp,
+    shiny,
+    shinyWidgets,
+    bslib,
     DT,
     shinybusy
-Depends: 
-    data.table,
+Depends:
     R (>= 3.5)
 LinkingTo: Rcpp
 RoxygenNote: 7.3.3
