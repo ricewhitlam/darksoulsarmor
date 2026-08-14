@@ -530,20 +530,21 @@ get.optimal.armor.combos <- function(
                 cummax(c(working.chest.data$POISE, rep(0, n.max-n.chest)))+
                 cummax(c(working.hands.data$POISE, rep(0, n.max-n.hands)))+
                 cummax(c(working.legs.data$POISE, rep(0, n.max-n.legs)))
-            ) >= (minima[i]-ifelse(wolf.ring, 40, 0)-1e-10)
+            ) >= (minima[8]-ifelse(wolf.ring, 40, 0)-1e-10)
         )
     min.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
+    min.cols.minima.index <- c(1:7, 9:11)
     for(i in seq_along(min.cols)){
-        minima.check <- 
-            minima.check & 
+        minima.check <-
+            minima.check &
             (
                 (
                     cummax(c(working.head.data[[min.cols[i]]], rep(0, n.max-n.head)))+
                     cummax(c(working.chest.data[[min.cols[i]]], rep(0, n.max-n.chest)))+
                     cummax(c(working.hands.data[[min.cols[i]]], rep(0, n.max-n.hands)))+
                     cummax(c(working.legs.data[[min.cols[i]]], rep(0, n.max-n.legs)))
-                ) >= (minima[i]-1e-10)
-            ) 
+                ) >= (minima[min.cols.minima.index[i]]-1e-10)
+            )
     }
     init.size <- which(weight.check & minima.check)[1]
 
