@@ -476,7 +476,8 @@ get.optimal.armor.combos <- function(
 
     ## Calc scores for each dataset and sort on these
     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
-    score.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
+    scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
+    metric.cols <- scored.metrics$metric
     # lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
     # lm.alpha <- -lm.beta*mean.weight
     # lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
@@ -485,11 +486,11 @@ get.optimal.armor.combos <- function(
     working.chest.data[, SCORE := 0]
     working.hands.data[, SCORE := 0]
     working.legs.data[, SCORE := 0]
-    for(i in seq_along(score.cols)){
-        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
-        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
-        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
-        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*means[i])]
+    for(i in seq_along(metric.cols)){
+        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
     }
     data.table::setorder(working.head.data, -SCORE, WEIGHT)
     data.table::setorder(working.chest.data, -SCORE, WEIGHT)
@@ -521,29 +522,27 @@ get.optimal.armor.combos <- function(
             cummax(c(working.chest.data$DURABILITY, rep(0, n.max-n.chest))),
             cummax(c(working.hands.data$DURABILITY, rep(0, n.max-n.hands))),
             cummax(c(working.legs.data$DURABILITY, rep(0, n.max-n.legs)))
-        ) >= (minima[12]-1e-10) 
-    minima.check <- 
-        minima.check & 
+        ) >= (minima[METRICS[metric == "DURABILITY", minima.index]]-1e-10)
+    minima.check <-
+        minima.check &
         (
             (
                 cummax(c(working.head.data$POISE, rep(0, n.max-n.head)))+
                 cummax(c(working.chest.data$POISE, rep(0, n.max-n.chest)))+
                 cummax(c(working.hands.data$POISE, rep(0, n.max-n.hands)))+
                 cummax(c(working.legs.data$POISE, rep(0, n.max-n.legs)))
-            ) >= (minima[8]-ifelse(wolf.ring, 40, 0)-1e-10)
+            ) >= (minima[METRICS[metric == "POISE", minima.index]]-ifelse(wolf.ring, 40, 0)-1e-10)
         )
-    min.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
-    min.cols.minima.index <- c(1:7, 9:11)
-    for(i in seq_along(min.cols)){
+    for(i in seq_along(metric.cols)){
         minima.check <-
             minima.check &
             (
                 (
-                    cummax(c(working.head.data[[min.cols[i]]], rep(0, n.max-n.head)))+
-                    cummax(c(working.chest.data[[min.cols[i]]], rep(0, n.max-n.chest)))+
-                    cummax(c(working.hands.data[[min.cols[i]]], rep(0, n.max-n.hands)))+
-                    cummax(c(working.legs.data[[min.cols[i]]], rep(0, n.max-n.legs)))
-                ) >= (minima[min.cols.minima.index[i]]-1e-10)
+                    cummax(c(working.head.data[[metric.cols[i]]], rep(0, n.max-n.head)))+
+                    cummax(c(working.chest.data[[metric.cols[i]]], rep(0, n.max-n.chest)))+
+                    cummax(c(working.hands.data[[metric.cols[i]]], rep(0, n.max-n.hands)))+
+                    cummax(c(working.legs.data[[metric.cols[i]]], rep(0, n.max-n.legs)))
+                ) >= (minima[scored.metrics$minima.index[i]]-1e-10)
             )
     }
     init.size <- which(weight.check & minima.check)[1]
@@ -605,9 +604,9 @@ get.optimal.armor.combos <- function(
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.motf"))
-    rm(list = c("score.scalars", "score.cols"))
+    rm(list = c("score.scalars", "scored.metrics", "metric.cols"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
-    rm(list = c("weight.check", "minima.check", "min.cols", "init.size"))
+    rm(list = c("weight.check", "minima.check", "init.size"))
     rm(list = c("motf.index"))
     gc()
 

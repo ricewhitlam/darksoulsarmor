@@ -6,8 +6,27 @@ utils::globalVariables(c(
     "AREAFILTER", "AREA_FORMULA", "ARMOR", "SCORE", "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
     "areas", "classes", "means", "stddevs", "corrs",
     "head.data_00", "head.data_10", "chest.data_00", "chest.data_10",
-    "hands.data_00", "hands.data_10", "legs.data_00", "legs.data_10"
+    "hands.data_00", "hands.data_10", "legs.data_00", "legs.data_10",
+    "METRICS", "metric", "weight.index", "minima.index"
 ))
+
+## Canonical identity and order of every armor metric - the single source of truth for the
+## metric-order lists in get.optimal.armor.combos (score.cols/min.cols were previously two
+## independently hand-typed vectors) and for the position each metric occupies in the
+## `minima` (all 12 metrics) and `weights` (the 10 that are scored) arguments. Keeping these
+## positions in one place, rather than as parallel hand-maintained literals, is what prevents
+## them from drifting out of sync with each other - which is how the minima-indexing bug fixed
+## earlier in this package's history happened.
+METRICS <-
+    data.table::data.table(
+        metric = c(
+            "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",
+            "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "POISE",
+            "BLEED_RES", "POIS_RES", "CURSE_RES", "DURABILITY"
+        ),
+        minima.index = 1:12,
+        weight.index = c(1:7, NA, 8:10, NA)
+    )
 
 #' Character vector of areas in Dark Souls
 #'
