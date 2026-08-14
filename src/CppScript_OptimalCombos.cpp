@@ -111,6 +111,17 @@ DataFrame optimal_armor_combinations(
     NumericVector legs_DURABILITY = legs_df["DURABILITY"];
     NumericVector legs_WEIGHT = legs_df["WEIGHT"];
 
+    // All four tables arrive sorted descending by SCORE (see setorder() in get.optimal.armor.combos),
+    // so element 0 of each is the best score achievable from that slot alone. Once the output heap is
+    // full, curr_head_SCORE/curr_chest_SCORE/curr_hands_SCORE plus these bounds give the best possible
+    // score reachable from the remaining, not-yet-fixed slots at each nesting level. If that best case
+    // cannot beat the heap's current worst kept score, neither can this candidate or any later one in
+    // the same (descending-sorted) loop, since the loop only ever advances forward - so it is safe to
+    // break out of that level entirely rather than merely skip the current candidate.
+    double best_chest_SCORE = chest_SCORE[0];
+    double best_hands_SCORE = hands_SCORE[0];
+    double best_legs_SCORE = legs_SCORE[0];
+
     int I = head_df.nrows(); int J = chest_df.nrows(); int K = hands_df.nrows(); int L = legs_df.nrows();
 
     int curr_count = 0;
@@ -189,6 +200,11 @@ DataFrame optimal_armor_combinations(
             }
             
             curr_head_SCORE = head_SCORE[i];
+
+            if(at_max_queue_size && (curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
+                break;
+            }
+
             curr_head = head_ARMOR[i];
             curr_head_PHYS_DEF = head_PHYS_DEF[i];
             curr_head_STRIKE_DEF = head_STRIKE_DEF[i];
@@ -211,6 +227,11 @@ DataFrame optimal_armor_combinations(
                 }
 
                 curr_chest_SCORE = chest_SCORE[j];
+
+                if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
+                    break;
+                }
+
                 curr_chest = chest_ARMOR[j];
                 curr_chest_PHYS_DEF = chest_PHYS_DEF[j];
                 curr_chest_STRIKE_DEF = chest_STRIKE_DEF[j];
@@ -233,6 +254,11 @@ DataFrame optimal_armor_combinations(
                     }
 
                     curr_hands_SCORE = hands_SCORE[k];
+
+                    if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
+                        break;
+                    }
+
                     curr_hands = hands_ARMOR[k];
                     curr_hands_PHYS_DEF = hands_PHYS_DEF[k];
                     curr_hands_STRIKE_DEF = hands_STRIKE_DEF[k];
@@ -252,6 +278,12 @@ DataFrame optimal_armor_combinations(
 
                         if(i != loop_size_1 && j != loop_size_1 && k != loop_size_1 && l != loop_size_1 && !L_capped){
                             l = loop_size_1;
+                        }
+
+                        curr_legs_SCORE = legs_SCORE[l];
+
+                        if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) <= armor_combos.top().score){
+                            break;
                         }
 
                         curr_legs_WEIGHT = legs_WEIGHT[l];
@@ -319,8 +351,7 @@ DataFrame optimal_armor_combinations(
                         if(curr_DURABILITY < (minima[11]-eps)){
                             continue;
                         }
-                        
-                        curr_legs_SCORE = legs_SCORE[l];                        
+
                         curr_legs = legs_ARMOR[l];
                         curr_combo.score = curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE;
                         curr_combo.head = curr_head; curr_combo.chest = curr_chest; curr_combo.hands = curr_hands; curr_combo.legs = curr_legs;
