@@ -244,7 +244,7 @@ armor_10 <- merge(armor_10, armor_metainfo, by = "ARMOR")
 
 colorder <- 
     c(
-        "ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", 
+        "ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "LINK",
         "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",    
         "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "POISE",
         "BLEED_RES", "POIS_RES", "CURSE_RES",

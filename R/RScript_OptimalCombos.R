@@ -1,5 +1,23 @@
 
 
+## Whether a piece's area requirement is satisfied by a set of completed areas. AREA_MATCH_TYPE
+## and AREA_LIST each encode one or more "|"-separated clauses that are combined with OR; a
+## clause is ALWAYS (no areas required), ANY (at least one of its ";"-separated areas required),
+## or ALL (every one of its areas required). This is a closed, fully data-driven grammar - no
+## armor piece needs more than this - so it replaces what used to be a per-piece R expression
+## string evaluated via eval(parse()) on every call.
+area.requirement.met <- function(match.type, area.list, completed){
+    if(match.type == "ALWAYS"){
+        return(TRUE)
+    }
+    types <- strsplit(match.type, "|", fixed = TRUE)[[1]]
+    clauses <- strsplit(area.list, "|", fixed = TRUE)[[1]]
+    any(mapply(function(type, clause){
+        areas <- strsplit(clause, ";", fixed = TRUE)[[1]]
+        if(type == "ANY") any(areas %in% completed) else all(areas %in% completed)
+    }, types, clauses))
+}
+
 #' @name get.optimal.armor.combos
 #' 
 #' @title Create a \code{data.table} of optimized Dark Souls armor combinations
@@ -398,7 +416,7 @@ get.optimal.armor.combos <- function(
     load.threshold.motf <- load.threshold*1.05
 
     ## Filter datasets based on inputs
-    working.head.data[, AREAFILTER := sapply(AREA_FORMULA, function(x){eval(parse(text = x))(areas.completed)})]
+    working.head.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
     working.head.data <- 
         working.head.data[
             (ARMOR %in% head.filter) & 
@@ -407,7 +425,7 @@ get.optimal.armor.combos <- function(
             (WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", -unarmored.weight+load.threshold.motf+1e-10, -unarmored.weight+load.threshold+1e-10))
         ]
 
-    working.chest.data[, AREAFILTER := sapply(AREA_FORMULA, function(x){eval(parse(text = x))(areas.completed)})]
+    working.chest.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
     working.chest.data <- 
         working.chest.data[
             (ARMOR %in% chest.filter) & 
@@ -416,7 +434,7 @@ get.optimal.armor.combos <- function(
             (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.motf-1.2)+1e-10))
         ]
 
-    working.hands.data[, AREAFILTER := sapply(AREA_FORMULA, function(x){eval(parse(text = x))(areas.completed)})]
+    working.hands.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
     working.hands.data <- 
         working.hands.data[
             (ARMOR %in% hands.filter) & 
@@ -425,7 +443,7 @@ get.optimal.armor.combos <- function(
             (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.motf-1.2)+1e-10))
         ]
 
-    working.legs.data[, AREAFILTER := sapply(AREA_FORMULA, function(x){eval(parse(text = x))(areas.completed)})]
+    working.legs.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
     working.legs.data <- 
         working.legs.data[
             (ARMOR %in% legs.filter) & 
@@ -469,10 +487,10 @@ get.optimal.armor.combos <- function(
     }
 
     ## Remove unneeded columns
-    working.head.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "AREAFILTER") := NULL]
-    working.chest.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "AREAFILTER") := NULL]
-    working.hands.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "AREAFILTER") := NULL]
-    working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "AREAFILTER") := NULL]
+    working.head.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+    working.chest.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+    working.hands.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+    working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
 
     ## Calc scores for each dataset and sort on these
     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))

@@ -3,7 +3,7 @@
 ## and head.data_00 etc. are lazy-loaded package datasets referenced by bare name in default
 ## argument values and function bodies - neither is visible to R CMD check's static analysis.
 utils::globalVariables(c(
-    "AREAFILTER", "AREA_FORMULA", "ARMOR", "SCORE", "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
+    "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
     "areas", "classes", "means", "stddevs", "corrs",
     "head.data_00", "head.data_10", "chest.data_00", "chest.data_10",
     "hands.data_00", "hands.data_10", "legs.data_00", "legs.data_10",
@@ -87,7 +87,7 @@ NULL
 #'   \item{ARMOR}{Name of armor piece}
 #'   \item{UPGRADE_TYPE}{One of \code{"Regular"} (upgrades with regular titanite), \code{"Twinkling"} (upgrades with twinkling titanite), or \code{"None"} (cannot be upgraded).}
 #'   \item{STARTING_CLASS}{If relevant, the starting class associated with the armor piece. Otherwise, \code{"N/A"}.}
-#'   \item{AREA_FORMULA}{An R expression stored as a character which can be applied to a list of areas via \code{eval(parse())} to determine whether the armor piece is available.}
+#'   \item{AREA_MATCH_TYPE, AREA_LIST}{Together, encode which areas make the piece available. Each holds one or more \code{"|"}-separated clauses combined with OR. A clause in \code{AREA_MATCH_TYPE} is \code{"ALWAYS"} (always available; its \code{AREA_LIST} clause is empty), \code{"ANY"} (available once at least one of its \code{";"}-separated \code{AREA_LIST} areas is completed), or \code{"ALL"} (available once every one of its areas is completed).}
 #'   \item{LINK}{A link to the armor piece on darksouls.wikidot.com.}
 #'   \item{PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES, DURABILITY, WEIGHT}{The value of the relevant metric.}
 #'   \item{STAM_MOD}{The additive modifier to the base stamina regeneration rate of 45 per second.}
