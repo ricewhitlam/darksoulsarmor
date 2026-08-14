@@ -31,36 +31,26 @@ get.interp.data <- function(data_00, data_10, reg.lvl, twink.lvl){
     ## Define column names and attribute weights
     def.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF")
     res.cols <- c("BLEED_RES", "POIS_RES", "CURSE_RES")
-    const.cols <- c("POISE", "DURABILITY", "WEIGHT", "STAM_MOD", "SOUND_MOD")
-    out.cols <- c(def.cols, "POISE", res.cols, "DURABILITY", "WEIGHT", "STAM_MOD", "SOUND_MOD")
-    def.res.cols <- c(def.cols, res.cols)
-    info.cols <- setdiff(colnames(data_00), out.cols)
-    reg.weights_10 <- c(rep(get.reg.def.weight_10(reg.lvl), 7), rep(get.reg.res.weight_10(reg.lvl), 3))
-    twink.weights_05 <- c(rep(get.twink.def.weight_05(twink.lvl), 7), rep(get.twink.res.weight_05(twink.lvl), 3))
 
-    ## Apply weights to and combine unupgraded and fully upgraded data to get interpolated data
-    data.final <- 
-        rbind(
-            data.table::copy(data_00)[
-                UPGRADE_TYPE == "Regular", 
-                (def.res.cols) := mapply(function(col, weight){get(col)*weight}, def.res.cols, 1-reg.weights_10, SIMPLIFY = FALSE)
-            ][
-                UPGRADE_TYPE == "Twinkling", 
-                (def.res.cols) := mapply(function(col, weight){get(col)*weight}, def.res.cols, 1-twink.weights_05, SIMPLIFY = FALSE)
-            ],
-            data.table::copy(data_10)[UPGRADE_TYPE != "None"][, (const.cols) := 0][
-                UPGRADE_TYPE == "Regular", 
-                (def.res.cols) := mapply(function(col, weight){get(col)*weight}, def.res.cols, reg.weights_10, SIMPLIFY = FALSE)
-            ][
-                UPGRADE_TYPE == "Twinkling", 
-                (def.res.cols) := mapply(function(col, weight){get(col)*weight}, def.res.cols, twink.weights_05, SIMPLIFY = FALSE)
-            ]
-        )[,
-            lapply(.SD, function(x){round(sum(x), 1)}), 
-            by = info.cols,
-            .SDcols = out.cols
-        ]
-    
+    ## Both tables are now row-aligned by ARMOR, so each metric's interpolated value is simply a
+    ## per-row weighted average of the unupgraded and fully upgraded values: a Regular piece
+    ## blends toward data_10 by its regular-upgrade weight, a Twinkling piece by its twinkling
+    ## weight, and a piece that cannot be upgraded (UPGRADE_TYPE == "None") stays at weight 0,
+    ## i.e. exactly its data_00 value. POISE, DURABILITY, WEIGHT, STAM_MOD, and SOUND_MOD never
+    ## change with upgrade level, so they are left untouched at their data_00 values below.
+    is.reg <- data_00$UPGRADE_TYPE == "Regular"
+    is.twink <- data_00$UPGRADE_TYPE == "Twinkling"
+    def.weight <- ifelse(is.reg, get.reg.def.weight_10(reg.lvl), ifelse(is.twink, get.twink.def.weight_05(twink.lvl), 0))
+    res.weight <- ifelse(is.reg, get.reg.res.weight_10(reg.lvl), ifelse(is.twink, get.twink.res.weight_05(twink.lvl), 0))
+
+    data.final <- data.table::copy(data_00)
+    for(col in def.cols){
+        data.table::set(data.final, j = col, value = round((1-def.weight)*data_00[[col]]+def.weight*data_10[[col]], 1))
+    }
+    for(col in res.cols){
+        data.table::set(data.final, j = col, value = round((1-res.weight)*data_00[[col]]+res.weight*data_10[[col]], 1))
+    }
+
     ## Tidy data
     data.table::setorder(data.final, ARMOR)
 
