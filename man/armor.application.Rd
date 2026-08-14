@@ -4,7 +4,7 @@
 \alias{armor.application}
 \title{Run an R Shiny application to Produce Optimized Armor Combinations}
 \usage{
-armor.application()
+armor.application(...)
 }
 \arguments{
 \item{...}{Arguments are passed to \code{shiny::runApp}.}
@@ -17,4 +17,10 @@ Runs an R Shiny application which facilitates Dark Souls armor optimization.
 Various UI elements allow constraints and goals to be specified.
 A table is produced which displays optimal armor combinations.
 Some links are included in this app. To ensure that they work, launch the app in a browser.
+}
+\examples{
+\dontrun{
+armor.application()
+}
+
 }

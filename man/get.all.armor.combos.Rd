@@ -4,7 +4,10 @@
 \alias{get.all.armor.combos}
 \title{Create a \code{data.table} of all possible Dark Souls armor combinations}
 \usage{
-all.armor.combos <- get.all.armor.combos()
+get.all.armor.combos(
+  regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1],
+  twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1]
+)
 }
 \arguments{
 \item{regular.level}{A length 1 \code{character} indicating the upgrade level of armor pieces ascended via regular titanite. 
@@ -31,4 +34,10 @@ Only call this function if there is enough available RAM to support this.
 All relevant metrics are included.
 All metrics are aggregated as would be expected with perhaps one exception: 
 Durability is aggregated by taking the minimum across all armor pieces.
+}
+\examples{
+\dontrun{
+all.armor.combos <- get.all.armor.combos()
+}
+
 }

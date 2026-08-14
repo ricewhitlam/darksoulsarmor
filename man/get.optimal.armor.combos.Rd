@@ -4,7 +4,26 @@
 \alias{get.optimal.armor.combos}
 \title{Create a \code{data.table} of optimized Dark Souls armor combinations}
 \usage{
-optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+get.optimal.armor.combos(
+  max.table.size = 1000,
+  starting.class = classes[1],
+  areas.completed = areas,
+  upgrade.types = c("Regular", "Twinkling", "None"),
+  head.filter = head.data_00$ARMOR,
+  chest.filter = chest.data_00$ARMOR,
+  hands.filter = hands.data_00$ARMOR,
+  legs.filter = legs.data_00$ARMOR,
+  regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1],
+  twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
+  roll = c("Fast", "Mid", "Fat", "None")[1],
+  unarmored.weight = 10,
+  endurance.level = 10,
+  havel.ring = FALSE,
+  fap.ring = FALSE,
+  wolf.ring = FALSE,
+  minima = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+  weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
+)
 }
 \arguments{
 \item{max.table.size}{A length 1 \code{numeric} indicating how large the produced table should be.
@@ -90,4 +109,8 @@ Produces a table of optimized armor combinations in Dark Souls.
 All relevant metrics are included, as well as a column of scores on which the data is sorted.
 These scores are between \code{0} and \code{1} and indicate how optimal each combination is.
 The table can be tailored to satisfy various constraints.
+}
+\examples{
+optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+
 }

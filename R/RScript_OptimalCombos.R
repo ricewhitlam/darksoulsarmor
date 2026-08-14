@@ -10,10 +10,7 @@
 #' These scores are between \code{0} and \code{1} and indicate how optimal each combination is.
 #' The table can be tailored to satisfy various constraints.
 #' 
-#' @usage 
-#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
-#' 
-#' @param 
+#' @param
 #' max.table.size A length 1 \code{numeric} indicating how large the produced table should be.
 #' Defaults to \code{1000}. Passed values will be clamped between 1 and 100,000,000 and cast to an integer.
 #' 
@@ -108,7 +105,10 @@
 #' 
 #' @return
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
-#' 
+#'
+#' @examples
+#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+#'
 get.optimal.armor.combos <- function(
     max.table.size = 1000,
     starting.class = classes[1],

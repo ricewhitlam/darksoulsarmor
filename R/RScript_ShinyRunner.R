@@ -10,15 +10,17 @@
 #' A table is produced which displays optimal armor combinations.
 #' Some links are included in this app. To ensure that they work, launch the app in a browser.
 #' 
-#' @usage 
-#' armor.application()
-#' 
-#' @param 
+#' @param
 #' ... Arguments are passed to \code{shiny::runApp}.
-#' 
+#'
 #' @return
 #' No value is returned - rather, a Shiny application is run.
-#' 
+#'
+#' @examples
+#' \dontrun{
+#' armor.application()
+#' }
+#'
 armor.application <- function(...){
     appDir <- system.file("shiny", package = "darksoulsarmor")
     if(appDir == ""){

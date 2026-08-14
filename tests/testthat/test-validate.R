@@ -1,0 +1,31 @@
+## get.optimal.armor.combos validates every argument before doing any work; these tests cover
+## one invalid shape per argument to guard against a check silently being dropped or loosened.
+test_that("get.optimal.armor.combos rejects invalid argument shapes", {
+    expect_error(get.optimal.armor.combos(max.table.size = "1000"), "max.table.size")
+    expect_error(get.optimal.armor.combos(max.table.size = NA), "max.table.size")
+    expect_error(get.optimal.armor.combos(starting.class = "Not A Class"), "starting.class")
+    expect_error(get.optimal.armor.combos(areas.completed = "Not An Area"), "areas.completed")
+    expect_error(get.optimal.armor.combos(upgrade.types = "Not A Type"), "upgrade.types")
+    expect_error(get.optimal.armor.combos(head.filter = "Not An Armor Piece"), "head.filter")
+    expect_error(get.optimal.armor.combos(chest.filter = "Not An Armor Piece"), "chest.filter")
+    expect_error(get.optimal.armor.combos(hands.filter = "Not An Armor Piece"), "hands.filter")
+    expect_error(get.optimal.armor.combos(legs.filter = "Not An Armor Piece"), "legs.filter")
+    expect_error(get.optimal.armor.combos(regular.level = "+11"), "regular.level")
+    expect_error(get.optimal.armor.combos(twinkling.level = "+6"), "twinkling.level")
+    expect_error(get.optimal.armor.combos(roll = "Sprint"), "roll")
+    expect_error(get.optimal.armor.combos(unarmored.weight = "ten"), "unarmored.weight")
+    expect_error(get.optimal.armor.combos(endurance.level = NA), "endurance.level")
+    expect_error(get.optimal.armor.combos(havel.ring = "yes"), "havel.ring")
+    expect_error(get.optimal.armor.combos(fap.ring = c(TRUE, FALSE)), "fap.ring")
+    expect_error(get.optimal.armor.combos(wolf.ring = NA), "wolf.ring")
+    expect_error(get.optimal.armor.combos(minima = rep(0, 11)), "minima")
+    expect_error(get.optimal.armor.combos(minima = c(rep(0, 11), NA)), "minima")
+    expect_error(get.optimal.armor.combos(weights = rep(0.1, 9)), "weights")
+    expect_error(get.optimal.armor.combos(weights = rep(-1, 10)), "weights")
+    expect_error(get.optimal.armor.combos(weights = rep(0, 10)), "weights")
+})
+
+test_that("get.optimal.armor.combos treats an empty slot filter as wearing nothing in that slot", {
+    result <- get.optimal.armor.combos(max.table.size = 10, head.filter = NULL)
+    expect_true(all(result$data$HEAD == "No Head"))
+})

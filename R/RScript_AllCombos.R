@@ -12,10 +12,7 @@
 #' All metrics are aggregated as would be expected with perhaps one exception: 
 #' Durability is aggregated by taking the minimum across all armor pieces.
 #' 
-#' @usage 
-#' all.armor.combos <- get.all.armor.combos()
-#' 
-#' @param 
+#' @param
 #' regular.level A length 1 \code{character} indicating the upgrade level of armor pieces ascended via regular titanite. 
 #' Options are \code{"+0"} thru \code{"+10"}. 
 #' Metrics are exact for \code{"+0"} and \code{"+10"}. 
@@ -33,7 +30,12 @@
 #' 
 #' @return
 #' A \code{data.table} of all possible armor combinations
-#' 
+#'
+#' @examples
+#' \dontrun{
+#' all.armor.combos <- get.all.armor.combos()
+#' }
+#'
 get.all.armor.combos <- function(regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1]){
 
     ## Check regular.level

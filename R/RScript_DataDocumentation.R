@@ -1,4 +1,14 @@
 
+## data.table columns are referenced by bare name via non-standard evaluation (e.g. dt[, ARMOR]),
+## and head.data_00 etc. are lazy-loaded package datasets referenced by bare name in default
+## argument values and function bodies - neither is visible to R CMD check's static analysis.
+utils::globalVariables(c(
+    "AREAFILTER", "AREA_FORMULA", "ARMOR", "SCORE", "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
+    "areas", "classes", "means", "stddevs", "corrs",
+    "head.data_00", "head.data_10", "chest.data_00", "chest.data_10",
+    "hands.data_00", "hands.data_10", "legs.data_00", "legs.data_10"
+))
+
 #' Character vector of areas in Dark Souls
 #'
 #' @name areas
