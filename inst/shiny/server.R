@@ -84,7 +84,12 @@ server <- function(input, output, session){
                     To explain Unarmored Resistance: if base Bleed Resistance is X, Armor Bleed Resistance is Y, and the Bloodbite Ring and Gargoyle Tail Axe are equipped, then final Bleed Resistance is X*4*2+Y. <br> <br>
                     Links to the Wikidot site have been included in various parts of this app. 
                     However, over the course of this app's creation, I have found multiple inaccuracies there (no disrespect intended towards all the great folks who have taken the time and energy to contribute).
-                    Do not be surprised if it contradicts the information here.
+                    Do not be surprised if it contradicts the information here. <br> <br>
+
+                    This app is also available as an R package - here is the link to the codebase on GitHub: ",
+                    tags$a("https://github.com/ricewhitlam/darksoulsarmor", href = "https://github.com/ricewhitlam/darksoulsarmor", target = "_blank"),
+                    " To install, run the following command in the R terminal: devtools::install_github(https://github.com/ricewhitlam/darksoulsarmor)
+
                 "))
             ) 
         ) 
