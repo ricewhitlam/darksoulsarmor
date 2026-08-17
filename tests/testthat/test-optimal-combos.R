@@ -8,11 +8,11 @@
 test_that("get.optimal.armor.combos matches a brute-force reference over a small filtered subset", {
 
     set.seed(20260814)
-    pool.head <- setdiff(head.data_00$ARMOR, "Mask of the Father")
+    pool.head <- setdiff(head.data.unupgraded$ARMOR, "Mask of the Father")
     head.sel <- sample(pool.head, 5)
-    chest.sel <- sample(chest.data_00$ARMOR, 5)
-    hands.sel <- sample(hands.data_00$ARMOR, 5)
-    legs.sel <- sample(legs.data_00$ARMOR, 5)
+    chest.sel <- sample(chest.data.unupgraded$ARMOR, 5)
+    hands.sel <- sample(hands.data.unupgraded$ARMOR, 5)
+    legs.sel <- sample(legs.data.unupgraded$ARMOR, 5)
 
     minima <- c(0, 0, 0, 0, 0, 0, 0, 5, 3, 2, 1, 0)
     unarmored.weight <- 10
@@ -30,10 +30,10 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
         )$data
 
     ## True brute force: every (head, chest, hands, legs) combination in the filtered subset.
-    h <- head.data_00[ARMOR %in% head.sel]
-    c <- chest.data_00[ARMOR %in% chest.sel]
-    g <- hands.data_00[ARMOR %in% hands.sel]
-    l <- legs.data_00[ARMOR %in% legs.sel]
+    h <- head.data.unupgraded[ARMOR %in% head.sel]
+    c <- chest.data.unupgraded[ARMOR %in% chest.sel]
+    g <- hands.data.unupgraded[ARMOR %in% hands.sel]
+    l <- legs.data.unupgraded[ARMOR %in% legs.sel]
 
     metric.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
 

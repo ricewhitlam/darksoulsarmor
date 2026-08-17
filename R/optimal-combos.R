@@ -48,21 +48,21 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' Defaults to all types i.e. \code{c("Regular", "Twinkling", "None")}.
 #' 
 #' @param 
-#' head.filter A \code{character} vector indicating which head armor pieces should be included. 
-#' Defaults to all pieces. A vector of available pieces can be accessed via \code{head.data_00$ARMOR}.
+#' head.filter A \code{character} vector indicating which head armor pieces should be included.
+#' Defaults to all pieces. A vector of available pieces can be accessed via \code{head.data.unupgraded$ARMOR}.
 #' If an empty vector is passed, it is assumed that no head armor will be worn.
-#' 
-#' @param 
-#' chest.filter Same as \code{head.filter} but for chest armor pieces. 
-#' A vector of available pieces can be accessed via \code{chest.data_00$ARMOR}.
-#' 
-#' @param 
+#'
+#' @param
+#' chest.filter Same as \code{head.filter} but for chest armor pieces.
+#' A vector of available pieces can be accessed via \code{chest.data.unupgraded$ARMOR}.
+#'
+#' @param
 #' hands.filter Same as \code{head.filter} but for hand armor pieces.
-#' A vector of available pieces can be accessed via \code{hands.data_00$ARMOR}.
-#' 
-#' @param 
+#' A vector of available pieces can be accessed via \code{hands.data.unupgraded$ARMOR}.
+#'
+#' @param
 #' legs.filter Same as \code{head.filter} but for leg armor pieces.
-#' A vector of available pieces can be accessed via \code{legs.data_00$ARMOR}.
+#' A vector of available pieces can be accessed via \code{legs.data.unupgraded$ARMOR}.
 #' 
 #' @param 
 #' regular.level A length 1 \code{character} indicating the upgrade level of armor pieces ascended via regular titanite. 
@@ -100,7 +100,7 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' This ring increases maximum equip load by 50\%. Defaults to \code{FALSE}.
 #' 
 #' @param 
-#' fap.ring A length 1 \code{logical} indicating whether the Ring of Favor and Protection is equipped. 
+#' favor.ring A length 1 \code{logical} indicating whether the Ring of Favor and Protection is equipped.
 #' This ring increases maximum equip load by 20\%. Defaults to \code{FALSE}.
 #' 
 #' @param 
@@ -125,24 +125,24 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
 #'
 #' @examples
-#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, roll = "Fast")
 #'
 get.optimal.armor.combos <- function(
     max.table.size = 1000,
     starting.class = classes[1],
     areas.completed = areas,
     upgrade.types = c("Regular", "Twinkling", "None"),
-    head.filter = head.data_00$ARMOR,
-    chest.filter = chest.data_00$ARMOR,
-    hands.filter = hands.data_00$ARMOR,
-    legs.filter = legs.data_00$ARMOR,
+    head.filter = head.data.unupgraded$ARMOR,
+    chest.filter = chest.data.unupgraded$ARMOR,
+    hands.filter = hands.data.unupgraded$ARMOR,
+    legs.filter = legs.data.unupgraded$ARMOR,
     regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], 
     twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
     roll = c("Fast", "Mid", "Fat", "None")[1],
     unarmored.weight = 10,
     endurance.level = 10,
     havel.ring = FALSE,
-    fap.ring = FALSE,
+    favor.ring = FALSE,
     wolf.ring = FALSE,
     minima = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
@@ -219,7 +219,7 @@ get.optimal.armor.combos <- function(
     } else if(any(is.na(head.filter))){
         stop("Invalid argument 'head.filter'")
     } else if(length(head.filter) != 0){
-        if(!all(head.filter %in% head.data_00$ARMOR)){
+        if(!all(head.filter %in% head.data.unupgraded$ARMOR)){
             stop("Invalid argument 'head.filter'")
         }
     } else if(length(head.filter) == 0){
@@ -236,7 +236,7 @@ get.optimal.armor.combos <- function(
     } else if(any(is.na(chest.filter))){
         stop("Invalid argument 'chest.filter'")
     } else if(length(chest.filter) != 0){
-        if(!all(chest.filter %in% chest.data_00$ARMOR)){
+        if(!all(chest.filter %in% chest.data.unupgraded$ARMOR)){
             stop("Invalid argument 'chest.filter'")
         }
     } else if(length(chest.filter) == 0){
@@ -253,7 +253,7 @@ get.optimal.armor.combos <- function(
     } else if(any(is.na(hands.filter))){
         stop("Invalid argument 'hands.filter'")
     } else if(length(hands.filter) != 0){
-        if(!all(hands.filter %in% hands.data_00$ARMOR)){
+        if(!all(hands.filter %in% hands.data.unupgraded$ARMOR)){
             stop("Invalid argument 'hands.filter'")
         }
     } else if(length(hands.filter) == 0){
@@ -270,7 +270,7 @@ get.optimal.armor.combos <- function(
     } else if(any(is.na(legs.filter))){
         stop("Invalid argument 'legs.filter'")
     } else if(length(legs.filter) != 0){
-        if(!all(legs.filter %in% legs.data_00$ARMOR)){
+        if(!all(legs.filter %in% legs.data.unupgraded$ARMOR)){
             stop("Invalid argument 'legs.filter'")
         }
     } else if(length(legs.filter) == 0){
@@ -319,13 +319,13 @@ get.optimal.armor.combos <- function(
         stop("Invalid argument 'havel.ring'")
     }
 
-    ## Check fap.ring
-    if(!is.logical(fap.ring)){
-        stop("Invalid argument 'fap.ring'")
-    } else if(length(fap.ring) != 1){
-        stop("Invalid argument 'fap.ring'")
-    } else if(is.na(fap.ring)){
-        stop("Invalid argument 'fap.ring'")
+    ## Check favor.ring
+    if(!is.logical(favor.ring)){
+        stop("Invalid argument 'favor.ring'")
+    } else if(length(favor.ring) != 1){
+        stop("Invalid argument 'favor.ring'")
+    } else if(is.na(favor.ring)){
+        stop("Invalid argument 'favor.ring'")
     }
 
     ## Check roll
@@ -395,7 +395,7 @@ get.optimal.armor.combos <- function(
                     unarmored.weight = unarmored.weight,
                     endurance.level = endurance.level,
                     havel.ring = havel.ring,
-                    fap.ring = fap.ring,
+                    favor.ring = favor.ring,
                     wolf.ring = wolf.ring,
                     minima = minima,
                     weights = weights
@@ -404,16 +404,16 @@ get.optimal.armor.combos <- function(
         )
 
     ## Get data at specified upgrade levels
-    working.head.data <- get.interp.data(head.data_00, head.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.chest.data <- get.interp.data(chest.data_00, chest.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.hands.data <- get.interp.data(hands.data_00, hands.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.legs.data <- get.interp.data(legs.data_00, legs.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.head.data <- get.interp.data(head.data.unupgraded, head.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.chest.data <- get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.hands.data <- get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.legs.data <- get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
 
     ## Calc equip load values
-    base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(fap.ring, 1.2, 1)
+    base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(favor.ring, 1.2, 1)
     roll.mult <- c(0.25, 0.5, 1.0, 999.0)[match(roll, c("Fast", "Mid", "Fat", "None"))]
     load.threshold <- base.load*roll.mult
-    load.threshold.motf <- load.threshold*1.05
+    load.threshold.father.mask <- load.threshold*1.05
 
     ## Filter datasets based on inputs
     working.head.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -422,7 +422,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% head.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Head") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) & 
-            (WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", -unarmored.weight+load.threshold.motf+1e-10, -unarmored.weight+load.threshold+1e-10))
+            (WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", -unarmored.weight+load.threshold.father.mask+1e-10, -unarmored.weight+load.threshold+1e-10))
         ]
 
     working.chest.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -431,7 +431,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% chest.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Chest") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) & 
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.motf-1.2)+1e-10))
+            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-1.2)+1e-10))
         ]
 
     working.hands.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -440,7 +440,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% hands.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Hands") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) &
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.motf-1.2)+1e-10))
+            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-1.2)+1e-10))
         ]
 
     working.legs.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -449,7 +449,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% legs.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Legs") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) &
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.motf-1.2)+1e-10))
+            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-1.2)+1e-10))
         ]
 
     ## If any tables empty, return empty data
@@ -515,11 +515,13 @@ get.optimal.armor.combos <- function(
     data.table::setorder(working.hands.data, -SCORE, WEIGHT)
     data.table::setorder(working.legs.data, -SCORE, WEIGHT)
   
-    ## Determine position of MOTF in head data to apply equip load benefit
-    motf.index <- which(working.head.data == "Mask of the Father")
-    if(length(motf.index) == 0){
-        motf.index <- 999
-    } 
+    ## Determine position of the Mask of the Father in head data to apply its equip load bonus.
+    ## NO_FATHER_MASK_INDEX (999) means it isn't present in the filtered head data at all.
+    NO_FATHER_MASK_INDEX <- 999
+    father.mask.index <- which(working.head.data == "Mask of the Father")
+    if(length(father.mask.index) == 0){
+        father.mask.index <- NO_FATHER_MASK_INDEX
+    }
 
     ## Identify initial looping info based on allowable weight and minima
     n.max <- max(n.head, n.chest, n.hands, n.legs)
@@ -527,12 +529,12 @@ get.optimal.armor.combos <- function(
         cummin(c(working.chest.data$WEIGHT, rep(0, n.max-n.chest)))+
         cummin(c(working.hands.data$WEIGHT, rep(0, n.max-n.hands)))+
         cummin(c(working.legs.data$WEIGHT, rep(0, n.max-n.legs)))
-    if(motf.index == 999){
-        weight.check <- ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10)) 
+    if(father.mask.index == NO_FATHER_MASK_INDEX){
+        weight.check <- ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10))
     } else{
-        weight.check <- 
+        weight.check <-
             ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10)) |
-            c(rep(FALSE, motf.index-1), ((weight.check[motf.index:n.max]+1.2) <= (-unarmored.weight+load.threshold.motf+1e-10)))
+            c(rep(FALSE, father.mask.index-1), ((weight.check[father.mask.index:n.max]+1.2) <= (-unarmored.weight+load.threshold.father.mask+1e-10)))
     }
     minima.check <- 
         pmin(
@@ -605,8 +607,8 @@ get.optimal.armor.combos <- function(
                 0.1*floor(10*base.load),
                 0.1*floor(10.5*base.load),
                 load.threshold,
-                load.threshold.motf,
-                motf.index-1,
+                load.threshold.father.mask,
+                father.mask.index-1,
                 wolf.ring,
                 minima,
                 working.head.data,
@@ -621,11 +623,11 @@ get.optimal.armor.combos <- function(
         )
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
-    rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.motf"))
+    rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask"))
     rm(list = c("score.scalars", "scored.metrics", "metric.cols"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
     rm(list = c("weight.check", "minima.check", "init.size"))
-    rm(list = c("motf.index"))
+    rm(list = c("father.mask.index", "NO_FATHER_MASK_INDEX"))
     gc()
 
     return(out)

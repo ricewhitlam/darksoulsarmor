@@ -5,7 +5,7 @@ all_armor_combinations <- function(head_df, chest_df, hands_df, legs_df) {
     .Call(`_darksoulsarmor_all_armor_combinations`, head_df, chest_df, hands_df, legs_df)
 }
 
-optimal_armor_combinations <- function(starting_loop_size, max_output_size, base_weight, load, load_motf, load_threshold, load_threshold_motf, motf_index, wolf, minima, head_df, chest_df, hands_df, legs_df) {
-    .Call(`_darksoulsarmor_optimal_armor_combinations`, starting_loop_size, max_output_size, base_weight, load, load_motf, load_threshold, load_threshold_motf, motf_index, wolf, minima, head_df, chest_df, hands_df, legs_df)
+optimal_armor_combinations <- function(starting_loop_size, max_output_size, base_weight, load, load_father_mask, load_threshold, load_threshold_father_mask, father_mask_index, wolf, minima, head_df, chest_df, hands_df, legs_df) {
+    .Call(`_darksoulsarmor_optimal_armor_combinations`, starting_loop_size, max_output_size, base_weight, load, load_father_mask, load_threshold, load_threshold_father_mask, father_mask_index, wolf, minima, head_df, chest_df, hands_df, legs_df)
 }
 

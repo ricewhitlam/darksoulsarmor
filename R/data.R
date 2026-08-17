@@ -1,12 +1,12 @@
 
 ## data.table columns are referenced by bare name via non-standard evaluation (e.g. dt[, ARMOR]),
-## and head.data_00 etc. are lazy-loaded package datasets referenced by bare name in default
-## argument values and function bodies - neither is visible to R CMD check's static analysis.
+## and head.data.unupgraded etc. are lazy-loaded package datasets referenced by bare name in
+## default argument values and function bodies - neither is visible to R CMD check's static analysis.
 utils::globalVariables(c(
     "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
     "areas", "classes", "means", "stddevs", "corrs",
-    "head.data_00", "head.data_10", "chest.data_00", "chest.data_10",
-    "hands.data_00", "hands.data_10", "legs.data_00", "legs.data_10",
+    "head.data.unupgraded", "head.data.fullupgrade", "chest.data.unupgraded", "chest.data.fullupgrade",
+    "hands.data.unupgraded", "hands.data.fullupgrade", "legs.data.unupgraded", "legs.data.fullupgrade",
     "METRICS", "metric", "weight.index", "minima.index"
 ))
 
@@ -58,8 +58,8 @@ NULL
 
 #' Table of all unupgraded head armor pieces
 #'
-#' @name head.data_00
-#' @format 
+#' @name head.data.unupgraded
+#' @format
 #' \describe{
 #'   \item{ARMOR}{Name of armor piece}
 #'   \item{UPGRADE_TYPE}{One of \code{"Regular"} (upgrades with regular titanite), \code{"Twinkling"} (upgrades with twinkling titanite), or \code{"None"} (cannot be upgraded).}
@@ -76,63 +76,63 @@ NULL
 
 #' Table of all unupgraded chest armor pieces
 #'
-#' @name chest.data_00
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name chest.data.unupgraded
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL
 
 #' Table of all unupgraded hand armor pieces
 #'
-#' @name hands.data_00
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name hands.data.unupgraded
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL
 
 #' Table of all unupgraded leg armor pieces
 #'
-#' @name legs.data_00
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name legs.data.unupgraded
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL
 
 #' Table of all fully upgraded head armor pieces
 #'
-#' @name head.data_10
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name head.data.fullupgrade
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL
 
 #' Table of all fully upgraded chest armor pieces
 #'
-#' @name chest.data_10
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name chest.data.fullupgrade
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL
 
 #' Table of all fully upgraded hand armor pieces
 #'
-#' @name hands.data_10
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name hands.data.fullupgrade
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL
 
 #' Table of all fully upgraded leg armor pieces
 #'
-#' @name legs.data_10
-#' @format 
-#' See \code{\link{head.data_00}}
+#' @name legs.data.fullupgrade
+#' @format
+#' See \code{\link{head.data.unupgraded}}
 #' @docType data
 #' @keywords data
 NULL

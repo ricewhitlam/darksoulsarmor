@@ -6,18 +6,18 @@
 
 
 ## Function to interpolate to a dataset with specified regular upgrade level and twinkling upgrade level from the unpgraded and fully upgraded datasets
-get.interp.data <- function(data_00, data_10, reg.lvl, twink.lvl){
+get.interp.data <- function(data.unupgraded, data.fullupgrade, reg.lvl, twink.lvl){
 
-    ## Check that the unupgraded and fully upgraded datasets are compatible 
-    if(!all(data_00$ARMOR == data_10$ARMOR)){
-        data.table::setorder(data_00, ARMOR)
-        data.table::setorder(data_10, ARMOR)
-        if(!all(data_00$ARMOR == data_10$ARMOR)){
+    ## Check that the unupgraded and fully upgraded datasets are compatible
+    if(!all(data.unupgraded$ARMOR == data.fullupgrade$ARMOR)){
+        data.table::setorder(data.unupgraded, ARMOR)
+        data.table::setorder(data.fullupgrade, ARMOR)
+        if(!all(data.unupgraded$ARMOR == data.fullupgrade$ARMOR)){
             stop("Armor sets are incompatible - check underlying data")
         }
-    } else if(ncol(data_00) != ncol(data_10)){
+    } else if(ncol(data.unupgraded) != ncol(data.fullupgrade)){
         stop("Armor sets are incompatible - check underlying data")
-    } else if(!all(colnames(data_00) == colnames(data_10))){
+    } else if(!all(colnames(data.unupgraded) == colnames(data.fullupgrade))){
         stop("Armor sets are incompatible - check underlying data")
     }
 
@@ -34,21 +34,22 @@ get.interp.data <- function(data_00, data_10, reg.lvl, twink.lvl){
 
     ## Both tables are now row-aligned by ARMOR, so each metric's interpolated value is simply a
     ## per-row weighted average of the unupgraded and fully upgraded values: a Regular piece
-    ## blends toward data_10 by its regular-upgrade weight, a Twinkling piece by its twinkling
-    ## weight, and a piece that cannot be upgraded (UPGRADE_TYPE == "None") stays at weight 0,
-    ## i.e. exactly its data_00 value. POISE, DURABILITY, WEIGHT, STAM_MOD, and SOUND_MOD never
-    ## change with upgrade level, so they are left untouched at their data_00 values below.
-    is.reg <- data_00$UPGRADE_TYPE == "Regular"
-    is.twink <- data_00$UPGRADE_TYPE == "Twinkling"
+    ## blends toward data.fullupgrade by its regular-upgrade weight, a Twinkling piece by its
+    ## twinkling weight, and a piece that cannot be upgraded (UPGRADE_TYPE == "None") stays at
+    ## weight 0, i.e. exactly its data.unupgraded value. POISE, DURABILITY, WEIGHT, STAM_MOD, and
+    ## SOUND_MOD never change with upgrade level, so they are left untouched at their
+    ## data.unupgraded values below.
+    is.reg <- data.unupgraded$UPGRADE_TYPE == "Regular"
+    is.twink <- data.unupgraded$UPGRADE_TYPE == "Twinkling"
     def.weight <- ifelse(is.reg, get.reg.def.weight_10(reg.lvl), ifelse(is.twink, get.twink.def.weight_05(twink.lvl), 0))
     res.weight <- ifelse(is.reg, get.reg.res.weight_10(reg.lvl), ifelse(is.twink, get.twink.res.weight_05(twink.lvl), 0))
 
-    data.final <- data.table::copy(data_00)
+    data.final <- data.table::copy(data.unupgraded)
     for(col in def.cols){
-        data.table::set(data.final, j = col, value = round((1-def.weight)*data_00[[col]]+def.weight*data_10[[col]], 1))
+        data.table::set(data.final, j = col, value = round((1-def.weight)*data.unupgraded[[col]]+def.weight*data.fullupgrade[[col]], 1))
     }
     for(col in res.cols){
-        data.table::set(data.final, j = col, value = round((1-res.weight)*data_00[[col]]+res.weight*data_10[[col]], 1))
+        data.table::set(data.final, j = col, value = round((1-res.weight)*data.unupgraded[[col]]+res.weight*data.fullupgrade[[col]], 1))
     }
 
     ## Tidy data

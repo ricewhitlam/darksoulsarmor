@@ -9,17 +9,17 @@ get.optimal.armor.combos(
   starting.class = classes[1],
   areas.completed = areas,
   upgrade.types = c("Regular", "Twinkling", "None"),
-  head.filter = head.data_00$ARMOR,
-  chest.filter = chest.data_00$ARMOR,
-  hands.filter = hands.data_00$ARMOR,
-  legs.filter = legs.data_00$ARMOR,
+  head.filter = head.data.unupgraded$ARMOR,
+  chest.filter = chest.data.unupgraded$ARMOR,
+  hands.filter = hands.data.unupgraded$ARMOR,
+  legs.filter = legs.data.unupgraded$ARMOR,
   regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1],
   twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
   roll = c("Fast", "Mid", "Fat", "None")[1],
   unarmored.weight = 10,
   endurance.level = 10,
   havel.ring = FALSE,
-  fap.ring = FALSE,
+  favor.ring = FALSE,
   wolf.ring = FALSE,
   minima = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
   weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
@@ -41,18 +41,18 @@ There are three types available: \code{"Regular"} (armor pieces that upgrade wit
 and \code{"None"} (armor pieces that cannot be upgraded).
 Defaults to all types i.e. \code{c("Regular", "Twinkling", "None")}.}
 
-\item{head.filter}{A \code{character} vector indicating which head armor pieces should be included. 
-Defaults to all pieces. A vector of available pieces can be accessed via \code{head.data_00$ARMOR}.
+\item{head.filter}{A \code{character} vector indicating which head armor pieces should be included.
+Defaults to all pieces. A vector of available pieces can be accessed via \code{head.data.unupgraded$ARMOR}.
 If an empty vector is passed, it is assumed that no head armor will be worn.}
 
-\item{chest.filter}{Same as \code{head.filter} but for chest armor pieces. 
-A vector of available pieces can be accessed via \code{chest.data_00$ARMOR}.}
+\item{chest.filter}{Same as \code{head.filter} but for chest armor pieces.
+A vector of available pieces can be accessed via \code{chest.data.unupgraded$ARMOR}.}
 
 \item{hands.filter}{Same as \code{head.filter} but for hand armor pieces.
-A vector of available pieces can be accessed via \code{hands.data_00$ARMOR}.}
+A vector of available pieces can be accessed via \code{hands.data.unupgraded$ARMOR}.}
 
 \item{legs.filter}{Same as \code{head.filter} but for leg armor pieces.
-A vector of available pieces can be accessed via \code{legs.data_00$ARMOR}.}
+A vector of available pieces can be accessed via \code{legs.data.unupgraded$ARMOR}.}
 
 \item{regular.level}{A length 1 \code{character} indicating the upgrade level of armor pieces ascended via regular titanite. 
 Options are \code{"+0"} thru \code{"+10"}. 
@@ -83,7 +83,7 @@ Passed values are clamped between 0 and 99 and rounded to an integer.}
 \item{havel.ring}{A length 1 \code{logical} indicating whether Havels Ring is equipped. 
 This ring increases maximum equip load by 50\%. Defaults to \code{FALSE}.}
 
-\item{fap.ring}{A length 1 \code{logical} indicating whether the Ring of Favor and Protection is equipped. 
+\item{favor.ring}{A length 1 \code{logical} indicating whether the Ring of Favor and Protection is equipped.
 This ring increases maximum equip load by 20\%. Defaults to \code{FALSE}.}
 
 \item{wolf.ring}{A length 1 \code{logical} indicating whether the Wolf Ring is equipped. 
@@ -111,6 +111,6 @@ These scores are between \code{0} and \code{1} and indicate how optimal each com
 The table can be tailored to satisfy various constraints.
 }
 \examples{
-optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, fap.ring = TRUE, roll = "Fast")
+optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, roll = "Fast")
 
 }

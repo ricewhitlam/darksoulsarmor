@@ -128,10 +128,10 @@ server <- function(input, output, session){
             starting.class = classes[1], 
             areas.completed = areas, 
             upgrade.types = c("Regular", "Twinkling", "None"),
-            head.filter = head.data_00$ARMOR,
-            chest.filter = chest.data_00$ARMOR,
-            hands.filter = hands.data_00$ARMOR,
-            legs.filter = legs.data_00$ARMOR
+            head.filter = head.data.unupgraded$ARMOR,
+            chest.filter = chest.data.unupgraded$ARMOR,
+            hands.filter = hands.data.unupgraded$ARMOR,
+            legs.filter = legs.data.unupgraded$ARMOR
         )
     
     shiny::observeEvent(input$filters, { 
@@ -193,7 +193,7 @@ server <- function(input, output, session){
                     shinyWidgets::pickerInput(
                         inputId = "head.filter",
                         label = "Head",
-                        choices = head.data_00$ARMOR,
+                        choices = head.data.unupgraded$ARMOR,
                         selected = filter.values$head.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
@@ -206,7 +206,7 @@ server <- function(input, output, session){
                     shinyWidgets::pickerInput(
                         inputId = "chest.filter",
                         label = "Chest",
-                        choices = chest.data_00$ARMOR,
+                        choices = chest.data.unupgraded$ARMOR,
                         selected = filter.values$chest.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
@@ -219,7 +219,7 @@ server <- function(input, output, session){
                     shinyWidgets::pickerInput(
                         inputId = "hands.filter",
                         label = "Hands",
-                        choices = hands.data_00$ARMOR,
+                        choices = hands.data.unupgraded$ARMOR,
                         selected = filter.values$hands.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
@@ -232,7 +232,7 @@ server <- function(input, output, session){
                     shinyWidgets::pickerInput(
                         inputId = "legs.filter",
                         label = "Legs",
-                        choices = legs.data_00$ARMOR,
+                        choices = legs.data.unupgraded$ARMOR,
                         selected = filter.values$legs.filter,
                         multiple = TRUE,
                         options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
@@ -253,24 +253,24 @@ server <- function(input, output, session){
     })
 
     shiny::observeEvent(input$poise_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data_00[POISE > 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data_00[POISE > 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data_00[POISE > 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data_00[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data.unupgraded[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data.unupgraded[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data.unupgraded[POISE > 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data.unupgraded[POISE > 0]$ARMOR])
     })
 
     shiny::observeEvent(input$stam_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data_00[STAM_MOD >= 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data_00[STAM_MOD >= 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data_00[STAM_MOD >= 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data_00[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data.unupgraded[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data.unupgraded[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data.unupgraded[STAM_MOD >= 0]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data.unupgraded[STAM_MOD >= 0]$ARMOR])
     })
 
     shiny::observeEvent(input$quiet_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data_00[SOUND_MOD <= 1]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data_00[SOUND_MOD <= 1]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data_00[SOUND_MOD <= 1]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data_00[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
+        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
     })
 
     shiny::observeEvent(input$dismiss_filter_modal, {
@@ -365,7 +365,7 @@ server <- function(input, output, session){
     ring.values <- 
         shiny::reactiveValues(
             havel.ring = FALSE,
-            fap.ring = FALSE,
+            favor.ring = FALSE,
             wolf.ring = FALSE
         )
     
@@ -376,7 +376,7 @@ server <- function(input, output, session){
                 footer = shiny::actionButton(inputId = "dismiss_ring_modal", label = "Done"), 
                 shiny::fluidRow(
                     bslib::input_switch(id = "havel.ring", label = "Havel's Ring (+50% Eq Load)", value = ring.values$havel.ring, width = NULL),
-                    bslib::input_switch(id = "fap.ring", label = "Ring of Favor (+20% Eq Load)", value = ring.values$fap.ring, width = NULL),
+                    bslib::input_switch(id = "favor.ring", label = "Ring of Favor (+20% Eq Load)", value = ring.values$favor.ring, width = NULL),
                     bslib::input_switch(id = "wolf.ring", label = "Wolf Ring (+40 Poise)", value = ring.values$wolf.ring, width = NULL)
                 )
             ) 
@@ -386,7 +386,7 @@ server <- function(input, output, session){
     shiny::observeEvent(input$dismiss_ring_modal, {
 
         if(shiny::isTruthy(input$havel.ring)){ring.values$havel.ring <- input$havel.ring} else if(length(input$havel.ring) == 1){if(!is.na(input$havel.ring) && is.logical(input$havel.ring)){ring.values$havel.ring <- input$havel.ring}}
-        if(shiny::isTruthy(input$fap.ring)){ring.values$fap.ring <- input$fap.ring} else if(length(input$fap.ring) == 1){if(!is.na(input$fap.ring) && is.logical(input$fap.ring)){ring.values$fap.ring <- input$fap.ring}}
+        if(shiny::isTruthy(input$favor.ring)){ring.values$favor.ring <- input$favor.ring} else if(length(input$favor.ring) == 1){if(!is.na(input$favor.ring) && is.logical(input$favor.ring)){ring.values$favor.ring <- input$favor.ring}}
         if(shiny::isTruthy(input$wolf.ring)){ring.values$wolf.ring <- input$wolf.ring} else if(length(input$wolf.ring) == 1){if(!is.na(input$wolf.ring) && is.logical(input$wolf.ring)){ring.values$wolf.ring <- input$wolf.ring}}
 
         if(been.refreshed()){
@@ -890,17 +890,17 @@ server <- function(input, output, session){
                         starting.class = classes[1],
                         areas.completed = areas,
                         upgrade.types = c("Regular", "Twinkling", "None"),
-                        head.filter = head.data_00$ARMOR,
-                        chest.filter = chest.data_00$ARMOR,
-                        hands.filter = hands.data_00$ARMOR,
-                        legs.filter = legs.data_00$ARMOR,
+                        head.filter = head.data.unupgraded$ARMOR,
+                        chest.filter = chest.data.unupgraded$ARMOR,
+                        hands.filter = hands.data.unupgraded$ARMOR,
+                        legs.filter = legs.data.unupgraded$ARMOR,
                         regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], 
                         twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
                         roll = c("Fast", "Mid", "Fat", "None")[1],
                         unarmored.weight = 10,
                         endurance.level = 10,
                         havel.ring = FALSE,
-                        fap.ring = FALSE,
+                        favor.ring = FALSE,
                         wolf.ring = FALSE,
                         minima = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
                         weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
@@ -971,25 +971,25 @@ server <- function(input, output, session){
 
     shiny::observeEvent(input$table_rows_selected, {
         data.selected <- armordata()$data[input$table_rows_selected]
-        head.link <- head.data_00$LINK[match(data.selected$HEAD, head.data_00$ARMOR)]
+        head.link <- head.data.unupgraded$LINK[match(data.selected$HEAD, head.data.unupgraded$ARMOR)]
         if(head.link != "N/A"){
             output$tabhead <- shiny::renderUI({shiny::tagList("Head: ", shiny::a(data.selected$HEAD, href = head.link, target = "_blank"))})
         } else{
             output$tabhead <- NULL
         }
-        chest.link <- chest.data_00$LINK[match(data.selected$CHEST, chest.data_00$ARMOR)]
+        chest.link <- chest.data.unupgraded$LINK[match(data.selected$CHEST, chest.data.unupgraded$ARMOR)]
         if(chest.link != "N/A"){
             output$tabchest <- shiny::renderUI({shiny::tagList("Chest: ", shiny::a(data.selected$CHEST, href = chest.link, target = "_blank"))})
         } else{
             output$tabchest <- NULL
         }
-        hands.link <- hands.data_00$LINK[match(data.selected$HANDS, hands.data_00$ARMOR)]
+        hands.link <- hands.data.unupgraded$LINK[match(data.selected$HANDS, hands.data.unupgraded$ARMOR)]
         if(hands.link != "N/A"){
             output$tabhands <- shiny::renderUI({shiny::tagList("Hands: ", shiny::a(data.selected$HANDS, href = hands.link, target = "_blank"))})
         } else{
             output$tabhands <- NULL
         }
-        legs.link <- legs.data_00$LINK[match(data.selected$LEGS, legs.data_00$ARMOR)]
+        legs.link <- legs.data.unupgraded$LINK[match(data.selected$LEGS, legs.data.unupgraded$ARMOR)]
         if(legs.link != "N/A"){
             output$tablegs <- shiny::renderUI({shiny::tagList("Legs: ", shiny::a(data.selected$LEGS, href = legs.link, target = "_blank"))})
         } else{
@@ -1035,7 +1035,7 @@ server <- function(input, output, session){
                     unarmored.weight = constraint.values$unarmored.weight,
                     endurance.level = constraint.values$endurance.level,
                     havel.ring = ring.values$havel.ring,
-                    fap.ring = ring.values$fap.ring,
+                    favor.ring = ring.values$favor.ring,
                     wolf.ring = ring.values$wolf.ring,
                     minima = minimum.values$minima,
                     weights = weight.values$weights

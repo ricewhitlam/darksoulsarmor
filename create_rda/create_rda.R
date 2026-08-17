@@ -192,23 +192,23 @@ colorder <-
         "DURABILITY",  "WEIGHT", "STAM_MOD", "SOUND_MOD"
     )
 
-head.data_00 <- armor_00[TYPE == "Head"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(head.data_00, colorder)
-chest.data_00 <- armor_00[TYPE == "Chest"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(chest.data_00, colorder)
-hands.data_00 <- armor_00[TYPE == "Hands"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(hands.data_00, colorder)
-legs.data_00 <- armor_00[TYPE == "Legs"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(legs.data_00, colorder)
+head.data.unupgraded <- armor_00[TYPE == "Head"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(head.data.unupgraded, colorder)
+chest.data.unupgraded <- armor_00[TYPE == "Chest"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(chest.data.unupgraded, colorder)
+hands.data.unupgraded <- armor_00[TYPE == "Hands"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(hands.data.unupgraded, colorder)
+legs.data.unupgraded <- armor_00[TYPE == "Legs"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(legs.data.unupgraded, colorder)
 
-head.data_10 <- armor_10[TYPE == "Head"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(head.data_10, colorder)
-chest.data_10 <- armor_10[TYPE == "Chest"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(chest.data_10, colorder)
-hands.data_10 <- armor_10[TYPE == "Hands"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(hands.data_10, colorder)
-legs.data_10 <- armor_10[TYPE == "Legs"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(legs.data_10, colorder)
+head.data.fullupgrade <- armor_10[TYPE == "Head"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(head.data.fullupgrade, colorder)
+chest.data.fullupgrade <- armor_10[TYPE == "Chest"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(chest.data.fullupgrade, colorder)
+hands.data.fullupgrade <- armor_10[TYPE == "Hands"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(hands.data.fullupgrade, colorder)
+legs.data.fullupgrade <- armor_10[TYPE == "Legs"][, c("INDEX", "TYPE", "SET") := NULL]
+setcolorder(legs.data.fullupgrade, colorder)
 
 areas <- 
     c(
@@ -223,19 +223,19 @@ areas <-
     )
 classes <- c("Warrior", "Knight", "Wanderer", "Thief", "Bandit", "Hunter", "Sorcerer", "Pyromancer", "Cleric", "Deprived")
 
-## Save out to rda files. head.data_00 etc., areas, and classes are the package's public,
+## Save out to rda files. head.data.unupgraded etc., areas, and classes are the package's public,
 ## documented data (data/*.rda). means/stddevs/corrs exist only to normalize the score formula
 ## in get.optimal.armor.combos and are not meant to be used directly, so they are saved
 ## separately as internal data (R/sysdata.rda) rather than exported alongside the public data.
 use_data(
-    head.data_00,
-    chest.data_00,
-    hands.data_00,
-    legs.data_00,
-    head.data_10,
-    chest.data_10,
-    hands.data_10,
-    legs.data_10,
+    head.data.unupgraded,
+    chest.data.unupgraded,
+    hands.data.unupgraded,
+    legs.data.unupgraded,
+    head.data.fullupgrade,
+    chest.data.fullupgrade,
+    hands.data.fullupgrade,
+    legs.data.fullupgrade,
     areas,
     classes,
     overwrite = TRUE

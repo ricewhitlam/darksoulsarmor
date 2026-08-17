@@ -2,7 +2,7 @@
 
 This directory is a **dev-only data-build step**, not part of the installed `darksoulsarmor`
 package. It turns the raw armor CSVs into the `.rda` files under `data/` (the public datasets,
-e.g. `head.data_00`) and `R/sysdata.rda` (the internal `means`/`stddevs`/`corrs` used to score
+e.g. `head.data.unupgraded`) and `R/sysdata.rda` (the internal `means`/`stddevs`/`corrs` used to score
 combinations - see `vignettes/scoring.Rmd`). Nothing in `R/` or `src/` reads from this directory
 at runtime; it only needs to be re-run when the source CSVs change (a new armor piece, a stat
 correction, etc.).

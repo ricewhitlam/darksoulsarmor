@@ -61,10 +61,10 @@ get.all.armor.combos <- function(regular.level = c("+0", "+1", "+2", "+3", "+4",
     }
 
     ## Interpolate to specified upgrade levels
-    working.head.data <- get.interp.data(head.data_00, head.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.chest.data <- get.interp.data(chest.data_00, chest.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.hands.data <- get.interp.data(hands.data_00, hands.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.legs.data <- get.interp.data(legs.data_00, legs.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.head.data <- get.interp.data(head.data.unupgraded, head.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.chest.data <- get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.hands.data <- get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.legs.data <- get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
 
     ## Call cpp function to create and return the table of all combos
     full.data <- data.table::setDT(all_armor_combinations(working.head.data, working.chest.data, working.hands.data, working.legs.data))

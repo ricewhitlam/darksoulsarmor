@@ -65,10 +65,10 @@ DataFrame optimal_armor_combinations(
 
     const double base_weight,
     const double load,
-    const double load_motf,
+    const double load_father_mask,
     const double load_threshold,
-    const double load_threshold_motf,
-    const int motf_index,
+    const double load_threshold_father_mask,
+    const int father_mask_index,
     const bool wolf,
 
     const NumericVector& minima,
@@ -106,10 +106,10 @@ DataFrame optimal_armor_combinations(
     int curr_count = 0;
 
     double curr_load_threshold;
-    // Tolerance for the boundary comparisons below (e.g. curr_WEIGHT > threshold+eps rather than
-    // just > threshold), so a combo that lands exactly on a limit isn't excluded by floating-
-    // point rounding from the R-side arithmetic that produced these values.
-    double eps = 1.0e-10;
+    // Tolerance for the boundary comparisons below (e.g. curr_WEIGHT > threshold+epsilon rather
+    // than just > threshold), so a combo that lands exactly on a limit isn't excluded by
+    // floating-point rounding from the R-side arithmetic that produced these values.
+    double epsilon = 1.0e-10;
 
     double extra_poise = 0.0;
     if(wolf){extra_poise = 40.0;};
@@ -197,11 +197,12 @@ DataFrame optimal_armor_combinations(
                 i = loop_size_1;
             }
 
-            // motf_index is head's row index for "Mask of the Father" (999 if it isn't in the
-            // filtered head table at all), the one piece with its own equip-load bonus (x1.05)
+            // father_mask_index is head's row index for "Mask of the Father" (the sentinel value
+            // R passes when it isn't in the filtered head table at all - see NO_FATHER_MASK_INDEX
+            // in get.optimal.armor.combos), the one piece with its own equip-load bonus (x1.05)
             // rather than the shared load_threshold every other combo uses.
-            if(i == motf_index){
-                curr_load_threshold = load_threshold_motf;
+            if(i == father_mask_index){
+                curr_load_threshold = load_threshold_father_mask;
             } else{
                 curr_load_threshold = load_threshold;
             }
@@ -297,67 +298,67 @@ DataFrame optimal_armor_combinations(
                         // [7] POISE, [8] BLEED_RES, [9] POIS_RES, [10] CURSE_RES, [11] DURABILITY.
                         curr_legs_WEIGHT = legs.WEIGHT[l];
                         curr_WEIGHT = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
-                        if(curr_WEIGHT > (-base_weight+curr_load_threshold+eps)){
+                        if(curr_WEIGHT > (-base_weight+curr_load_threshold+epsilon)){
                             continue;
                         }
                         curr_legs_POISE = legs.POISE[l];
                         curr_POISE = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
-                        if((curr_POISE+extra_poise) < (minima[7]-eps)){
+                        if((curr_POISE+extra_poise) < (minima[7]-epsilon)){
                             continue;
                         }
                         curr_legs_PHYS_DEF = legs.PHYS_DEF[l];
                         curr_PHYS_DEF = curr_head_PHYS_DEF+curr_chest_PHYS_DEF+curr_hands_PHYS_DEF+curr_legs_PHYS_DEF;
-                        if(curr_PHYS_DEF < (minima[0]-eps)){
+                        if(curr_PHYS_DEF < (minima[0]-epsilon)){
                             continue;
                         }
                         curr_legs_STRIKE_DEF = legs.STRIKE_DEF[l];
                         curr_STRIKE_DEF = curr_head_STRIKE_DEF+curr_chest_STRIKE_DEF+curr_hands_STRIKE_DEF+curr_legs_STRIKE_DEF;
-                        if(curr_STRIKE_DEF < (minima[1]-eps)){
+                        if(curr_STRIKE_DEF < (minima[1]-epsilon)){
                             continue;
                         }
                         curr_legs_SLASH_DEF = legs.SLASH_DEF[l];
                         curr_SLASH_DEF = curr_head_SLASH_DEF+curr_chest_SLASH_DEF+curr_hands_SLASH_DEF+curr_legs_SLASH_DEF;
-                        if(curr_SLASH_DEF < (minima[2]-eps)){
+                        if(curr_SLASH_DEF < (minima[2]-epsilon)){
                             continue;
                         }
                         curr_legs_THRUST_DEF = legs.THRUST_DEF[l];
                         curr_THRUST_DEF = curr_head_THRUST_DEF+curr_chest_THRUST_DEF+curr_hands_THRUST_DEF+curr_legs_THRUST_DEF;
-                        if(curr_THRUST_DEF < (minima[3]-eps)){
+                        if(curr_THRUST_DEF < (minima[3]-epsilon)){
                             continue;
                         }
                         curr_legs_MAG_DEF = legs.MAG_DEF[l];
                         curr_MAG_DEF = curr_head_MAG_DEF+curr_chest_MAG_DEF+curr_hands_MAG_DEF+curr_legs_MAG_DEF;
-                        if(curr_MAG_DEF < (minima[4]-eps)){
+                        if(curr_MAG_DEF < (minima[4]-epsilon)){
                             continue;
                         }
                         curr_legs_FIRE_DEF = legs.FIRE_DEF[l];
                         curr_FIRE_DEF = curr_head_FIRE_DEF+curr_chest_FIRE_DEF+curr_hands_FIRE_DEF+curr_legs_FIRE_DEF;
-                        if(curr_FIRE_DEF < (minima[5]-eps)){
+                        if(curr_FIRE_DEF < (minima[5]-epsilon)){
                             continue;
                         }
                         curr_legs_LITNG_DEF = legs.LITNG_DEF[l];
                         curr_LITNG_DEF = curr_head_LITNG_DEF+curr_chest_LITNG_DEF+curr_hands_LITNG_DEF+curr_legs_LITNG_DEF;
-                        if(curr_LITNG_DEF < (minima[6]-eps)){
+                        if(curr_LITNG_DEF < (minima[6]-epsilon)){
                             continue;
                         }
                         curr_legs_BLEED_RES = legs.BLEED_RES[l];
                         curr_BLEED_RES = curr_head_BLEED_RES+curr_chest_BLEED_RES+curr_hands_BLEED_RES+curr_legs_BLEED_RES;
-                        if(curr_BLEED_RES < (minima[8]-eps)){
+                        if(curr_BLEED_RES < (minima[8]-epsilon)){
                             continue;
                         }
                         curr_legs_POIS_RES = legs.POIS_RES[l];
                         curr_POIS_RES = curr_head_POIS_RES+curr_chest_POIS_RES+curr_hands_POIS_RES+curr_legs_POIS_RES;
-                        if(curr_POIS_RES < (minima[9]-eps)){
+                        if(curr_POIS_RES < (minima[9]-epsilon)){
                             continue;
                         }
                         curr_legs_CURSE_RES = legs.CURSE_RES[l];
                         curr_CURSE_RES = curr_head_CURSE_RES+curr_chest_CURSE_RES+curr_hands_CURSE_RES+curr_legs_CURSE_RES;
-                        if(curr_CURSE_RES < (minima[10]-eps)){
+                        if(curr_CURSE_RES < (minima[10]-epsilon)){
                             continue;
                         }
                         curr_legs_DURABILITY = legs.DURABILITY[l];
                         curr_DURABILITY = std::min(curr_head_DURABILITY, std::min(curr_chest_DURABILITY, std::min(curr_hands_DURABILITY, curr_legs_DURABILITY)));
-                        if(curr_DURABILITY < (minima[11]-eps)){
+                        if(curr_DURABILITY < (minima[11]-epsilon)){
                             continue;
                         }
 
@@ -463,7 +464,7 @@ DataFrame optimal_armor_combinations(
         }
 
         out_WEIGHT = head.WEIGHT[out_h]+chest.WEIGHT[out_c]+hands.WEIGHT[out_g]+legs.WEIGHT[out_l];
-        out_load = (out_h == motf_index) ? load_motf : load;
+        out_load = (out_h == father_mask_index) ? load_father_mask : load;
         ARMOR_WEIGHT[n] = out_WEIGHT; TOTAL_WEIGHT[n] = out_WEIGHT+base_weight; EQUIP_LOAD[n] = out_load; PCT_LOAD[n] = (out_WEIGHT+base_weight)/out_load;
         armor_combos.pop();
     }

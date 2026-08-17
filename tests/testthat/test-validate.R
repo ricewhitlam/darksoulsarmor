@@ -16,7 +16,7 @@ test_that("get.optimal.armor.combos rejects invalid argument shapes", {
     expect_error(get.optimal.armor.combos(unarmored.weight = "ten"), "unarmored.weight")
     expect_error(get.optimal.armor.combos(endurance.level = NA), "endurance.level")
     expect_error(get.optimal.armor.combos(havel.ring = "yes"), "havel.ring")
-    expect_error(get.optimal.armor.combos(fap.ring = c(TRUE, FALSE)), "fap.ring")
+    expect_error(get.optimal.armor.combos(favor.ring = c(TRUE, FALSE)), "favor.ring")
     expect_error(get.optimal.armor.combos(wolf.ring = NA), "wolf.ring")
     expect_error(get.optimal.armor.combos(minima = rep(0, 11)), "minima")
     expect_error(get.optimal.armor.combos(minima = c(rep(0, 11), NA)), "minima")
