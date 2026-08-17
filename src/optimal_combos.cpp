@@ -12,6 +12,9 @@ using namespace Rcpp;
 struct armor_combo {
     double score;
     int32_t h; int32_t c; int32_t g; int32_t l;
+    // Reversed on purpose: std::priority_queue is a max-heap by operator<, and this makes
+    // "less than" mean "higher score". So the heap's top() is the *lowest*-scoring combo
+    // currently kept - the one to evict first once the heap is full and something better shows up.
     bool operator<(const armor_combo& comparison) const
     {
         return score > comparison.score;
@@ -103,6 +106,9 @@ DataFrame optimal_armor_combinations(
     int curr_count = 0;
 
     double curr_load_threshold;
+    // Tolerance for the boundary comparisons below (e.g. curr_WEIGHT > threshold+eps rather than
+    // just > threshold), so a combo that lands exactly on a limit isn't excluded by floating-
+    // point rounding from the R-side arithmetic that produced these values.
     double eps = 1.0e-10;
 
     double extra_poise = 0.0;
@@ -123,6 +129,27 @@ DataFrame optimal_armor_combinations(
     double curr_DURABILITY; double curr_head_DURABILITY; double curr_chest_DURABILITY; double curr_hands_DURABILITY; double curr_legs_DURABILITY;
     double curr_WEIGHT; double curr_head_WEIGHT; double curr_chest_WEIGHT; double curr_hands_WEIGHT; double curr_legs_WEIGHT;
 
+    // The shell-iteration scheme below visits combos in increasing "shell size" rather than
+    // simply looping i in 0..I-1, j in 0..J-1, etc. A combo (i,j,k,l) belongs to shell
+    // max(i,j,k,l)+1: the smallest N for which all four indices fit inside 0..N-1. Since all
+    // four tables are sorted descending by SCORE, shell N is exactly the set of combos reachable
+    // using only the top N pieces from every slot - so visiting shells in increasing order visits
+    // increasingly lower-scoring combos, in an order the caller can rely on for pruning (see the
+    // score-bound checks below).
+    //
+    // starting_loop_size (init.size, computed in R) is the smallest shell that COULD contain a
+    // feasible combo, given the weight and minima constraints - R already proved every smaller
+    // shell is entirely infeasible, so this loop starts there directly rather than at shell 1.
+    //
+    // Within one shell, only the *new* combos are visited - the ones with max(i,j,k,l) exactly
+    // loop_size-1 - since every combo with a smaller max was already visited by an earlier,
+    // smaller shell. The i/j/k/l = loop_size_1 jumps below implement this: once every dimension
+    // to the right (later in the i/j/k/l nesting) either is capped (its table is smaller than the
+    // current shell, so it has no new pieces left to contribute) or already sits at the shell
+    // boundary itself, then this dimension only needs to visit the boundary index too - visiting
+    // anything smaller here, with everything to the right already exhausted, would just repeat a
+    // combo an earlier shell already covered. A capped dimension, once capped, stays that way for
+    // every later (larger) shell, since its table can never grow.
     int curr_I; int curr_J; int curr_K; int curr_L;
     bool I_capped = false; bool J_capped = false; bool K_capped = false; bool L_capped = false;
     int max_loop_size = std::max(I, std::max(J, std::max(K, L)));
@@ -170,6 +197,9 @@ DataFrame optimal_armor_combinations(
                 i = loop_size_1;
             }
 
+            // motf_index is head's row index for "Mask of the Father" (999 if it isn't in the
+            // filtered head table at all), the one piece with its own equip-load bonus (x1.05)
+            // rather than the shared load_threshold every other combo uses.
             if(i == motf_index){
                 curr_load_threshold = load_threshold_motf;
             } else{
@@ -260,6 +290,11 @@ DataFrame optimal_armor_combinations(
                             break;
                         }
 
+                        // minima[] holds one bound per metric, in a fixed order that must stay in
+                        // sync with METRICS$minima.index in R/data.R (the one place this order is
+                        // still duplicated outside that registry): [0] PHYS_DEF, [1] STRIKE_DEF,
+                        // [2] SLASH_DEF, [3] THRUST_DEF, [4] MAG_DEF, [5] FIRE_DEF, [6] LITNG_DEF,
+                        // [7] POISE, [8] BLEED_RES, [9] POIS_RES, [10] CURSE_RES, [11] DURABILITY.
                         curr_legs_WEIGHT = legs.WEIGHT[l];
                         curr_WEIGHT = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
                         if(curr_WEIGHT > (-base_weight+curr_load_threshold+eps)){
@@ -377,6 +412,9 @@ DataFrame optimal_armor_combinations(
         return out;
     }
 
+    // Dark Souls' poise cooldown timer starts at 5 seconds and shrinks by 10% for each equipped
+    // piece with positive POISE (up to all four slots), rewarding armor that spreads its poise
+    // across multiple pieces rather than concentrating it in one.
     double timer_0 = 5.0; double timer_1 = timer_0*0.9; double timer_2 = timer_1*0.9; double timer_3 = timer_2*0.9; double timer_4 = timer_3*0.9;
 
     int out_h; int out_c; int out_g; int out_l;
