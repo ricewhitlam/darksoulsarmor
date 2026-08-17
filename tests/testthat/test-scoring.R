@@ -8,6 +8,9 @@
 ## weights imply.
 
 test_that("score normalization gives unit variance for arbitrary weights", {
+    ## means/stddevs/corrs are internal (R/sysdata.rda), so accessed here via :::.
+    stddevs <- darksoulsarmor:::stddevs
+    corrs <- darksoulsarmor:::corrs
     Sigma <- diag(stddevs) %*% corrs %*% diag(stddevs)
 
     set.seed(2026)

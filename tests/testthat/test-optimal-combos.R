@@ -45,10 +45,14 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     grid[, DURABILITY := pmin(h$DURABILITY[H], c$DURABILITY[C], g$DURABILITY[G], l$DURABILITY[L])]
     grid[, WEIGHT := h$WEIGHT[H] + c$WEIGHT[C] + g$WEIGHT[G] + l$WEIGHT[L]]
 
-    ## Same score formula get.optimal.armor.combos uses (see means/stddevs/corrs docs): the
-    ## package computes each slot's score as score.scalars[i]*(metric_i - 0.25*means[i]) and
-    ## sums the four slots, so summing metrics across slots first requires the full means[i]
-    ## (four slots x 0.25*means[i] = means[i]) applied once here.
+    ## Same score formula get.optimal.armor.combos uses (means/stddevs/corrs are internal,
+    ## R/sysdata.rda, so accessed here via :::): the package computes each slot's score as
+    ## score.scalars[i]*(metric_i - 0.25*means[i]) and sums the four slots, so summing metrics
+    ## across slots first requires the full means[i] (four slots x 0.25*means[i] = means[i])
+    ## applied once here.
+    stddevs <- darksoulsarmor:::stddevs
+    corrs <- darksoulsarmor:::corrs
+    means <- darksoulsarmor:::means
     weights <- c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
     score.scalars <- weights / (stddevs * sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
     grid[, SCORE := 0]

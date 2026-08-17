@@ -49,35 +49,12 @@ NULL
 #' @keywords data
 NULL
 
-#' Vector of means for every possible armor combination 
-#'
-#' @name means
-#' @format 
-#' This is a numeric vector of means across every possible armor combination including upgrades for the following ten metrics:
-#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
-#' @docType data
-#' @keywords data
-NULL
-
-#' Vector of standard deviations for every possible armor combination 
-#'
-#' @name stddevs
-#' @format 
-#' This is a numeric vector of standard deviations across every possible armor combination including upgrades for the following ten metrics:
-#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
-#' @docType data
-#' @keywords data
-NULL
-
-#' Correlation matrix for every possible armor combination 
-#'
-#' @name corrs
-#' @format 
-#' This is a correlation matrix across every possible armor combination including upgrades for the following ten metrics:
-#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
-#' @docType data
-#' @keywords data
-NULL
+## means, stddevs, and corrs (R/sysdata.rda) are the population mean, standard deviation, and
+## correlation matrix of PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF,
+## LITNG_DEF, BLEED_RES, POIS_RES, and CURSE_RES across every possible armor combination
+## (including upgrades) - see create_rda/create_rda.R for how they're derived. They exist only
+## to normalize the score formula in get.optimal.armor.combos and are not meant to be used
+## directly, so unlike areas/classes they are internal (sysdata.rda) rather than exported data.
 
 #' Table of all unupgraded head armor pieces
 #'
