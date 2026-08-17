@@ -463,181 +463,70 @@ server <- function(input, output, session){
     }, ignoreInit = TRUE)
 
 
+    ## The minima/weights modal inputs below are built from darksoulsarmor:::METRICS (see
+    ## R/data.R) instead of one hand-typed autonumericInput() block per metric. Without this,
+    ## each metric's UI input id, label, and position in the minima/weights vector would have
+    ## to be hand-typed in sync across four places (widget creation, the modal-dismiss
+    ## reassembly, and - for weights - the normalize-weights update) - the same kind of
+    ## parallel hand-maintained ordering that caused the minima-indexing bug fixed earlier in
+    ## this package's history. metric.input.id() reproduces the existing widget ids exactly
+    ## (e.g. "PHYS_DEF" -> "minphysdef"/"physdefweight") so this is a pure refactor.
+    METRICS <- darksoulsarmor:::METRICS
+
+    metric.input.id <- function(stat, kind){
+        base <- tolower(gsub("_", "", stat))
+        if(kind == "minima") paste0("min", base) else paste0(base, "weight")
+    }
+    minima.index.of <- function(stat){ METRICS[metric == stat, minima.index] }
+    weight.index.of <- function(stat){ METRICS[metric == stat, weight.index] }
+
+    ## Canonical order matches minima.index/weight.index, i.e. exactly the order
+    ## get.optimal.armor.combos expects its minima/weights arguments in.
+    minima.metrics <- METRICS[order(minima.index), metric]
+    ## unname() below: vapply() over a character vector auto-names its result using the input
+    ## values (X itself, per USE.NAMES) - harmless for R-side use, but Shiny serializes a named
+    ## vector differently (jsonlite's keep_vec_names), which mangles the inputId sent to the
+    ## client, so these must stay plain unnamed strings.
+    minima.ids <- unname(vapply(minima.metrics, metric.input.id, character(1), kind = "minima"))
+    weight.metrics <- METRICS[!is.na(weight.index)][order(weight.index), metric]
+    weight.ids <- unname(vapply(weight.metrics, metric.input.id, character(1), kind = "weight"))
+
     minimum.values <- shiny::reactiveValues(minima = rep(0.0, 12))
 
-    shiny::observeEvent(input$minima, { 
-      shiny::showModal( 
-        shiny::modalDialog( 
-          title = "Minimum Inputs", 
-          footer = shiny::actionButton(inputId = "dismiss_minimum_modal", label = "Done"), 
+    minimum.input <- function(stat){
+        shinyWidgets::autonumericInput(
+            inputId = metric.input.id(stat, "minima"),
+            label = stat,
+            value = minimum.values$minima[minima.index.of(stat)],
+            align = "right",
+            decimalCharacter = ".",
+            digitGroupSeparator = ",",
+            decimalPlaces = ifelse(stat %in% c("POISE", "DURABILITY"), 0, 1),
+            maximumValue = 999,
+            minimumValue = 0
+        )
+    }
+
+    shiny::observeEvent(input$minima, {
+      shiny::showModal(
+        shiny::modalDialog(
+          title = "Minimum Inputs",
+          footer = shiny::actionButton(inputId = "dismiss_minimum_modal", label = "Done"),
           shiny::fluidRow(
-            shiny::column(width = 3,
-                   shinyWidgets::autonumericInput(
-                     inputId = "minphysdef",
-                     label = "PHYS_DEF",
-                     value = minimum.values$minima[1],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "minmagdef",
-                     label = "MAG_DEF",
-                     value = minimum.values$minima[5],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "minbleedres",
-                     label = "BLEED_RES",
-                     value = minimum.values$minima[9],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   )
-            ),
-            shiny::column(width = 3,
-                   shinyWidgets::autonumericInput(
-                     inputId = "minstrikedef",
-                     label = "STRIKE_DEF",
-                     value = minimum.values$minima[2],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "minfiredef",
-                     label = "FIRE_DEF",
-                     value = minimum.values$minima[6],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "minpoisres",
-                     label = "POIS_RES",
-                     value = minimum.values$minima[10],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   )
-            ),
-            shiny::column(width = 3,
-                   shinyWidgets::autonumericInput(
-                     inputId = "minslashdef",
-                     label = "SLASH_DEF",
-                     value = minimum.values$minima[3],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "minlitngdef",
-                     label = "LITNG_DEF",
-                     value = minimum.values$minima[7],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "mincurseres",
-                     label = "CURSE_RES",
-                     value = minimum.values$minima[11],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   )
-            ),
-            shiny::column(width = 3,
-                   shinyWidgets::autonumericInput(
-                     inputId = "minthrustdef",
-                     label = "THRUST_DEF",
-                     value = minimum.values$minima[4],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 1,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "minpoise",
-                     label = "POISE",
-                     value = minimum.values$minima[8],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 0,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   ),
-                   shinyWidgets::autonumericInput(
-                     inputId = "mindurability",
-                     label = "DURABILITY",
-                     value = minimum.values$minima[12],
-                     align = "right",
-                     decimalCharacter = ".",
-                     digitGroupSeparator = ",",
-                     decimalPlaces = 0,
-                     maximumValue = 999,
-                     minimumValue = 0
-                   )
-            )
+            shiny::column(width = 3, minimum.input("PHYS_DEF"), minimum.input("MAG_DEF"), minimum.input("BLEED_RES")),
+            shiny::column(width = 3, minimum.input("STRIKE_DEF"), minimum.input("FIRE_DEF"), minimum.input("POIS_RES")),
+            shiny::column(width = 3, minimum.input("SLASH_DEF"), minimum.input("LITNG_DEF"), minimum.input("CURSE_RES")),
+            shiny::column(width = 3, minimum.input("THRUST_DEF"), minimum.input("POISE"), minimum.input("DURABILITY"))
           )
-        ) 
-      ) 
+        )
+      )
     })
 
     shiny::observeEvent(input$dismiss_minimum_modal, {
 
-        if(
-            shiny::isTruthy(input$minphysdef) &&
-            shiny::isTruthy(input$minstrikedef) &&
-            shiny::isTruthy(input$minslashdef) &&
-            shiny::isTruthy(input$minthrustdef) &&
-            shiny::isTruthy(input$minmagdef) &&
-            shiny::isTruthy(input$minfiredef) &&
-            shiny::isTruthy(input$minlitngdef) &&
-            shiny::isTruthy(input$minpoise) &&
-            shiny::isTruthy(input$minbleedres) &&
-            shiny::isTruthy(input$minpoisres) &&
-            shiny::isTruthy(input$mincurseres) &&
-            shiny::isTruthy(input$mindurability)
-        ){
-            minimum.values$minima <- 
-                round(c(
-                    input$minphysdef, input$minstrikedef, input$minslashdef, input$minthrustdef,
-                    input$minmagdef, input$minfiredef, input$minlitngdef, input$minpoise,
-                    input$minbleedres, input$minpoisres, input$mincurseres, input$mindurability
-                ), 1)
+        minima.inputs <- lapply(minima.ids, function(id){ input[[id]] })
+        if(all(vapply(minima.inputs, shiny::isTruthy, logical(1)))){
+            minimum.values$minima <- round(unlist(minima.inputs), 1)
         }
 
         if(been.refreshed()){
@@ -645,183 +534,50 @@ server <- function(input, output, session){
             inputs.unchanged$minimum.values <- all(sapply(names(minimum.values), function(name){identical(curr.vals[[name]], minimum.values[[name]])}))
         }
         shiny::removeModal()
-        
+
     }, ignoreInit = TRUE)
 
 
     weight.values <- shiny::reactiveValues(weights = c(16.0, 16.0, 16.0, 16.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0))
-    
-    shiny::observeEvent(input$weights, { 
-        shiny::showModal( 
-            shiny::modalDialog( 
-                title = "Score Inputs", 
-                footer = shiny::fluidRow(shiny::column(8, shiny::actionButton(inputId = "normalize_weights", label = "Normalize to 100%")), shiny::column(4, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))), 
+
+    weight.input <- function(stat){
+        shinyWidgets::autonumericInput(
+            inputId = metric.input.id(stat, "weight"),
+            label = stat,
+            value = weight.values$weights[weight.index.of(stat)],
+            align = "right",
+            currencySymbol = "%",
+            currencySymbolPlacement = "s",
+            decimalCharacter = ".",
+            digitGroupSeparator = ",",
+            decimalPlaces = 1,
+            maximumValue = 100,
+            minimumValue = 0
+        )
+    }
+
+    shiny::observeEvent(input$weights, {
+        shiny::showModal(
+            shiny::modalDialog(
+                title = "Score Inputs",
+                footer = shiny::fluidRow(shiny::column(8, shiny::actionButton(inputId = "normalize_weights", label = "Normalize to 100%")), shiny::column(4, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))),
                 shiny::fluidRow(
-                    shiny::column(width = 3,
-                            shinyWidgets::autonumericInput(
-                                inputId = "physdefweight",
-                                label = "PHYS_DEF",
-                                value = weight.values$weights[1],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            ),
-                            shinyWidgets::autonumericInput(
-                                inputId = "magdefweight",
-                                label = "MAG_DEF",
-                                value = weight.values$weights[5],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            ),
-                            shinyWidgets::autonumericInput(
-                                inputId = "bleedresweight",
-                                label = "BLEED_RES",
-                                value = weight.values$weights[8],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            )
-                    ),
-                    shiny::column(width = 3,
-                            shinyWidgets::autonumericInput(
-                                inputId = "strikedefweight",
-                                label = "STRIKE_DEF",
-                                value = weight.values$weights[2],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            ),
-                            shinyWidgets::autonumericInput(
-                                inputId = "firedefweight",
-                                label = "FIRE_DEF",
-                                value = weight.values$weights[6],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            ),
-                            shinyWidgets::autonumericInput(
-                                inputId = "poisresweight",
-                                label = "POIS_RES",
-                                value = weight.values$weights[9],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            )
-                    ),
-                    shiny::column(width = 3,
-                            shinyWidgets::autonumericInput(
-                                inputId = "slashdefweight",
-                                label = "SLASH_DEF",
-                                value = weight.values$weights[3],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            ),
-                            shinyWidgets::autonumericInput(
-                                inputId = "litngdefweight",
-                                label = "LITNG_DEF",
-                                value = weight.values$weights[7],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            ),
-                            shinyWidgets::autonumericInput(
-                                inputId = "curseresweight",
-                                label = "CURSE_RES",
-                                value = weight.values$weights[10],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            )
-                    ),
-                    shiny::column(width = 3,
-                            shinyWidgets::autonumericInput(
-                                inputId = "thrustdefweight",
-                                label = "THRUST_DEF",
-                                value = weight.values$weights[4],
-                                align = "right",
-                                currencySymbol = "%",
-                                currencySymbolPlacement = "s",
-                                decimalCharacter = ".",
-                                digitGroupSeparator = ",",
-                                decimalPlaces = 1,
-                                maximumValue = 100,
-                                minimumValue = 0
-                            )
-                    )
+                    shiny::column(width = 3, weight.input("PHYS_DEF"), weight.input("MAG_DEF"), weight.input("BLEED_RES")),
+                    shiny::column(width = 3, weight.input("STRIKE_DEF"), weight.input("FIRE_DEF"), weight.input("POIS_RES")),
+                    shiny::column(width = 3, weight.input("SLASH_DEF"), weight.input("LITNG_DEF"), weight.input("CURSE_RES")),
+                    shiny::column(width = 3, weight.input("THRUST_DEF"))
                 )
-            ) 
-        ) 
+            )
+        )
     })
 
     shiny::observeEvent(input$normalize_weights, {
 
-        if(
-            shiny::isTruthy(input$physdefweight) &&
-            shiny::isTruthy(input$strikedefweight) &&
-            shiny::isTruthy(input$slashdefweight) &&
-            shiny::isTruthy(input$thrustdefweight) &&
-            shiny::isTruthy(input$magdefweight) &&
-            shiny::isTruthy(input$firedefweight) &&
-            shiny::isTruthy(input$litngdefweight) &&
-            shiny::isTruthy(input$bleedresweight) &&
-            shiny::isTruthy(input$poisresweight) &&
-            shiny::isTruthy(input$curseresweight)
-        ){
+        weight.inputs <- lapply(weight.ids, function(id){ input[[id]] })
+        if(all(vapply(weight.inputs, shiny::isTruthy, logical(1)))){
 
-            weights <- 
-                c(
-                    input$physdefweight, input$strikedefweight, input$slashdefweight, input$thrustdefweight,
-                    input$magdefweight, input$firedefweight, input$litngdefweight, 
-                    input$bleedresweight, input$poisresweight, input$curseresweight
-                )
-            
+            weights <- unlist(weight.inputs)
+
             weights <- 1000*weights/sum(weights)
             int.parts <- floor(weights)
             frac.parts <- (weights-int.parts)
@@ -834,50 +590,28 @@ server <- function(input, output, session){
             weights <- 0.1*weights
 
             ## Update inputs
-            shinyWidgets::updateAutonumericInput(inputId = "physdefweight", value = weights[1])
-            shinyWidgets::updateAutonumericInput(inputId = "strikedefweight", value = weights[2])
-            shinyWidgets::updateAutonumericInput(inputId = "slashdefweight", value = weights[3])
-            shinyWidgets::updateAutonumericInput(inputId = "thrustdefweight", value = weights[4])
-            shinyWidgets::updateAutonumericInput(inputId = "magdefweight", value = weights[5])
-            shinyWidgets::updateAutonumericInput(inputId = "firedefweight", value = weights[6])
-            shinyWidgets::updateAutonumericInput(inputId = "litngdefweight", value = weights[7])
-            shinyWidgets::updateAutonumericInput(inputId = "bleedresweight", value = weights[8])
-            shinyWidgets::updateAutonumericInput(inputId = "poisresweight", value = weights[9])
-            shinyWidgets::updateAutonumericInput(inputId = "curseresweight", value = weights[10])
+            for(i in seq_along(weight.ids)){
+                shinyWidgets::updateAutonumericInput(inputId = weight.ids[i], value = weights[i])
+            }
 
-        } 
-        
+        }
+
     }, ignoreInit = TRUE)
 
     shiny::observeEvent(input$dismiss_weight_modal, {
 
-        if(
-            shiny::isTruthy(input$physdefweight) &&
-            shiny::isTruthy(input$strikedefweight) &&
-            shiny::isTruthy(input$slashdefweight) &&
-            shiny::isTruthy(input$thrustdefweight) &&
-            shiny::isTruthy(input$magdefweight) &&
-            shiny::isTruthy(input$firedefweight) &&
-            shiny::isTruthy(input$litngdefweight) &&
-            shiny::isTruthy(input$bleedresweight) &&
-            shiny::isTruthy(input$poisresweight) &&
-            shiny::isTruthy(input$curseresweight)
-        ){
-            weight.values$weights <- 
-                c(
-                    input$physdefweight, input$strikedefweight, input$slashdefweight, input$thrustdefweight,
-                    input$magdefweight, input$firedefweight, input$litngdefweight, 
-                    input$bleedresweight, input$poisresweight, input$curseresweight
-                )
+        weight.inputs <- lapply(weight.ids, function(id){ input[[id]] })
+        if(all(vapply(weight.inputs, shiny::isTruthy, logical(1)))){
+            weight.values$weights <- unlist(weight.inputs)
         }
 
         if(been.refreshed()){
             ## Custom logic here due to special nature of weights argument
-            inputs.unchanged$weight.values <- (abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 1e-10) 
+            inputs.unchanged$weight.values <- (abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 1e-10)
         }
-        
+
         shiny::removeModal()
-        
+
     }, ignoreInit = TRUE)
 
 
