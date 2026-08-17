@@ -11,17 +11,17 @@ Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
 // all_armor_combinations
-void all_armor_combinations(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df, DataFrame& full_df);
-RcppExport SEXP _darksoulsarmor_all_armor_combinations(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP, SEXP full_dfSEXP) {
+DataFrame all_armor_combinations(const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df);
+RcppExport SEXP _darksoulsarmor_all_armor_combinations(SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP) {
 BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const DataFrame& >::type head_df(head_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type chest_df(chest_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type hands_df(hands_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type legs_df(legs_dfSEXP);
-    Rcpp::traits::input_parameter< DataFrame& >::type full_df(full_dfSEXP);
-    all_armor_combinations(head_df, chest_df, hands_df, legs_df, full_df);
-    return R_NilValue;
+    rcpp_result_gen = Rcpp::wrap(all_armor_combinations(head_df, chest_df, hands_df, legs_df));
+    return rcpp_result_gen;
 END_RCPP
 }
 // optimal_armor_combinations
@@ -50,7 +50,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_darksoulsarmor_all_armor_combinations", (DL_FUNC) &_darksoulsarmor_all_armor_combinations, 5},
+    {"_darksoulsarmor_all_armor_combinations", (DL_FUNC) &_darksoulsarmor_all_armor_combinations, 4},
     {"_darksoulsarmor_optimal_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimal_armor_combinations, 14},
     {NULL, NULL, 0}
 };

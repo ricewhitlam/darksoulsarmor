@@ -66,33 +66,10 @@ get.all.armor.combos <- function(regular.level = c("+0", "+1", "+2", "+3", "+4",
     working.hands.data <- get.interp.data(hands.data_00, hands.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
     working.legs.data <- get.interp.data(legs.data_00, legs.data_10, as.numeric(regular.level), as.numeric(twinkling.level))
 
-    ## Initialize output data
-    N <- nrow(working.head.data)*nrow(working.chest.data)*nrow(working.hands.data)*nrow(working.legs.data)
-    full.data <- 
-        data.table::data.table(
-            HEAD = character(N),
-            CHEST = character(N),
-            HANDS = character(N),
-            LEGS = character(N),
-            PHYS_DEF = numeric(N),
-            STRIKE_DEF = numeric(N),
-            SLASH_DEF = numeric(N),
-            THRUST_DEF = numeric(N),
-            MAG_DEF = numeric(N),
-            FIRE_DEF = numeric(N),
-            LITNG_DEF = numeric(N),
-            POISE = numeric(N),
-            BLEED_RES = numeric(N),
-            POIS_RES = numeric(N),
-            CURSE_RES = numeric(N),
-            DURABILITY = numeric(N),
-            WEIGHT = numeric(N)
-        )
-    
-    ## Call cpp function to create all combos
-    all_armor_combinations(working.head.data, working.chest.data, working.hands.data, working.legs.data, full.data)
+    ## Call cpp function to create and return the table of all combos
+    full.data <- data.table::setDT(all_armor_combinations(working.head.data, working.chest.data, working.hands.data, working.legs.data))
 
-    rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data", "N"))
+    rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     gc()
 
     return(full.data)

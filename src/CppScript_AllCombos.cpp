@@ -3,12 +3,11 @@
 using namespace Rcpp;
 
 // [[Rcpp::export(all_armor_combinations)]]
-void all_armor_combinations(
+DataFrame all_armor_combinations(
     const DataFrame& head_df,
     const DataFrame& chest_df,
     const DataFrame& hands_df,
-    const DataFrame& legs_df,
-    DataFrame& full_df
+    const DataFrame& legs_df
 ){
 
     CharacterVector head_ARMOR = head_df["ARMOR"];
@@ -71,28 +70,17 @@ void all_armor_combinations(
     NumericVector legs_DURABILITY = legs_df["DURABILITY"];
     NumericVector legs_WEIGHT = legs_df["WEIGHT"];
 
-    CharacterVector HEAD = full_df["HEAD"];
-    CharacterVector CHEST = full_df["CHEST"];
-    CharacterVector HANDS = full_df["HANDS"];
-    CharacterVector LEGS = full_df["LEGS"];
-    NumericVector PHYS_DEF = full_df["PHYS_DEF"];
-    NumericVector STRIKE_DEF = full_df["STRIKE_DEF"];
-    NumericVector SLASH_DEF = full_df["SLASH_DEF"];
-    NumericVector THRUST_DEF = full_df["THRUST_DEF"];
-    NumericVector MAG_DEF = full_df["MAG_DEF"];
-    NumericVector FIRE_DEF = full_df["FIRE_DEF"];
-    NumericVector LITNG_DEF = full_df["LITNG_DEF"];
-    NumericVector POISE = full_df["POISE"];
-    NumericVector BLEED_RES = full_df["BLEED_RES"];
-    NumericVector POIS_RES = full_df["POIS_RES"];
-    NumericVector CURSE_RES = full_df["CURSE_RES"];
-    NumericVector DURABILITY = full_df["DURABILITY"];
-    NumericVector WEIGHT = full_df["WEIGHT"];
-
     int I = head_df.nrows();
     int J = chest_df.nrows();
     int K = hands_df.nrows();
     int L = legs_df.nrows();
+    int N = I*J*K*L;
+
+    CharacterVector HEAD(N); CharacterVector CHEST(N); CharacterVector HANDS(N); CharacterVector LEGS(N);
+    NumericVector PHYS_DEF(N); NumericVector STRIKE_DEF(N); NumericVector SLASH_DEF(N); NumericVector THRUST_DEF(N);
+    NumericVector MAG_DEF(N); NumericVector FIRE_DEF(N); NumericVector LITNG_DEF(N);
+    NumericVector POISE(N); NumericVector BLEED_RES(N); NumericVector POIS_RES(N); NumericVector CURSE_RES(N);
+    NumericVector DURABILITY(N); NumericVector WEIGHT(N);
 
     int index = -1;
 
@@ -175,7 +163,7 @@ void all_armor_combinations(
                     curr_legs_CURSE_RES = legs_CURSE_RES[l];
                     curr_legs_DURABILITY = legs_DURABILITY[l];
                     curr_legs_WEIGHT = legs_WEIGHT[l];
-                    
+
                     HEAD[index] = head_ARMOR[i]; CHEST[index] = chest_ARMOR[j]; HANDS[index] = hands_ARMOR[k]; LEGS[index] = legs_ARMOR[l];
                     PHYS_DEF[index] = curr_head_PHYS_DEF+curr_chest_PHYS_DEF+curr_hands_PHYS_DEF+curr_legs_PHYS_DEF;
                     STRIKE_DEF[index] = curr_head_STRIKE_DEF+curr_chest_STRIKE_DEF+curr_hands_STRIKE_DEF+curr_legs_STRIKE_DEF;
@@ -184,7 +172,7 @@ void all_armor_combinations(
                     MAG_DEF[index] = curr_head_MAG_DEF+curr_chest_MAG_DEF+curr_hands_MAG_DEF+curr_legs_MAG_DEF;
                     FIRE_DEF[index] = curr_head_FIRE_DEF+curr_chest_FIRE_DEF+curr_hands_FIRE_DEF+curr_legs_FIRE_DEF;
                     LITNG_DEF[index] = curr_head_LITNG_DEF+curr_chest_LITNG_DEF+curr_hands_LITNG_DEF+curr_legs_LITNG_DEF;
-                    POISE[index] = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE; 
+                    POISE[index] = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
                     BLEED_RES[index] = curr_head_BLEED_RES+curr_chest_BLEED_RES+curr_hands_BLEED_RES+curr_legs_BLEED_RES;
                     POIS_RES[index] = curr_head_POIS_RES+curr_chest_POIS_RES+curr_hands_POIS_RES+curr_legs_POIS_RES;
                     CURSE_RES[index] = curr_head_CURSE_RES+curr_chest_CURSE_RES+curr_hands_CURSE_RES+curr_legs_CURSE_RES;
@@ -199,5 +187,13 @@ void all_armor_combinations(
 
     }
 
-}
+    return DataFrame::create(
+        _["HEAD"] = HEAD , _["CHEST"] = CHEST , _["HANDS"] = HANDS , _["LEGS"] = LEGS ,
+        _["PHYS_DEF"] = PHYS_DEF , _["STRIKE_DEF"] = STRIKE_DEF , _["SLASH_DEF"] = SLASH_DEF , _["THRUST_DEF"] = THRUST_DEF ,
+        _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF , _["POISE"] = POISE ,
+        _["BLEED_RES"] = BLEED_RES , _["POIS_RES"] = POIS_RES , _["CURSE_RES"] = CURSE_RES ,
+        _["DURABILITY"] = DURABILITY , _["WEIGHT"] = WEIGHT ,
+        _["stringsAsFactors"] = false
+    );
 
+}
