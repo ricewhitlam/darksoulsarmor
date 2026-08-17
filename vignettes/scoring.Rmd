@@ -1,0 +1,106 @@
+---
+title: "How the armor score is calculated"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{How the armor score is calculated}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+`get.optimal.armor.combos()` ranks armor combinations using a single number, `SCORE_RAW`
+(and its percentile form, `SCORE_PCT`). This vignette explains where that number comes from.
+
+## The problem: metrics on different scales
+
+An armor combination is described by ten metrics: physical, strike, slash, and thrust defense;
+magic, fire, and lightning defense; and bleed, poison, and curse resistance. These aren't on
+comparable scales. Combined physical defense across a full set of gear typically runs from the
+teens up into the hundreds; combined curse resistance rarely gets past a few dozen. A weight of
+"1" on physical defense and "1" on curse resistance would not mean equal importance if the raw
+values were just added together - physical defense would dominate the total purely because its
+numbers are bigger, not because the `weights` argument said so.
+
+The fix is standardization: express each metric in units of "how unusual is this value", not
+its raw number. `get.optimal.armor.combos()` does this using the population mean and standard
+deviation of each metric, computed once across every possible armor combination (including
+every upgrade level) when the package's data was built - see `create_rda/create_rda.R`. These
+live in the package's internal data as `means`, `stddevs`, and `corrs` (the population
+correlation matrix across the ten metrics).
+
+## Building a score from weights
+
+Given a `weights` vector (one weight per metric, after the function normalizes it to sum to 1),
+the package computes a set of per-metric scalars:
+
+```r
+score.scalars <- weights / (stddevs * sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
+```
+
+For a combination with combined metric values $x_1, \dots, x_{10}$, the score is:
+
+$$
+\text{SCORE} = \sum_{i=1}^{10} \text{score.scalars}_i \cdot (x_i - \mu_i)
+$$
+
+where $\mu_i$ is that metric's population mean (`means[i]`). This is a weighted, centered sum -
+but the *particular* denominator in `score.scalars` isn't arbitrary. It's chosen so that
+`SCORE` always has variance exactly 1, no matter what weights are passed in.
+
+To see why: let $\Sigma$ be the population covariance matrix implied by `stddevs` and `corrs`
+(so $\Sigma_{ij} = \sigma_i \sigma_j \cdot \text{corr}_{ij}$), and let
+$k = \sqrt{w^\top \text{corr} \, w}$ be the normalizing term inside `score.scalars`. Then
+`score.scalars` $= w / (\sigma k)$ element-wise, and the variance of SCORE works out to:
+
+$$
+\text{Var}(\text{SCORE}) = \text{score.scalars}^\top \Sigma \, \text{score.scalars}
+= \frac{1}{k^2} w^\top \text{corr} \, w = \frac{1}{k^2} \cdot k^2 = 1
+$$
+
+This is what makes scores comparable across *different* weight choices: a `SCORE_RAW` of 1.5
+means "one and a half standard deviations above average for this combination of priorities",
+regardless of which priorities were chosen. `tests/testthat/test-scoring.R` checks this
+algebraic identity directly, for a battery of random weight vectors.
+
+## Why each armor slot subtracts a quarter of the mean
+
+The four armor slots (head, chest, hands, legs) are scored independently and then added
+together - `optimal_armor_combinations()` sums `curr_head_SCORE + curr_chest_SCORE +
+curr_hands_SCORE + curr_legs_SCORE`; see `R/optimal-combos.R`, where each slot's contribution
+is computed as `score.scalars[i] * (metric_i - 0.25 * means[i])`.
+
+`means[i]` is the population mean of the *combined* metric across a full four-piece
+combination, not any one slot's mean. Subtracting `0.25 * means[i]` in each of the four slots,
+and then summing all four, subtracts exactly `means[i]` from the total - which is what actually
+needs to happen for the total score to be centered at 0. The even four-way split is simply the
+easiest way to divide that single subtraction across four separately-computed slot scores; it
+doesn't require (and isn't affected by) whether any individual slot's own average metric value
+happens to be exactly a quarter of the combo-level mean.
+
+## From SCORE_RAW to SCORE_PCT
+
+Since `SCORE_RAW` is a sum of many roughly-independent standardized quantities, it's
+approximately normally distributed. `SCORE_PCT` applies the standard normal cumulative
+distribution function to `SCORE_RAW`:
+
+```r
+SCORE_PCT <- pnorm(SCORE_RAW, mean = 0, sd = 1)
+```
+
+giving an approximate percentile: 100% is (approximately) the best score achievable for the
+weights given, 0% the worst, and 50% is exactly average. This is an approximation - the true
+distribution of scores across all possible combinations isn't exactly normal - but it's
+generally accurate enough to give an intuitive sense of how good a combination is, without
+needing to know the score's scale.
+
+## What this does and doesn't let you compare
+
+Because `Var(SCORE) = 1` holds for any weights, scores are directly comparable across different
+filter and constraint choices *as long as the weights are held fixed* - a `SCORE_PCT` of 90%
+under one set of filters really is better than 80% under a different set of filters, provided
+both used the same `weights`. Scores computed with *different* weights are not directly
+comparable to each other in the same way, since each weight vector defines its own notion of
+"average" combination.

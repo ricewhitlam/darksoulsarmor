@@ -4,3 +4,5 @@
 *.tar.gz
 .Rproj.user/
 *.Rcheck/
+/README.html
+inst/doc/
