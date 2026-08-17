@@ -3,7 +3,7 @@
 ## the shell-expansion and priority-queue machinery that get.optimal.armor.combos and
 ## optimal_armor_combinations use internally. This is the test that would have caught the
 ## minima-indexing bug fixed alongside this test suite (see git history for
-## R/RScript_OptimalCombos.R): a wrong index into `minima` there can inflate the starting
+## R/optimal-combos.R): a wrong index into `minima` there can inflate the starting
 ## shell size and cause the C++ search to silently skip feasible combinations.
 test_that("get.optimal.armor.combos matches a brute-force reference over a small filtered subset", {
 
