@@ -1019,8 +1019,8 @@ server <- function(input, output, session){
             
             shinybusy::show_modal_spinner()
 
-            armordata(
-                get.optimal.armor.combos(
+            armordata({
+                result <- get.optimal.armor.combos(
                     max.table.size = filter.values$max.table.size,
                     starting.class = filter.values$starting.class,
                     areas.completed = filter.values$areas.completed,
@@ -1040,10 +1040,10 @@ server <- function(input, output, session){
                     minima = minimum.values$minima,
                     weights = weight.values$weights
                 )
-            )
+                result$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := lapply(.SD, as.factor), .SDcols = c("HEAD", "CHEST", "HANDS", "LEGS")]
+                result
+            })
             gc()
-
-            armordata()$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := lapply(.SD, as.factor), .SDcols = c("HEAD", "CHEST", "HANDS", "LEGS")]
 
             been.refreshed(TRUE)
 
