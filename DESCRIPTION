@@ -2,7 +2,6 @@ Package: darksoulsarmor
 Type: Package
 Title: Explore and Optimize Armor Combinations
 Version: 1.0
-Date: 2025-09-18
 Authors@R: person("Package", "Maintainer", email = "package-maintainer@example.com", role = c("aut", "cre"))
 Description:
     This package contains full datasets for the unupgraded and fully upgraded armor pieces of Dark Souls.
