@@ -223,24 +223,28 @@ areas <-
     )
 classes <- c("Warrior", "Knight", "Wanderer", "Thief", "Bandit", "Hunter", "Sorcerer", "Pyromancer", "Cleric", "Deprived")
 
-## Save out to rda files
+## Save out to rda files. head.data_00 etc., areas, and classes are the package's public,
+## documented data (data/*.rda). means/stddevs/corrs exist only to normalize the score formula
+## in get.optimal.armor.combos and are not meant to be used directly, so they are saved
+## separately as internal data (R/sysdata.rda) rather than exported alongside the public data.
 use_data(
-    head.data_00, 
-    chest.data_00, 
-    hands.data_00, 
-    legs.data_00, 
-    head.data_10, 
-    chest.data_10, 
-    hands.data_10, 
-    legs.data_10, 
-    areas, 
+    head.data_00,
+    chest.data_00,
+    hands.data_00,
+    legs.data_00,
+    head.data_10,
+    chest.data_10,
+    hands.data_10,
+    legs.data_10,
+    areas,
     classes,
+    overwrite = TRUE
+)
+use_data(
     means,
     stddevs,
     corrs,
-    # mean.weight,
-    # stddev.weight,
-    # covars.weight,
+    internal = TRUE,
     overwrite = TRUE
 )
 
