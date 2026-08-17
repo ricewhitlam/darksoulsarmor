@@ -150,7 +150,12 @@ DataFrame optimal_armor_combinations(
     bool I_capped = false; bool J_capped = false; bool K_capped = false; bool L_capped = false;
     int max_loop_size = std::max(I, std::max(J, std::max(K, L)));
     armor_combo curr_combo;
-    std::priority_queue<armor_combo> armor_combos;
+    // Reserve capacity for the heap's backing storage up front, so it never has to reallocate
+    // and copy its contents as it fills to max_output_size. priority_queue exposes no reserve()
+    // of its own, but its constructor can take ownership of an already-reserved container.
+    std::vector<armor_combo> armor_combos_storage;
+    armor_combos_storage.reserve(max_output_size);
+    std::priority_queue<armor_combo> armor_combos(std::less<armor_combo>(), std::move(armor_combos_storage));
     bool at_max_queue_size = false;
     int loop_size_1;
     for(int loop_size = starting_loop_size; loop_size <= max_loop_size; ++loop_size){
