@@ -46,69 +46,73 @@ DataFrame optimal_armor_combinations(
     // const double lm_alpha,
     // const double lm_resid_se_inv
 
-    NumericVector head_SCORE = head_df["SCORE"];
+    // PERF EXPERIMENT: raw pointers instead of NumericVector::operator[] in the hot loop below.
+    // The wrapping NumericVector (kept alive here under a _vec suffix) still owns/protects the
+    // underlying REALSXP; .begin() on a numeric vector is already a plain double*, so indexing
+    // through the raw pointer is identical in behavior to indexing the NumericVector directly.
+    NumericVector head_SCORE_vec = head_df["SCORE"]; const double* head_SCORE = head_SCORE_vec.begin();
     CharacterVector head_ARMOR = head_df["ARMOR"];
-    NumericVector head_PHYS_DEF = head_df["PHYS_DEF"];
-    NumericVector head_STRIKE_DEF = head_df["STRIKE_DEF"];
-    NumericVector head_SLASH_DEF = head_df["SLASH_DEF"];
-    NumericVector head_THRUST_DEF = head_df["THRUST_DEF"];
-    NumericVector head_MAG_DEF = head_df["MAG_DEF"];
-    NumericVector head_FIRE_DEF = head_df["FIRE_DEF"];
-    NumericVector head_LITNG_DEF = head_df["LITNG_DEF"];
-    NumericVector head_POISE = head_df["POISE"];
-    NumericVector head_BLEED_RES = head_df["BLEED_RES"];
-    NumericVector head_POIS_RES = head_df["POIS_RES"];
-    NumericVector head_CURSE_RES = head_df["CURSE_RES"];
-    NumericVector head_DURABILITY = head_df["DURABILITY"];
-    NumericVector head_WEIGHT = head_df["WEIGHT"];
+    NumericVector head_PHYS_DEF_vec = head_df["PHYS_DEF"]; const double* head_PHYS_DEF = head_PHYS_DEF_vec.begin();
+    NumericVector head_STRIKE_DEF_vec = head_df["STRIKE_DEF"]; const double* head_STRIKE_DEF = head_STRIKE_DEF_vec.begin();
+    NumericVector head_SLASH_DEF_vec = head_df["SLASH_DEF"]; const double* head_SLASH_DEF = head_SLASH_DEF_vec.begin();
+    NumericVector head_THRUST_DEF_vec = head_df["THRUST_DEF"]; const double* head_THRUST_DEF = head_THRUST_DEF_vec.begin();
+    NumericVector head_MAG_DEF_vec = head_df["MAG_DEF"]; const double* head_MAG_DEF = head_MAG_DEF_vec.begin();
+    NumericVector head_FIRE_DEF_vec = head_df["FIRE_DEF"]; const double* head_FIRE_DEF = head_FIRE_DEF_vec.begin();
+    NumericVector head_LITNG_DEF_vec = head_df["LITNG_DEF"]; const double* head_LITNG_DEF = head_LITNG_DEF_vec.begin();
+    NumericVector head_POISE_vec = head_df["POISE"]; const double* head_POISE = head_POISE_vec.begin();
+    NumericVector head_BLEED_RES_vec = head_df["BLEED_RES"]; const double* head_BLEED_RES = head_BLEED_RES_vec.begin();
+    NumericVector head_POIS_RES_vec = head_df["POIS_RES"]; const double* head_POIS_RES = head_POIS_RES_vec.begin();
+    NumericVector head_CURSE_RES_vec = head_df["CURSE_RES"]; const double* head_CURSE_RES = head_CURSE_RES_vec.begin();
+    NumericVector head_DURABILITY_vec = head_df["DURABILITY"]; const double* head_DURABILITY = head_DURABILITY_vec.begin();
+    NumericVector head_WEIGHT_vec = head_df["WEIGHT"]; const double* head_WEIGHT = head_WEIGHT_vec.begin();
 
-    NumericVector chest_SCORE = chest_df["SCORE"];
+    NumericVector chest_SCORE_vec = chest_df["SCORE"]; const double* chest_SCORE = chest_SCORE_vec.begin();
     CharacterVector chest_ARMOR = chest_df["ARMOR"];
-    NumericVector chest_PHYS_DEF = chest_df["PHYS_DEF"];
-    NumericVector chest_STRIKE_DEF = chest_df["STRIKE_DEF"];
-    NumericVector chest_SLASH_DEF = chest_df["SLASH_DEF"];
-    NumericVector chest_THRUST_DEF = chest_df["THRUST_DEF"];
-    NumericVector chest_MAG_DEF = chest_df["MAG_DEF"];
-    NumericVector chest_FIRE_DEF = chest_df["FIRE_DEF"];
-    NumericVector chest_LITNG_DEF = chest_df["LITNG_DEF"];
-    NumericVector chest_POISE = chest_df["POISE"];
-    NumericVector chest_BLEED_RES = chest_df["BLEED_RES"];
-    NumericVector chest_POIS_RES = chest_df["POIS_RES"];
-    NumericVector chest_CURSE_RES = chest_df["CURSE_RES"];
-    NumericVector chest_DURABILITY = chest_df["DURABILITY"];
-    NumericVector chest_WEIGHT = chest_df["WEIGHT"];
+    NumericVector chest_PHYS_DEF_vec = chest_df["PHYS_DEF"]; const double* chest_PHYS_DEF = chest_PHYS_DEF_vec.begin();
+    NumericVector chest_STRIKE_DEF_vec = chest_df["STRIKE_DEF"]; const double* chest_STRIKE_DEF = chest_STRIKE_DEF_vec.begin();
+    NumericVector chest_SLASH_DEF_vec = chest_df["SLASH_DEF"]; const double* chest_SLASH_DEF = chest_SLASH_DEF_vec.begin();
+    NumericVector chest_THRUST_DEF_vec = chest_df["THRUST_DEF"]; const double* chest_THRUST_DEF = chest_THRUST_DEF_vec.begin();
+    NumericVector chest_MAG_DEF_vec = chest_df["MAG_DEF"]; const double* chest_MAG_DEF = chest_MAG_DEF_vec.begin();
+    NumericVector chest_FIRE_DEF_vec = chest_df["FIRE_DEF"]; const double* chest_FIRE_DEF = chest_FIRE_DEF_vec.begin();
+    NumericVector chest_LITNG_DEF_vec = chest_df["LITNG_DEF"]; const double* chest_LITNG_DEF = chest_LITNG_DEF_vec.begin();
+    NumericVector chest_POISE_vec = chest_df["POISE"]; const double* chest_POISE = chest_POISE_vec.begin();
+    NumericVector chest_BLEED_RES_vec = chest_df["BLEED_RES"]; const double* chest_BLEED_RES = chest_BLEED_RES_vec.begin();
+    NumericVector chest_POIS_RES_vec = chest_df["POIS_RES"]; const double* chest_POIS_RES = chest_POIS_RES_vec.begin();
+    NumericVector chest_CURSE_RES_vec = chest_df["CURSE_RES"]; const double* chest_CURSE_RES = chest_CURSE_RES_vec.begin();
+    NumericVector chest_DURABILITY_vec = chest_df["DURABILITY"]; const double* chest_DURABILITY = chest_DURABILITY_vec.begin();
+    NumericVector chest_WEIGHT_vec = chest_df["WEIGHT"]; const double* chest_WEIGHT = chest_WEIGHT_vec.begin();
 
-    NumericVector hands_SCORE = hands_df["SCORE"];
+    NumericVector hands_SCORE_vec = hands_df["SCORE"]; const double* hands_SCORE = hands_SCORE_vec.begin();
     CharacterVector hands_ARMOR = hands_df["ARMOR"];
-    NumericVector hands_PHYS_DEF = hands_df["PHYS_DEF"];
-    NumericVector hands_STRIKE_DEF = hands_df["STRIKE_DEF"];
-    NumericVector hands_SLASH_DEF = hands_df["SLASH_DEF"];
-    NumericVector hands_THRUST_DEF = hands_df["THRUST_DEF"];
-    NumericVector hands_MAG_DEF = hands_df["MAG_DEF"];
-    NumericVector hands_FIRE_DEF = hands_df["FIRE_DEF"];
-    NumericVector hands_LITNG_DEF = hands_df["LITNG_DEF"];
-    NumericVector hands_POISE = hands_df["POISE"];
-    NumericVector hands_BLEED_RES = hands_df["BLEED_RES"];
-    NumericVector hands_POIS_RES = hands_df["POIS_RES"];
-    NumericVector hands_CURSE_RES = hands_df["CURSE_RES"];
-    NumericVector hands_DURABILITY = hands_df["DURABILITY"];
-    NumericVector hands_WEIGHT = hands_df["WEIGHT"];
+    NumericVector hands_PHYS_DEF_vec = hands_df["PHYS_DEF"]; const double* hands_PHYS_DEF = hands_PHYS_DEF_vec.begin();
+    NumericVector hands_STRIKE_DEF_vec = hands_df["STRIKE_DEF"]; const double* hands_STRIKE_DEF = hands_STRIKE_DEF_vec.begin();
+    NumericVector hands_SLASH_DEF_vec = hands_df["SLASH_DEF"]; const double* hands_SLASH_DEF = hands_SLASH_DEF_vec.begin();
+    NumericVector hands_THRUST_DEF_vec = hands_df["THRUST_DEF"]; const double* hands_THRUST_DEF = hands_THRUST_DEF_vec.begin();
+    NumericVector hands_MAG_DEF_vec = hands_df["MAG_DEF"]; const double* hands_MAG_DEF = hands_MAG_DEF_vec.begin();
+    NumericVector hands_FIRE_DEF_vec = hands_df["FIRE_DEF"]; const double* hands_FIRE_DEF = hands_FIRE_DEF_vec.begin();
+    NumericVector hands_LITNG_DEF_vec = hands_df["LITNG_DEF"]; const double* hands_LITNG_DEF = hands_LITNG_DEF_vec.begin();
+    NumericVector hands_POISE_vec = hands_df["POISE"]; const double* hands_POISE = hands_POISE_vec.begin();
+    NumericVector hands_BLEED_RES_vec = hands_df["BLEED_RES"]; const double* hands_BLEED_RES = hands_BLEED_RES_vec.begin();
+    NumericVector hands_POIS_RES_vec = hands_df["POIS_RES"]; const double* hands_POIS_RES = hands_POIS_RES_vec.begin();
+    NumericVector hands_CURSE_RES_vec = hands_df["CURSE_RES"]; const double* hands_CURSE_RES = hands_CURSE_RES_vec.begin();
+    NumericVector hands_DURABILITY_vec = hands_df["DURABILITY"]; const double* hands_DURABILITY = hands_DURABILITY_vec.begin();
+    NumericVector hands_WEIGHT_vec = hands_df["WEIGHT"]; const double* hands_WEIGHT = hands_WEIGHT_vec.begin();
 
-    NumericVector legs_SCORE = legs_df["SCORE"];
+    NumericVector legs_SCORE_vec = legs_df["SCORE"]; const double* legs_SCORE = legs_SCORE_vec.begin();
     CharacterVector legs_ARMOR = legs_df["ARMOR"];
-    NumericVector legs_PHYS_DEF = legs_df["PHYS_DEF"];
-    NumericVector legs_STRIKE_DEF = legs_df["STRIKE_DEF"];
-    NumericVector legs_SLASH_DEF = legs_df["SLASH_DEF"];
-    NumericVector legs_THRUST_DEF = legs_df["THRUST_DEF"];
-    NumericVector legs_MAG_DEF = legs_df["MAG_DEF"];
-    NumericVector legs_FIRE_DEF = legs_df["FIRE_DEF"];
-    NumericVector legs_LITNG_DEF = legs_df["LITNG_DEF"];
-    NumericVector legs_POISE = legs_df["POISE"];
-    NumericVector legs_BLEED_RES = legs_df["BLEED_RES"];
-    NumericVector legs_POIS_RES = legs_df["POIS_RES"];
-    NumericVector legs_CURSE_RES = legs_df["CURSE_RES"];
-    NumericVector legs_DURABILITY = legs_df["DURABILITY"];
-    NumericVector legs_WEIGHT = legs_df["WEIGHT"];
+    NumericVector legs_PHYS_DEF_vec = legs_df["PHYS_DEF"]; const double* legs_PHYS_DEF = legs_PHYS_DEF_vec.begin();
+    NumericVector legs_STRIKE_DEF_vec = legs_df["STRIKE_DEF"]; const double* legs_STRIKE_DEF = legs_STRIKE_DEF_vec.begin();
+    NumericVector legs_SLASH_DEF_vec = legs_df["SLASH_DEF"]; const double* legs_SLASH_DEF = legs_SLASH_DEF_vec.begin();
+    NumericVector legs_THRUST_DEF_vec = legs_df["THRUST_DEF"]; const double* legs_THRUST_DEF = legs_THRUST_DEF_vec.begin();
+    NumericVector legs_MAG_DEF_vec = legs_df["MAG_DEF"]; const double* legs_MAG_DEF = legs_MAG_DEF_vec.begin();
+    NumericVector legs_FIRE_DEF_vec = legs_df["FIRE_DEF"]; const double* legs_FIRE_DEF = legs_FIRE_DEF_vec.begin();
+    NumericVector legs_LITNG_DEF_vec = legs_df["LITNG_DEF"]; const double* legs_LITNG_DEF = legs_LITNG_DEF_vec.begin();
+    NumericVector legs_POISE_vec = legs_df["POISE"]; const double* legs_POISE = legs_POISE_vec.begin();
+    NumericVector legs_BLEED_RES_vec = legs_df["BLEED_RES"]; const double* legs_BLEED_RES = legs_BLEED_RES_vec.begin();
+    NumericVector legs_POIS_RES_vec = legs_df["POIS_RES"]; const double* legs_POIS_RES = legs_POIS_RES_vec.begin();
+    NumericVector legs_CURSE_RES_vec = legs_df["CURSE_RES"]; const double* legs_CURSE_RES = legs_CURSE_RES_vec.begin();
+    NumericVector legs_DURABILITY_vec = legs_df["DURABILITY"]; const double* legs_DURABILITY = legs_DURABILITY_vec.begin();
+    NumericVector legs_WEIGHT_vec = legs_df["WEIGHT"]; const double* legs_WEIGHT = legs_WEIGHT_vec.begin();
 
     // All four tables arrive sorted descending by SCORE (see setorder() in get.optimal.armor.combos),
     // so element 0 of each is the best score achievable from that slot alone. Once the output heap is
