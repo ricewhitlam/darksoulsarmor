@@ -6,3 +6,4 @@
 *.Rcheck/
 /README.html
 inst/doc/
+.claude/
