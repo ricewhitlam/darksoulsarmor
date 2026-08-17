@@ -18,6 +18,42 @@ struct armor_combo {
     }
 };
 
+// One armor slot's columns (head/chest/hands/legs are all shaped the same way), as raw
+// pointers for use in the hot loop below. The wrapping NumericVector/CharacterVector members
+// own/protect the underlying SEXPs; .begin() on a numeric column is already a plain double*,
+// so indexing through the raw pointer is identical in behavior to indexing the vector directly.
+struct Slot {
+    NumericVector SCORE_vec, PHYS_DEF_vec, STRIKE_DEF_vec, SLASH_DEF_vec, THRUST_DEF_vec,
+                  MAG_DEF_vec, FIRE_DEF_vec, LITNG_DEF_vec, POISE_vec, BLEED_RES_vec,
+                  POIS_RES_vec, CURSE_RES_vec, DURABILITY_vec, WEIGHT_vec;
+    CharacterVector ARMOR;
+    const double *SCORE, *PHYS_DEF, *STRIKE_DEF, *SLASH_DEF, *THRUST_DEF,
+                 *MAG_DEF, *FIRE_DEF, *LITNG_DEF, *POISE, *BLEED_RES,
+                 *POIS_RES, *CURSE_RES, *DURABILITY, *WEIGHT;
+    int n;
+};
+
+Slot make_slot(const DataFrame& df){
+    Slot s;
+    s.SCORE_vec = df["SCORE"]; s.SCORE = s.SCORE_vec.begin();
+    s.ARMOR = df["ARMOR"];
+    s.PHYS_DEF_vec = df["PHYS_DEF"]; s.PHYS_DEF = s.PHYS_DEF_vec.begin();
+    s.STRIKE_DEF_vec = df["STRIKE_DEF"]; s.STRIKE_DEF = s.STRIKE_DEF_vec.begin();
+    s.SLASH_DEF_vec = df["SLASH_DEF"]; s.SLASH_DEF = s.SLASH_DEF_vec.begin();
+    s.THRUST_DEF_vec = df["THRUST_DEF"]; s.THRUST_DEF = s.THRUST_DEF_vec.begin();
+    s.MAG_DEF_vec = df["MAG_DEF"]; s.MAG_DEF = s.MAG_DEF_vec.begin();
+    s.FIRE_DEF_vec = df["FIRE_DEF"]; s.FIRE_DEF = s.FIRE_DEF_vec.begin();
+    s.LITNG_DEF_vec = df["LITNG_DEF"]; s.LITNG_DEF = s.LITNG_DEF_vec.begin();
+    s.POISE_vec = df["POISE"]; s.POISE = s.POISE_vec.begin();
+    s.BLEED_RES_vec = df["BLEED_RES"]; s.BLEED_RES = s.BLEED_RES_vec.begin();
+    s.POIS_RES_vec = df["POIS_RES"]; s.POIS_RES = s.POIS_RES_vec.begin();
+    s.CURSE_RES_vec = df["CURSE_RES"]; s.CURSE_RES = s.CURSE_RES_vec.begin();
+    s.DURABILITY_vec = df["DURABILITY"]; s.DURABILITY = s.DURABILITY_vec.begin();
+    s.WEIGHT_vec = df["WEIGHT"]; s.WEIGHT = s.WEIGHT_vec.begin();
+    s.n = df.nrows();
+    return s;
+}
+
 //[[Rcpp::export(optimal_armor_combinations)]]
 DataFrame optimal_armor_combinations(
 
@@ -46,73 +82,10 @@ DataFrame optimal_armor_combinations(
     // const double lm_alpha,
     // const double lm_resid_se_inv
 
-    // PERF EXPERIMENT: raw pointers instead of NumericVector::operator[] in the hot loop below.
-    // The wrapping NumericVector (kept alive here under a _vec suffix) still owns/protects the
-    // underlying REALSXP; .begin() on a numeric vector is already a plain double*, so indexing
-    // through the raw pointer is identical in behavior to indexing the NumericVector directly.
-    NumericVector head_SCORE_vec = head_df["SCORE"]; const double* head_SCORE = head_SCORE_vec.begin();
-    CharacterVector head_ARMOR = head_df["ARMOR"];
-    NumericVector head_PHYS_DEF_vec = head_df["PHYS_DEF"]; const double* head_PHYS_DEF = head_PHYS_DEF_vec.begin();
-    NumericVector head_STRIKE_DEF_vec = head_df["STRIKE_DEF"]; const double* head_STRIKE_DEF = head_STRIKE_DEF_vec.begin();
-    NumericVector head_SLASH_DEF_vec = head_df["SLASH_DEF"]; const double* head_SLASH_DEF = head_SLASH_DEF_vec.begin();
-    NumericVector head_THRUST_DEF_vec = head_df["THRUST_DEF"]; const double* head_THRUST_DEF = head_THRUST_DEF_vec.begin();
-    NumericVector head_MAG_DEF_vec = head_df["MAG_DEF"]; const double* head_MAG_DEF = head_MAG_DEF_vec.begin();
-    NumericVector head_FIRE_DEF_vec = head_df["FIRE_DEF"]; const double* head_FIRE_DEF = head_FIRE_DEF_vec.begin();
-    NumericVector head_LITNG_DEF_vec = head_df["LITNG_DEF"]; const double* head_LITNG_DEF = head_LITNG_DEF_vec.begin();
-    NumericVector head_POISE_vec = head_df["POISE"]; const double* head_POISE = head_POISE_vec.begin();
-    NumericVector head_BLEED_RES_vec = head_df["BLEED_RES"]; const double* head_BLEED_RES = head_BLEED_RES_vec.begin();
-    NumericVector head_POIS_RES_vec = head_df["POIS_RES"]; const double* head_POIS_RES = head_POIS_RES_vec.begin();
-    NumericVector head_CURSE_RES_vec = head_df["CURSE_RES"]; const double* head_CURSE_RES = head_CURSE_RES_vec.begin();
-    NumericVector head_DURABILITY_vec = head_df["DURABILITY"]; const double* head_DURABILITY = head_DURABILITY_vec.begin();
-    NumericVector head_WEIGHT_vec = head_df["WEIGHT"]; const double* head_WEIGHT = head_WEIGHT_vec.begin();
-
-    NumericVector chest_SCORE_vec = chest_df["SCORE"]; const double* chest_SCORE = chest_SCORE_vec.begin();
-    CharacterVector chest_ARMOR = chest_df["ARMOR"];
-    NumericVector chest_PHYS_DEF_vec = chest_df["PHYS_DEF"]; const double* chest_PHYS_DEF = chest_PHYS_DEF_vec.begin();
-    NumericVector chest_STRIKE_DEF_vec = chest_df["STRIKE_DEF"]; const double* chest_STRIKE_DEF = chest_STRIKE_DEF_vec.begin();
-    NumericVector chest_SLASH_DEF_vec = chest_df["SLASH_DEF"]; const double* chest_SLASH_DEF = chest_SLASH_DEF_vec.begin();
-    NumericVector chest_THRUST_DEF_vec = chest_df["THRUST_DEF"]; const double* chest_THRUST_DEF = chest_THRUST_DEF_vec.begin();
-    NumericVector chest_MAG_DEF_vec = chest_df["MAG_DEF"]; const double* chest_MAG_DEF = chest_MAG_DEF_vec.begin();
-    NumericVector chest_FIRE_DEF_vec = chest_df["FIRE_DEF"]; const double* chest_FIRE_DEF = chest_FIRE_DEF_vec.begin();
-    NumericVector chest_LITNG_DEF_vec = chest_df["LITNG_DEF"]; const double* chest_LITNG_DEF = chest_LITNG_DEF_vec.begin();
-    NumericVector chest_POISE_vec = chest_df["POISE"]; const double* chest_POISE = chest_POISE_vec.begin();
-    NumericVector chest_BLEED_RES_vec = chest_df["BLEED_RES"]; const double* chest_BLEED_RES = chest_BLEED_RES_vec.begin();
-    NumericVector chest_POIS_RES_vec = chest_df["POIS_RES"]; const double* chest_POIS_RES = chest_POIS_RES_vec.begin();
-    NumericVector chest_CURSE_RES_vec = chest_df["CURSE_RES"]; const double* chest_CURSE_RES = chest_CURSE_RES_vec.begin();
-    NumericVector chest_DURABILITY_vec = chest_df["DURABILITY"]; const double* chest_DURABILITY = chest_DURABILITY_vec.begin();
-    NumericVector chest_WEIGHT_vec = chest_df["WEIGHT"]; const double* chest_WEIGHT = chest_WEIGHT_vec.begin();
-
-    NumericVector hands_SCORE_vec = hands_df["SCORE"]; const double* hands_SCORE = hands_SCORE_vec.begin();
-    CharacterVector hands_ARMOR = hands_df["ARMOR"];
-    NumericVector hands_PHYS_DEF_vec = hands_df["PHYS_DEF"]; const double* hands_PHYS_DEF = hands_PHYS_DEF_vec.begin();
-    NumericVector hands_STRIKE_DEF_vec = hands_df["STRIKE_DEF"]; const double* hands_STRIKE_DEF = hands_STRIKE_DEF_vec.begin();
-    NumericVector hands_SLASH_DEF_vec = hands_df["SLASH_DEF"]; const double* hands_SLASH_DEF = hands_SLASH_DEF_vec.begin();
-    NumericVector hands_THRUST_DEF_vec = hands_df["THRUST_DEF"]; const double* hands_THRUST_DEF = hands_THRUST_DEF_vec.begin();
-    NumericVector hands_MAG_DEF_vec = hands_df["MAG_DEF"]; const double* hands_MAG_DEF = hands_MAG_DEF_vec.begin();
-    NumericVector hands_FIRE_DEF_vec = hands_df["FIRE_DEF"]; const double* hands_FIRE_DEF = hands_FIRE_DEF_vec.begin();
-    NumericVector hands_LITNG_DEF_vec = hands_df["LITNG_DEF"]; const double* hands_LITNG_DEF = hands_LITNG_DEF_vec.begin();
-    NumericVector hands_POISE_vec = hands_df["POISE"]; const double* hands_POISE = hands_POISE_vec.begin();
-    NumericVector hands_BLEED_RES_vec = hands_df["BLEED_RES"]; const double* hands_BLEED_RES = hands_BLEED_RES_vec.begin();
-    NumericVector hands_POIS_RES_vec = hands_df["POIS_RES"]; const double* hands_POIS_RES = hands_POIS_RES_vec.begin();
-    NumericVector hands_CURSE_RES_vec = hands_df["CURSE_RES"]; const double* hands_CURSE_RES = hands_CURSE_RES_vec.begin();
-    NumericVector hands_DURABILITY_vec = hands_df["DURABILITY"]; const double* hands_DURABILITY = hands_DURABILITY_vec.begin();
-    NumericVector hands_WEIGHT_vec = hands_df["WEIGHT"]; const double* hands_WEIGHT = hands_WEIGHT_vec.begin();
-
-    NumericVector legs_SCORE_vec = legs_df["SCORE"]; const double* legs_SCORE = legs_SCORE_vec.begin();
-    CharacterVector legs_ARMOR = legs_df["ARMOR"];
-    NumericVector legs_PHYS_DEF_vec = legs_df["PHYS_DEF"]; const double* legs_PHYS_DEF = legs_PHYS_DEF_vec.begin();
-    NumericVector legs_STRIKE_DEF_vec = legs_df["STRIKE_DEF"]; const double* legs_STRIKE_DEF = legs_STRIKE_DEF_vec.begin();
-    NumericVector legs_SLASH_DEF_vec = legs_df["SLASH_DEF"]; const double* legs_SLASH_DEF = legs_SLASH_DEF_vec.begin();
-    NumericVector legs_THRUST_DEF_vec = legs_df["THRUST_DEF"]; const double* legs_THRUST_DEF = legs_THRUST_DEF_vec.begin();
-    NumericVector legs_MAG_DEF_vec = legs_df["MAG_DEF"]; const double* legs_MAG_DEF = legs_MAG_DEF_vec.begin();
-    NumericVector legs_FIRE_DEF_vec = legs_df["FIRE_DEF"]; const double* legs_FIRE_DEF = legs_FIRE_DEF_vec.begin();
-    NumericVector legs_LITNG_DEF_vec = legs_df["LITNG_DEF"]; const double* legs_LITNG_DEF = legs_LITNG_DEF_vec.begin();
-    NumericVector legs_POISE_vec = legs_df["POISE"]; const double* legs_POISE = legs_POISE_vec.begin();
-    NumericVector legs_BLEED_RES_vec = legs_df["BLEED_RES"]; const double* legs_BLEED_RES = legs_BLEED_RES_vec.begin();
-    NumericVector legs_POIS_RES_vec = legs_df["POIS_RES"]; const double* legs_POIS_RES = legs_POIS_RES_vec.begin();
-    NumericVector legs_CURSE_RES_vec = legs_df["CURSE_RES"]; const double* legs_CURSE_RES = legs_CURSE_RES_vec.begin();
-    NumericVector legs_DURABILITY_vec = legs_df["DURABILITY"]; const double* legs_DURABILITY = legs_DURABILITY_vec.begin();
-    NumericVector legs_WEIGHT_vec = legs_df["WEIGHT"]; const double* legs_WEIGHT = legs_WEIGHT_vec.begin();
+    Slot head = make_slot(head_df);
+    Slot chest = make_slot(chest_df);
+    Slot hands = make_slot(hands_df);
+    Slot legs = make_slot(legs_df);
 
     // All four tables arrive sorted descending by SCORE (see setorder() in get.optimal.armor.combos),
     // so element 0 of each is the best score achievable from that slot alone. Once the output heap is
@@ -121,11 +94,11 @@ DataFrame optimal_armor_combinations(
     // cannot beat the heap's current worst kept score, neither can this candidate or any later one in
     // the same (descending-sorted) loop, since the loop only ever advances forward - so it is safe to
     // break out of that level entirely rather than merely skip the current candidate.
-    double best_chest_SCORE = chest_SCORE[0];
-    double best_hands_SCORE = hands_SCORE[0];
-    double best_legs_SCORE = legs_SCORE[0];
+    double best_chest_SCORE = chest.SCORE[0];
+    double best_hands_SCORE = hands.SCORE[0];
+    double best_legs_SCORE = legs.SCORE[0];
 
-    int I = head_df.nrows(); int J = chest_df.nrows(); int K = hands_df.nrows(); int L = legs_df.nrows();
+    int I = head.n; int J = chest.n; int K = hands.n; int L = legs.n;
 
     int curr_count = 0;
 
@@ -203,25 +176,25 @@ DataFrame optimal_armor_combinations(
                 curr_load_threshold = load_threshold;
             }
 
-            curr_head_SCORE = head_SCORE[i];
+            curr_head_SCORE = head.SCORE[i];
 
             if(at_max_queue_size && (curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
                 break;
             }
 
-            curr_head_PHYS_DEF = head_PHYS_DEF[i];
-            curr_head_STRIKE_DEF = head_STRIKE_DEF[i];
-            curr_head_SLASH_DEF = head_SLASH_DEF[i];
-            curr_head_THRUST_DEF = head_THRUST_DEF[i];
-            curr_head_MAG_DEF = head_MAG_DEF[i];
-            curr_head_FIRE_DEF = head_FIRE_DEF[i];
-            curr_head_LITNG_DEF = head_LITNG_DEF[i];
-            curr_head_POISE = head_POISE[i];
-            curr_head_BLEED_RES = head_BLEED_RES[i];
-            curr_head_POIS_RES = head_POIS_RES[i];
-            curr_head_CURSE_RES = head_CURSE_RES[i];
-            curr_head_DURABILITY = head_DURABILITY[i];
-            curr_head_WEIGHT = head_WEIGHT[i];
+            curr_head_PHYS_DEF = head.PHYS_DEF[i];
+            curr_head_STRIKE_DEF = head.STRIKE_DEF[i];
+            curr_head_SLASH_DEF = head.SLASH_DEF[i];
+            curr_head_THRUST_DEF = head.THRUST_DEF[i];
+            curr_head_MAG_DEF = head.MAG_DEF[i];
+            curr_head_FIRE_DEF = head.FIRE_DEF[i];
+            curr_head_LITNG_DEF = head.LITNG_DEF[i];
+            curr_head_POISE = head.POISE[i];
+            curr_head_BLEED_RES = head.BLEED_RES[i];
+            curr_head_POIS_RES = head.POIS_RES[i];
+            curr_head_CURSE_RES = head.CURSE_RES[i];
+            curr_head_DURABILITY = head.DURABILITY[i];
+            curr_head_WEIGHT = head.WEIGHT[i];
 
             for(int j = 0; j < curr_J; ++j){
 
@@ -229,25 +202,25 @@ DataFrame optimal_armor_combinations(
                     j = loop_size_1;
                 }
 
-                curr_chest_SCORE = chest_SCORE[j];
+                curr_chest_SCORE = chest.SCORE[j];
 
                 if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
                     break;
                 }
 
-                curr_chest_PHYS_DEF = chest_PHYS_DEF[j];
-                curr_chest_STRIKE_DEF = chest_STRIKE_DEF[j];
-                curr_chest_SLASH_DEF = chest_SLASH_DEF[j];
-                curr_chest_THRUST_DEF = chest_THRUST_DEF[j];
-                curr_chest_MAG_DEF = chest_MAG_DEF[j];
-                curr_chest_FIRE_DEF = chest_FIRE_DEF[j];
-                curr_chest_LITNG_DEF = chest_LITNG_DEF[j];
-                curr_chest_POISE = chest_POISE[j];
-                curr_chest_BLEED_RES = chest_BLEED_RES[j];
-                curr_chest_POIS_RES = chest_POIS_RES[j];
-                curr_chest_CURSE_RES = chest_CURSE_RES[j];
-                curr_chest_DURABILITY = chest_DURABILITY[j];
-                curr_chest_WEIGHT = chest_WEIGHT[j];
+                curr_chest_PHYS_DEF = chest.PHYS_DEF[j];
+                curr_chest_STRIKE_DEF = chest.STRIKE_DEF[j];
+                curr_chest_SLASH_DEF = chest.SLASH_DEF[j];
+                curr_chest_THRUST_DEF = chest.THRUST_DEF[j];
+                curr_chest_MAG_DEF = chest.MAG_DEF[j];
+                curr_chest_FIRE_DEF = chest.FIRE_DEF[j];
+                curr_chest_LITNG_DEF = chest.LITNG_DEF[j];
+                curr_chest_POISE = chest.POISE[j];
+                curr_chest_BLEED_RES = chest.BLEED_RES[j];
+                curr_chest_POIS_RES = chest.POIS_RES[j];
+                curr_chest_CURSE_RES = chest.CURSE_RES[j];
+                curr_chest_DURABILITY = chest.DURABILITY[j];
+                curr_chest_WEIGHT = chest.WEIGHT[j];
 
                 for(int k = 0; k < curr_K; ++k){
 
@@ -255,25 +228,25 @@ DataFrame optimal_armor_combinations(
                         k = loop_size_1;
                     }
 
-                    curr_hands_SCORE = hands_SCORE[k];
+                    curr_hands_SCORE = hands.SCORE[k];
 
                     if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
                         break;
                     }
 
-                    curr_hands_PHYS_DEF = hands_PHYS_DEF[k];
-                    curr_hands_STRIKE_DEF = hands_STRIKE_DEF[k];
-                    curr_hands_SLASH_DEF = hands_SLASH_DEF[k];
-                    curr_hands_THRUST_DEF = hands_THRUST_DEF[k];
-                    curr_hands_MAG_DEF = hands_MAG_DEF[k];
-                    curr_hands_FIRE_DEF = hands_FIRE_DEF[k];
-                    curr_hands_LITNG_DEF = hands_LITNG_DEF[k];
-                    curr_hands_POISE = hands_POISE[k];
-                    curr_hands_BLEED_RES = hands_BLEED_RES[k];
-                    curr_hands_POIS_RES = hands_POIS_RES[k];
-                    curr_hands_CURSE_RES = hands_CURSE_RES[k];
-                    curr_hands_DURABILITY = hands_DURABILITY[k];
-                    curr_hands_WEIGHT = hands_WEIGHT[k];
+                    curr_hands_PHYS_DEF = hands.PHYS_DEF[k];
+                    curr_hands_STRIKE_DEF = hands.STRIKE_DEF[k];
+                    curr_hands_SLASH_DEF = hands.SLASH_DEF[k];
+                    curr_hands_THRUST_DEF = hands.THRUST_DEF[k];
+                    curr_hands_MAG_DEF = hands.MAG_DEF[k];
+                    curr_hands_FIRE_DEF = hands.FIRE_DEF[k];
+                    curr_hands_LITNG_DEF = hands.LITNG_DEF[k];
+                    curr_hands_POISE = hands.POISE[k];
+                    curr_hands_BLEED_RES = hands.BLEED_RES[k];
+                    curr_hands_POIS_RES = hands.POIS_RES[k];
+                    curr_hands_CURSE_RES = hands.CURSE_RES[k];
+                    curr_hands_DURABILITY = hands.DURABILITY[k];
+                    curr_hands_WEIGHT = hands.WEIGHT[k];
 
                     for(int l = 0; l < curr_L; ++l){
 
@@ -281,73 +254,73 @@ DataFrame optimal_armor_combinations(
                             l = loop_size_1;
                         }
 
-                        curr_legs_SCORE = legs_SCORE[l];
+                        curr_legs_SCORE = legs.SCORE[l];
 
                         if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) <= armor_combos.top().score){
                             break;
                         }
 
-                        curr_legs_WEIGHT = legs_WEIGHT[l];
+                        curr_legs_WEIGHT = legs.WEIGHT[l];
                         curr_WEIGHT = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
                         if(curr_WEIGHT > (-base_weight+curr_load_threshold+eps)){
                             continue;
                         }
-                        curr_legs_POISE = legs_POISE[l];
+                        curr_legs_POISE = legs.POISE[l];
                         curr_POISE = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
                         if((curr_POISE+extra_poise) < (minima[7]-eps)){
                             continue;
                         }
-                        curr_legs_PHYS_DEF = legs_PHYS_DEF[l];
+                        curr_legs_PHYS_DEF = legs.PHYS_DEF[l];
                         curr_PHYS_DEF = curr_head_PHYS_DEF+curr_chest_PHYS_DEF+curr_hands_PHYS_DEF+curr_legs_PHYS_DEF;
                         if(curr_PHYS_DEF < (minima[0]-eps)){
                             continue;
                         }
-                        curr_legs_STRIKE_DEF = legs_STRIKE_DEF[l];
+                        curr_legs_STRIKE_DEF = legs.STRIKE_DEF[l];
                         curr_STRIKE_DEF = curr_head_STRIKE_DEF+curr_chest_STRIKE_DEF+curr_hands_STRIKE_DEF+curr_legs_STRIKE_DEF;
                         if(curr_STRIKE_DEF < (minima[1]-eps)){
                             continue;
                         }
-                        curr_legs_SLASH_DEF = legs_SLASH_DEF[l];
+                        curr_legs_SLASH_DEF = legs.SLASH_DEF[l];
                         curr_SLASH_DEF = curr_head_SLASH_DEF+curr_chest_SLASH_DEF+curr_hands_SLASH_DEF+curr_legs_SLASH_DEF;
                         if(curr_SLASH_DEF < (minima[2]-eps)){
                             continue;
                         }
-                        curr_legs_THRUST_DEF = legs_THRUST_DEF[l];
+                        curr_legs_THRUST_DEF = legs.THRUST_DEF[l];
                         curr_THRUST_DEF = curr_head_THRUST_DEF+curr_chest_THRUST_DEF+curr_hands_THRUST_DEF+curr_legs_THRUST_DEF;
                         if(curr_THRUST_DEF < (minima[3]-eps)){
                             continue;
                         }
-                        curr_legs_MAG_DEF = legs_MAG_DEF[l];
+                        curr_legs_MAG_DEF = legs.MAG_DEF[l];
                         curr_MAG_DEF = curr_head_MAG_DEF+curr_chest_MAG_DEF+curr_hands_MAG_DEF+curr_legs_MAG_DEF;
                         if(curr_MAG_DEF < (minima[4]-eps)){
                             continue;
                         }
-                        curr_legs_FIRE_DEF = legs_FIRE_DEF[l];
+                        curr_legs_FIRE_DEF = legs.FIRE_DEF[l];
                         curr_FIRE_DEF = curr_head_FIRE_DEF+curr_chest_FIRE_DEF+curr_hands_FIRE_DEF+curr_legs_FIRE_DEF;
                         if(curr_FIRE_DEF < (minima[5]-eps)){
                             continue;
                         }
-                        curr_legs_LITNG_DEF = legs_LITNG_DEF[l];
+                        curr_legs_LITNG_DEF = legs.LITNG_DEF[l];
                         curr_LITNG_DEF = curr_head_LITNG_DEF+curr_chest_LITNG_DEF+curr_hands_LITNG_DEF+curr_legs_LITNG_DEF;
                         if(curr_LITNG_DEF < (minima[6]-eps)){
                             continue;
                         }
-                        curr_legs_BLEED_RES = legs_BLEED_RES[l];
+                        curr_legs_BLEED_RES = legs.BLEED_RES[l];
                         curr_BLEED_RES = curr_head_BLEED_RES+curr_chest_BLEED_RES+curr_hands_BLEED_RES+curr_legs_BLEED_RES;
                         if(curr_BLEED_RES < (minima[8]-eps)){
                             continue;
                         }
-                        curr_legs_POIS_RES = legs_POIS_RES[l];
+                        curr_legs_POIS_RES = legs.POIS_RES[l];
                         curr_POIS_RES = curr_head_POIS_RES+curr_chest_POIS_RES+curr_hands_POIS_RES+curr_legs_POIS_RES;
                         if(curr_POIS_RES < (minima[9]-eps)){
                             continue;
                         }
-                        curr_legs_CURSE_RES = legs_CURSE_RES[l];
+                        curr_legs_CURSE_RES = legs.CURSE_RES[l];
                         curr_CURSE_RES = curr_head_CURSE_RES+curr_chest_CURSE_RES+curr_hands_CURSE_RES+curr_legs_CURSE_RES;
                         if(curr_CURSE_RES < (minima[10]-eps)){
                             continue;
                         }
-                        curr_legs_DURABILITY = legs_DURABILITY[l];
+                        curr_legs_DURABILITY = legs.DURABILITY[l];
                         curr_DURABILITY = std::min(curr_head_DURABILITY, std::min(curr_chest_DURABILITY, std::min(curr_hands_DURABILITY, curr_legs_DURABILITY)));
                         if(curr_DURABILITY < (minima[11]-eps)){
                             continue;
@@ -416,20 +389,20 @@ DataFrame optimal_armor_combinations(
 
         SCORE_RAW[n] = curr_combo.score; SCORE_PCT[n] = R::pnorm(curr_combo.score, 0.0, 1.0, true, false);
         // SCORE_RESID_RAW[n] = lm_resid_se_inv*((lm_beta*out_WEIGHT+lm_alpha)-curr_combo.score); SCORE_RESID_PCT[n] = R::pnorm(SCORE_RESID_RAW[n], 0.0, 1.0, true, false);
-        HEAD[n] = head_ARMOR[out_h]; CHEST[n] = chest_ARMOR[out_c]; HANDS[n] = hands_ARMOR[out_g]; LEGS[n] = legs_ARMOR[out_l];
-        PHYS_DEF[n] = head_PHYS_DEF[out_h]+chest_PHYS_DEF[out_c]+hands_PHYS_DEF[out_g]+legs_PHYS_DEF[out_l];
-        STRIKE_DEF[n] = head_STRIKE_DEF[out_h]+chest_STRIKE_DEF[out_c]+hands_STRIKE_DEF[out_g]+legs_STRIKE_DEF[out_l];
-        SLASH_DEF[n] = head_SLASH_DEF[out_h]+chest_SLASH_DEF[out_c]+hands_SLASH_DEF[out_g]+legs_SLASH_DEF[out_l];
-        THRUST_DEF[n] = head_THRUST_DEF[out_h]+chest_THRUST_DEF[out_c]+hands_THRUST_DEF[out_g]+legs_THRUST_DEF[out_l];
-        MAG_DEF[n] = head_MAG_DEF[out_h]+chest_MAG_DEF[out_c]+hands_MAG_DEF[out_g]+legs_MAG_DEF[out_l];
-        FIRE_DEF[n] = head_FIRE_DEF[out_h]+chest_FIRE_DEF[out_c]+hands_FIRE_DEF[out_g]+legs_FIRE_DEF[out_l];
-        LITNG_DEF[n] = head_LITNG_DEF[out_h]+chest_LITNG_DEF[out_c]+hands_LITNG_DEF[out_g]+legs_LITNG_DEF[out_l];
-        BLEED_RES[n] = head_BLEED_RES[out_h]+chest_BLEED_RES[out_c]+hands_BLEED_RES[out_g]+legs_BLEED_RES[out_l];
-        POIS_RES[n] = head_POIS_RES[out_h]+chest_POIS_RES[out_c]+hands_POIS_RES[out_g]+legs_POIS_RES[out_l];
-        CURSE_RES[n] = head_CURSE_RES[out_h]+chest_CURSE_RES[out_c]+hands_CURSE_RES[out_g]+legs_CURSE_RES[out_l];
-        DURABILITY[n] = std::min(head_DURABILITY[out_h], std::min(chest_DURABILITY[out_c], std::min(hands_DURABILITY[out_g], legs_DURABILITY[out_l])));
+        HEAD[n] = head.ARMOR[out_h]; CHEST[n] = chest.ARMOR[out_c]; HANDS[n] = hands.ARMOR[out_g]; LEGS[n] = legs.ARMOR[out_l];
+        PHYS_DEF[n] = head.PHYS_DEF[out_h]+chest.PHYS_DEF[out_c]+hands.PHYS_DEF[out_g]+legs.PHYS_DEF[out_l];
+        STRIKE_DEF[n] = head.STRIKE_DEF[out_h]+chest.STRIKE_DEF[out_c]+hands.STRIKE_DEF[out_g]+legs.STRIKE_DEF[out_l];
+        SLASH_DEF[n] = head.SLASH_DEF[out_h]+chest.SLASH_DEF[out_c]+hands.SLASH_DEF[out_g]+legs.SLASH_DEF[out_l];
+        THRUST_DEF[n] = head.THRUST_DEF[out_h]+chest.THRUST_DEF[out_c]+hands.THRUST_DEF[out_g]+legs.THRUST_DEF[out_l];
+        MAG_DEF[n] = head.MAG_DEF[out_h]+chest.MAG_DEF[out_c]+hands.MAG_DEF[out_g]+legs.MAG_DEF[out_l];
+        FIRE_DEF[n] = head.FIRE_DEF[out_h]+chest.FIRE_DEF[out_c]+hands.FIRE_DEF[out_g]+legs.FIRE_DEF[out_l];
+        LITNG_DEF[n] = head.LITNG_DEF[out_h]+chest.LITNG_DEF[out_c]+hands.LITNG_DEF[out_g]+legs.LITNG_DEF[out_l];
+        BLEED_RES[n] = head.BLEED_RES[out_h]+chest.BLEED_RES[out_c]+hands.BLEED_RES[out_g]+legs.BLEED_RES[out_l];
+        POIS_RES[n] = head.POIS_RES[out_h]+chest.POIS_RES[out_c]+hands.POIS_RES[out_g]+legs.POIS_RES[out_l];
+        CURSE_RES[n] = head.CURSE_RES[out_h]+chest.CURSE_RES[out_c]+hands.CURSE_RES[out_g]+legs.CURSE_RES[out_l];
+        DURABILITY[n] = std::min(head.DURABILITY[out_h], std::min(chest.DURABILITY[out_c], std::min(hands.DURABILITY[out_g], legs.DURABILITY[out_l])));
 
-        out_head_POISE = head_POISE[out_h]; out_chest_POISE = chest_POISE[out_c]; out_hands_POISE = hands_POISE[out_g]; out_legs_POISE = legs_POISE[out_l];
+        out_head_POISE = head.POISE[out_h]; out_chest_POISE = chest.POISE[out_c]; out_hands_POISE = hands.POISE[out_g]; out_legs_POISE = legs.POISE[out_l];
         out_POISE = out_head_POISE+out_chest_POISE+out_hands_POISE+out_legs_POISE;
         ARMOR_POISE[n] = out_POISE; TOTAL_POISE[n] = out_POISE+extra_poise;
         out_poise_count = (out_head_POISE > 1.0e-10)+(out_chest_POISE > 1.0e-10)+(out_hands_POISE > 1.0e-10)+(out_legs_POISE > 1.0e-10);
@@ -451,7 +424,7 @@ DataFrame optimal_armor_combinations(
                 break;
         }
 
-        out_WEIGHT = head_WEIGHT[out_h]+chest_WEIGHT[out_c]+hands_WEIGHT[out_g]+legs_WEIGHT[out_l];
+        out_WEIGHT = head.WEIGHT[out_h]+chest.WEIGHT[out_c]+hands.WEIGHT[out_g]+legs.WEIGHT[out_l];
         out_load = (out_h == motf_index) ? load_motf : load;
         ARMOR_WEIGHT[n] = out_WEIGHT; TOTAL_WEIGHT[n] = out_WEIGHT+base_weight; EQUIP_LOAD[n] = out_load; PCT_LOAD[n] = (out_WEIGHT+base_weight)/out_load;
         armor_combos.pop();
