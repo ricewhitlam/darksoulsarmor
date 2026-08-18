@@ -8,7 +8,7 @@ void kahan_addition(const double x, kahan_total& kt){
     double y = x-kt.comp;
     double t = kt.total+y;
     kt.comp = (t-kt.total)-y;
-    kt.total += y;
+    kt.total = t;
 }
 
 // [[Rcpp::export(dsa_get_metric_mean)]]
