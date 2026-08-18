@@ -214,7 +214,8 @@ get.optimal.armor.combos <- function(
     ## Check head.filter
     if(is.null(head.filter)){
         head.filter <- character(0)
-    } else if(!is.character(head.filter)){
+    }
+    if(!is.character(head.filter)){
         stop("Invalid argument 'head.filter'")
     } else if(any(is.na(head.filter))){
         stop("Invalid argument 'head.filter'")
@@ -231,7 +232,8 @@ get.optimal.armor.combos <- function(
     ## Check chest.filter
     if(is.null(chest.filter)){
         chest.filter <- character(0)
-    } else if(!is.character(chest.filter)){
+    }
+    if(!is.character(chest.filter)){
         stop("Invalid argument 'chest.filter'")
     } else if(any(is.na(chest.filter))){
         stop("Invalid argument 'chest.filter'")
@@ -248,7 +250,8 @@ get.optimal.armor.combos <- function(
     ## Check hands.filter
     if(is.null(hands.filter)){
         hands.filter <- character(0)
-    } else if(!is.character(hands.filter)){
+    }
+    if(!is.character(hands.filter)){
         stop("Invalid argument 'hands.filter'")
     } else if(any(is.na(hands.filter))){
         stop("Invalid argument 'hands.filter'")
@@ -265,7 +268,8 @@ get.optimal.armor.combos <- function(
     ## Check legs.filter
     if(is.null(legs.filter)){
         legs.filter <- character(0)
-    } else if(!is.character(legs.filter)){
+    }
+    if(!is.character(legs.filter)){
         stop("Invalid argument 'legs.filter'")
     } else if(any(is.na(legs.filter))){
         stop("Invalid argument 'legs.filter'")
