@@ -608,8 +608,17 @@ get.optimal.armor.combos <- function(
                 init.size,
                 max.table.size,
                 unarmored.weight,
-                0.1*floor(10*base.load),
-                0.1*floor(10.5*base.load),
+                ## round(., 4) before flooring to 1 decimal: base.load's true value always lands
+                ## on a 0.1 grid given the current ring multipliers (1.05x for Mask of the Father
+                ## needs at most 3 true decimal digits), but is computed in floating point, which
+                ## can put it a hair below its true value (e.g. true 49.2 stored as
+                ## 49.199999999999996) - floor()ing that directly chops off a whole 0.1 rather
+                ## than the intended zero. Rounding to 4 decimals first absorbs that noise (~1e-13,
+                ## many orders of magnitude below both the 0.00005 a round-to-4-decimals is
+                ## sensitive to and the true 3-decimal precision floor() needs to preserve)
+                ## without masking a genuine sub-0.1 remainder, which still floors down correctly.
+                0.1*floor(10*round(base.load, 4)),
+                0.1*floor(10*round(1.05*base.load, 4)),
                 load.threshold,
                 load.threshold.father.mask,
                 father.mask.index-1,

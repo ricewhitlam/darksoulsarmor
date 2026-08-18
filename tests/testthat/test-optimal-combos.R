@@ -89,3 +89,16 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     match.idx <- match(actual.key, expected$KEY)
     expect_equal(actual$SCORE_RAW, expected$SCORE[match.idx], tolerance = 1e-6)
 })
+
+## EQUIP_LOAD is derived from (endurance.level+40)*ring multipliers, always exactly a multiple of
+## 0.1 in true decimal arithmetic, but computed in floating point - which can land a hair below
+## the true value (e.g. true 49.2 stored as 49.199999999999996). floor()ing that directly used to
+## chop off a whole 0.1 (49.2 -> 49.1) instead of recovering the exact value; endurance.level=1
+## with favor.ring=TRUE is one of the affected cases (true base.load = 41*1.2 = 49.2).
+test_that("EQUIP_LOAD recovers the exact capacity despite floating-point noise", {
+    result <- get.optimal.armor.combos(max.table.size = 50, endurance.level = 1, favor.ring = TRUE, roll = "Fast")
+    non.motf <- result$data[HEAD != "Mask of the Father"]
+    expect_true(nrow(non.motf) > 0)
+    expect_equal(unique(non.motf$EQUIP_LOAD), 49.2)
+    expect_true(all(non.motf$PCT_LOAD <= 0.25))
+})
