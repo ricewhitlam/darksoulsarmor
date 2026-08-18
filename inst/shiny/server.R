@@ -574,7 +574,10 @@ server <- function(input, output, session){
     shiny::observeEvent(input$normalize_weights, {
 
         weight.inputs <- lapply(weight.ids, function(id){ input[[id]] })
-        if(all(vapply(weight.inputs, shiny::isTruthy, logical(1)))){
+        ## sum(weights) > 1e-15 mirrors get.optimal.armor.combos' own weights validation - without
+        ## it, all-zero (or otherwise ~0-sum) inputs divide by ~0 below, producing NaN that later
+        ## crashes on if(diff > 0) with "missing value where TRUE/FALSE needed".
+        if(all(vapply(weight.inputs, shiny::isTruthy, logical(1))) && sum(unlist(weight.inputs)) > 1e-15){
 
             weights <- unlist(weight.inputs)
 
