@@ -2,7 +2,7 @@
 server <- function(input, output, session){
     
 
-    output$mode <- shiny::renderText("Mode (Light or Dark)")
+    output$mode_label <- shiny::renderText("Mode (Light or Dark)")
 
     shiny::observeEvent(input$guide, { 
         shiny::showModal( 

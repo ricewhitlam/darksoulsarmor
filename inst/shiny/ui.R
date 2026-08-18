@@ -6,7 +6,7 @@ bslib::page_sidebar(
                 width = 360,
 
                 shiny::fluidRow(
-                    shiny::column(9, shiny::textOutput(outputId = "mode")), 
+                    shiny::column(9, shiny::textOutput(outputId = "mode_label")),
                     shiny::column(3, bslib::input_dark_mode(id = "mode", mode = "dark"))
                 ),
                 
