@@ -61,6 +61,16 @@ NULL
 ## function - SCORE_QUALITY works entirely from SCORE_RAW's normal-tail probability, independent
 ## of the true population size - but kept here as a documented, non-duplicated fact for anyone
 ## who wants it (e.g. to sanity-check how large a SCORE_QUALITY denominator can meaningfully get).
+## mean.stddev.corr.list (R/sysdata.rda) holds the same shape of data as means/stddevs/corrs, but
+## broken out WITHIN each individual (regular.level, twinkling.level) pair rather than pooled
+## across every level - i.e. the population where every armor slot is evaluated at the same
+## upgrade level simultaneously, matching how a player thinks of their loadout ("I'm using +5
+## regular titanite gear"), rather than each slot's own upgrade increment varying independently
+## of the others (which is what means/stddevs/corrs pool over). A named list of 67 entries: one
+## \code{list(means, stddevs, corrs)} per "{regular.level}_{twinkling.level}" combination (e.g.
+## \code{"3_2"}), plus one keyed "overall" holding the same values as means/stddevs/corrs. Not
+## currently used by any exported function - kept for potential future use (e.g. an
+## upgrade-level-aware scoring model).
 
 #' Table of all unupgraded head armor pieces
 #'
