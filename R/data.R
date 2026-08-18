@@ -3,8 +3,9 @@
 ## and head.data.unupgraded etc. are lazy-loaded package datasets referenced by bare name in
 ## default argument values and function bodies - neither is visible to R CMD check's static analysis.
 utils::globalVariables(c(
-    "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
-    "areas", "classes", "means", "stddevs", "corrs",
+    "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "SCORE_RAW", "SCORE_RANK",
+    "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
+    "areas", "classes", "means", "stddevs", "corrs", "total.combo.count",
     "head.data.unupgraded", "head.data.fullupgrade", "chest.data.unupgraded", "chest.data.fullupgrade",
     "hands.data.unupgraded", "hands.data.fullupgrade", "legs.data.unupgraded", "legs.data.fullupgrade",
     "METRICS", "metric", "weight.index", "minima.index"
@@ -55,6 +56,9 @@ NULL
 ## (including upgrades) - see create_rda/create_rda.R for how they're derived. They exist only
 ## to normalize the score formula in get.optimal.armor.combos and are not meant to be used
 ## directly, so unlike areas/classes they are internal (sysdata.rda) rather than exported data.
+## total.combo.count (R/sysdata.rda) is the exact count of armor combinations that population is
+## drawn from; get.optimal.armor.combos uses it to turn a combination's percentile into
+## SCORE_RANK, its approximate rank out of every possible combination.
 
 #' Table of all unupgraded head armor pieces
 #'

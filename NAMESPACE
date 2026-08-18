@@ -2,7 +2,7 @@
 useDynLib(darksoulsarmor, .registration=TRUE)
 import(data.table)
 import(Rcpp)
-importFrom(stats, approxfun, median)
+importFrom(stats, approxfun, median, pnorm)
 import(shiny, except = c(renderDataTable, dataTableOutput))
 import(shinyWidgets, except = show_toast)
 import(bslib)

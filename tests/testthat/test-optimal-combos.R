@@ -90,6 +90,23 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     expect_equal(actual$SCORE_RAW, expected$SCORE[match.idx], tolerance = 1e-6)
 })
 
+## SCORE_RANK is pnorm(SCORE_RAW, lower.tail = FALSE)*total.combo.count - an approximate rank
+## (1 = best) rather than a percentile, chosen specifically because pnorm(SCORE_RAW) rounds to
+## exactly 1 for the best combinations get.optimal.armor.combos returns, which would make a
+## percentile column unable to distinguish them.
+test_that("SCORE_RANK matches its formula and is correctly positioned as the second column", {
+    result <- get.optimal.armor.combos(max.table.size = 20)$data
+    expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_RANK"))
+    expect_equal(
+        result$SCORE_RANK,
+        pnorm(result$SCORE_RAW, lower.tail = FALSE) * darksoulsarmor:::total.combo.count,
+        tolerance = 1e-10
+    )
+    ## SCORE_RANK should increase (worsen) down the table, since results are sorted by SCORE_RAW
+    ## descending and SCORE_RANK is a monotonic transform of it.
+    expect_true(all(diff(result$SCORE_RANK) >= 0))
+})
+
 ## EQUIP_LOAD is derived from (endurance.level+40)*ring multipliers, always exactly a multiple of
 ## 0.1 in true decimal arithmetic, but computed in floating point - which can land a hair below
 ## the true value (e.g. true 49.2 stored as 49.199999999999996). floor()ing that directly used to

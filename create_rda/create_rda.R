@@ -50,6 +50,13 @@ sel.legs.data <- copy(total.legs.data)
 N_inv <- (1/nrow(sel.head.data))*(1/nrow(sel.chest.data))*(1/nrow(sel.hands.data))*(1/nrow(sel.legs.data))
 metric.indices <- c(1, 2, 3, 4, 5, 6, 7, 9, 10, 11)
 
+## Total number of possible armor combinations across every upgrade level (every regular level
+## 0-10 and twinkling level 0-5 stacked as separate rows per slot in total.*.data above) - the
+## population size get.optimal.armor.combos' SCORE_RANK is expressed "out of". Computed as an
+## exact integer product (not via 1/N_inv, which would round-trip through floating-point
+## division first) since it is itself an exact count, not a probability.
+total.combo.count <- as.numeric(nrow(total.head.data)) * nrow(total.chest.data) * nrow(total.hands.data) * nrow(total.legs.data)
+
 means <- 
     foreach(i = 1:10, .combine = c, .packages = "dsa.rda") %dopar% {
         N_inv*dsa_get_metric_mean(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, metric.indices[i])
@@ -244,6 +251,7 @@ use_data(
     means,
     stddevs,
     corrs,
+    total.combo.count,
     internal = TRUE,
     overwrite = TRUE
 )

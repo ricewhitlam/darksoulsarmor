@@ -26,8 +26,9 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' Produces a table of optimized armor combinations in Dark Souls.
 #' All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
 #' unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
-#' and \code{SCORE_PCT}, its percentile equivalent between \code{0} and \code{1}, where higher
-#' indicates a more optimal combination.
+#' and \code{SCORE_RANK}, its approximate rank out of every possible armor combination (across
+#' every upgrade level), where \code{1} is the single best combination achievable for the given
+#' weights.
 #' The table can be tailored to satisfy various constraints.
 #' 
 #' @param
@@ -465,7 +466,7 @@ get.optimal.armor.combos <- function(
     n.hands <- nrow(working.hands.data)
     n.legs <- nrow(working.legs.data)
     if(n.head == 0 || n.chest == 0 || n.hands == 0 || n.legs == 0){
-        out$data[, c("SCORE_RAW", "SCORE_PCT") := numeric(0)]
+        out$data[, c("SCORE_RAW", "SCORE_RANK") := numeric(0)]
         # out$data[, c("SCORE_RESID_RAW", "SCORE_RESID_PCT") := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
@@ -580,7 +581,7 @@ get.optimal.armor.combos <- function(
 
     ## If there are no allowable combos, return empty data
     if(is.na(init.size)){
-        out$data[, c("SCORE_RAW", "SCORE_PCT") := numeric(0)]
+        out$data[, c("SCORE_RAW", "SCORE_RANK") := numeric(0)]
         # out$data[, c("SCORE_RESID_RAW", "SCORE_RESID_PCT") := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
@@ -641,6 +642,15 @@ get.optimal.armor.combos <- function(
                 # 1/sqrt(1-abs(lm.rsqd))
             )
         )
+
+    ## SCORE_RANK: this combination's approximate rank out of every possible armor combination
+    ## (darksoulsarmor:::total.combo.count, across every upgrade level), 1 being the single best.
+    ## pnorm(..., lower.tail = FALSE) is used directly rather than 1-pnorm(...) because it stays
+    ## numerically precise far into the right tail, where pnorm(..., lower.tail = TRUE) saturates
+    ## to exactly 1 - and get.optimal.armor.combos returns exactly the combinations that land
+    ## there, where SCORE_PCT (its percentile predecessor) could no longer distinguish them.
+    out$data[, SCORE_RANK := pnorm(SCORE_RAW, lower.tail = FALSE)*total.combo.count]
+    data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_RANK"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask"))
