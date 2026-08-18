@@ -24,8 +24,10 @@ area.requirement.met <- function(match.type, area.list, completed){
 #'
 #' @description
 #' Produces a table of optimized armor combinations in Dark Souls.
-#' All relevant metrics are included, as well as a column of scores on which the data is sorted.
-#' These scores are between \code{0} and \code{1} and indicate how optimal each combination is.
+#' All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
+#' unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
+#' and \code{SCORE_PCT}, its percentile equivalent between \code{0} and \code{1}, where higher
+#' indicates a more optimal combination.
 #' The table can be tailored to satisfy various constraints.
 #' 
 #' @param
@@ -33,7 +35,8 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' Defaults to \code{1000}. Passed values will be clamped between 1 and 100,000,000 and cast to an integer.
 #' 
 #' @param 
-#' starting.class A length 1 \code{character} indicating whether to consider unupgraded or fully upgraded armor.
+#' starting.class A length 1 \code{character} indicating the character's starting class, whose
+#' starting armor set is treated as available regardless of \code{areas.completed}.
 #' Defaults to \code{"Warrior"}. The vector of available classes is stored as \code{classes}.
 #' 
 #' @param 
@@ -81,8 +84,8 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' Defaults to \code{"+0"}.
 #' 
 #' @param 
-#' roll A length 1 \code{character} indicating desired roll speed. 
-#' Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (weight above 100\% of max equip load).
+#' roll A length 1 \code{character} indicating desired roll speed.
+#' Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (no equip-load constraint applied).
 #' Defaults to \code{"Fast"}.
 #' 
 #' @param 

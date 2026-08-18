@@ -33,12 +33,14 @@ result <- get.optimal.armor.combos(
 )
 result$data[, .(SCORE_PCT, HEAD, CHEST, HANDS, LEGS, ARMOR_POISE, PCT_LOAD)]
 #>    SCORE_PCT                    HEAD          CHEST              HANDS
+#>        <num>                  <char>         <char>             <char>
 #> 1: 0.9968520 Crown of the Great Lord      Sage Robe Smough's Gauntlets
 #> 2: 0.9965136           Smough's Helm Smough's Armor  Antiquated Gloves
 #> 3: 0.9961734                 Big Hat      Sage Robe Smough's Gauntlets
 #> 4: 0.9960122            Bloated Head      Sage Robe Smough's Gauntlets
 #> 5: 0.9959529         Ornstein's Helm Smough's Armor       Witch Gloves
 #>                        LEGS ARMOR_POISE PCT_LOAD
+#>                      <char>       <num>    <num>
 #> 1:       Smough's Leggings          42  0.49750
 #> 2: Gold-Hemmed Black Skirt          49  0.50000
 #> 3:       Smough's Leggings          42  0.49750

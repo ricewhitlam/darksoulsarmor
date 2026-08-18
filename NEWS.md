@@ -7,7 +7,9 @@ Initial release.
   availability, and per-stat minimum constraints. Scores are built from ten
   standardized stats (physical/strike/slash/thrust/magic/fire/lightning
   defense, and bleed/poison/curse resistance) weighted by the `weights`
-  argument - see `vignette("scoring")` for the full derivation.
+  argument - see the "scoring" vignette for the full derivation
+  (`vignette("scoring")` if installed with `build_vignettes = TRUE`, or
+  `vignettes/scoring.Rmd` directly otherwise).
 * `get.all.armor.combos()` returns every valid combination unscored, for
   users who want to do their own analysis.
 * `armor.application()` launches an interactive Shiny app built on top of

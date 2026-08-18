@@ -29,7 +29,8 @@ get.optimal.armor.combos(
 \item{max.table.size}{A length 1 \code{numeric} indicating how large the produced table should be.
 Defaults to \code{1000}. Passed values will be clamped between 1 and 100,000,000 and cast to an integer.}
 
-\item{starting.class}{A length 1 \code{character} indicating whether to consider unupgraded or fully upgraded armor.
+\item{starting.class}{A length 1 \code{character} indicating the character's starting class, whose
+starting armor set is treated as available regardless of \code{areas.completed}.
 Defaults to \code{"Warrior"}. The vector of available classes is stored as \code{classes}.}
 
 \item{areas.completed}{A \code{character} vector indicating which areas have been completed.
@@ -68,8 +69,8 @@ For the other options, metrics are approximated based on the game's default upgr
 These approximations should be very accurate but will differ from true values slightly.
 Defaults to \code{"+0"}.}
 
-\item{roll}{A length 1 \code{character} indicating desired roll speed. 
-Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (weight above 100\% of max equip load).
+\item{roll}{A length 1 \code{character} indicating desired roll speed.
+Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (no equip-load constraint applied).
 Defaults to \code{"Fast"}.}
 
 \item{unarmored.weight}{A length 1 \code{numeric} indicating the unarmored weight of the character i.e. weight of weapons.
@@ -106,8 +107,10 @@ A \code{list} holding (1) the list of arguments which defined the table and (2) 
 }
 \description{
 Produces a table of optimized armor combinations in Dark Souls.
-All relevant metrics are included, as well as a column of scores on which the data is sorted.
-These scores are between \code{0} and \code{1} and indicate how optimal each combination is.
+All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
+unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
+and \code{SCORE_PCT}, its percentile equivalent between \code{0} and \code{1}, where higher
+indicates a more optimal combination.
 The table can be tailored to satisfy various constraints.
 }
 \examples{
