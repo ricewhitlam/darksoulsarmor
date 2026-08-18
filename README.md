@@ -32,13 +32,13 @@ result <- get.optimal.armor.combos(
     minima = c(0, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0)  # require at least 30 poise
 )
 result$data[, .(SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS, ARMOR_POISE, PCT_LOAD)]
-#>       SCORE_QUALITY                    HEAD          CHEST              HANDS
-#>              <char>                  <char>         <char>             <char>
-#> 1: Top 31 in 10,000 Crown of the Great Lord      Sage Robe Smough's Gauntlets
-#> 2: Top 35 in 10,000           Smough's Helm Smough's Armor  Antiquated Gloves
-#> 3: Top 38 in 10,000                 Big Hat      Sage Robe Smough's Gauntlets
-#> 4: Top 40 in 10,000            Bloated Head      Sage Robe Smough's Gauntlets
-#> 5: Top 40 in 10,000         Ornstein's Helm Smough's Armor       Witch Gloves
+#>    SCORE_QUALITY                    HEAD          CHEST              HANDS
+#>           <char>                  <char>         <char>             <char>
+#> 1:  Top 1 in 318 Crown of the Great Lord      Sage Robe Smough's Gauntlets
+#> 2:  Top 1 in 287           Smough's Helm Smough's Armor  Antiquated Gloves
+#> 3:  Top 1 in 261                 Big Hat      Sage Robe Smough's Gauntlets
+#> 4:  Top 1 in 251            Bloated Head      Sage Robe Smough's Gauntlets
+#> 5:  Top 1 in 247         Ornstein's Helm Smough's Armor       Witch Gloves
 #>                        LEGS ARMOR_POISE PCT_LOAD
 #>                      <char>       <num>    <num>
 #> 1:       Smough's Leggings          42  0.49750
@@ -52,7 +52,7 @@ See `?get.optimal.armor.combos` for the full set of filters (which areas/classes
 
 ## What the score means
 
-Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance), each standardized to mean 0 and variance 1 so that stats on very different natural scales (a 40-point armor rating vs. a 2-point resistance) contribute comparably. The `weights` argument controls how much each stat counts toward the total. The resulting `SCORE_RAW` is itself standardized, and `SCORE_QUALITY` converts that into a human-readable rarity description like `"Top 25 in 1,000"` or `"Bottom 25 in 1,000"` — see `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter/constraint choices as long as the weights are the same.
+Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance), each standardized to mean 0 and variance 1 so that stats on very different natural scales (a 40-point armor rating vs. a 2-point resistance) contribute comparably. The `weights` argument controls how much each stat counts toward the total. The resulting `SCORE_RAW` is itself standardized, and `SCORE_QUALITY` converts that into a human-readable rarity description like `"Top 1 in 40"` or `"Bottom 1 in 40"` — see `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter/constraint choices as long as the weights are the same.
 
 ## Where the data comes from
 

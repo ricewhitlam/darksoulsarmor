@@ -54,8 +54,8 @@ server <- function(input, output, session){
                     Weight Inputs: <br>  
                     Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
                     (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
-                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed into 'SCORE_QUALITY', a description of that score's approximate rarity such as 'Top 25 in 1,000' or 'Bottom 25 in 1,000'.
-                    This is computed by applying the standard normal cumulative distribution function to SCORE_RAW (the upper tail above a score of 0, the lower tail below it), then expressing that probability as the smallest 'K in N' fraction that gives K two meaningful digits.
+                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed into 'SCORE_QUALITY', a description of that score's approximate rarity such as 'Top 1 in 40' or 'Bottom 1 in 40'.
+                    This is computed by applying the standard normal cumulative distribution function to SCORE_RAW (the upper tail above a score of 0, the lower tail below it), then expressing that probability as its reciprocal, rounded to the nearest whole number, as '1 in N'.
                     These scores are global within the same set of weights: direct comparisons can be made across different inputs. <br> <br>
 
                     Miscellaneous notes: <br> <br>

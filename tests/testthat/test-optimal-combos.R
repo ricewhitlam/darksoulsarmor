@@ -90,7 +90,7 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     expect_equal(actual$SCORE_RAW, expected$SCORE[match.idx], tolerance = 1e-6)
 })
 
-## SCORE_QUALITY expresses SCORE_RAW's normal-tail probability as "Top/Bottom K in N", using
+## SCORE_QUALITY expresses SCORE_RAW's normal-tail probability as "Top/Bottom 1 in N", using
 ## whichever tail SCORE_RAW actually sits in - chosen specifically because pnorm(SCORE_RAW)
 ## rounds to exactly 0 or 1 for the best (or, under tight constraints, least-bad) combinations
 ## get.optimal.armor.combos returns, which would make a plain percentile unable to distinguish
@@ -98,9 +98,8 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
 expected.score.quality <- function(score.raw){
     better <- score.raw >= 0
     p <- ifelse(better, pnorm(score.raw, lower.tail = FALSE), pnorm(score.raw, lower.tail = TRUE))
-    n <- 10^ceiling(1-log10(p))
-    k <- round(p*n)
-    paste0(ifelse(better, "Top ", "Bottom "), format(k, big.mark = ",", scientific = FALSE, trim = TRUE), " in ", format(n, big.mark = ",", scientific = FALSE, trim = TRUE))
+    n <- round(1/p)
+    paste0(ifelse(better, "Top 1 in ", "Bottom 1 in "), format(n, big.mark = ",", scientific = FALSE, trim = TRUE))
 }
 
 test_that("SCORE_QUALITY matches its formula and is correctly positioned as the second column", {

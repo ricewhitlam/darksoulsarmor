@@ -114,29 +114,26 @@ one).
 
 Second, rather than showing that probability directly (or scaling it into an absolute rank
 against the ~21.9 billion possible combinations, `darksoulsarmor:::total.combo.count`, which is
-no more intuitive than a decimal probability), it's expressed as the smallest "K in N" fraction
-that gives K two meaningful digits:
+no more intuitive than a decimal probability), it's expressed as its reciprocal, "1 in N":
 
 ```r
-quality.n <- 10^ceiling(1 - log10(quality.p))
-quality.k <- round(quality.p * quality.n)
-SCORE_QUALITY <- paste0(ifelse(quality.better, "Top ", "Bottom "), quality.k, " in ", quality.n)
+quality.n <- round(1 / quality.p)
+SCORE_QUALITY <- paste0(ifelse(quality.better, "Top 1 in ", "Bottom 1 in "), quality.n)
 ```
 
 so a combination scoring better than roughly 97.5% of every possible combination
-(`quality.p = 0.025`) reads as `"Top 25 in 1,000"` rather than `"97.5th percentile"` - and a
+(`quality.p = 0.025`) reads as `"Top 1 in 40"` rather than `"97.5th percentile"` - and a
 combination that's merely the *least-bad* option under harsh constraints, worse than roughly
-97.5% of every possible combination, reads as `"Bottom 25 in 1,000"`. This is still an
-approximation in the same sense `SCORE_RAW`'s normality is: the true distribution of scores
-across all possible combinations isn't exactly normal, so `N` and `K` describe rarity relative
-to that normal approximation, not an exact count of real armor combinations that would truly
-rank better or worse.
+97.5% of every possible combination, reads as `"Bottom 1 in 40"`. This is still an approximation
+in the same sense `SCORE_RAW`'s normality is: the true distribution of scores across all possible
+combinations isn't exactly normal, so `N` describes rarity relative to that normal approximation,
+not an exact count of real armor combinations that would truly rank better or worse.
 
 ## What this does and doesn't let you compare
 
 Because `Var(SCORE) = 1` holds for any weights, scores are directly comparable across different
 filter and constraint choices *as long as the weights are held fixed* - a `SCORE_QUALITY` of
-`"Top 10 in 1,000"` under one set of filters really is better than `"Top 500 in 1,000"` under a
+`"Top 1 in 1,000"` under one set of filters really is better than `"Top 1 in 20"` under a
 different set of filters, provided both used the same `weights`. Scores computed with
 *different* weights are not directly comparable to each other in the same way, since each weight
 vector defines its own notion of "average" combination.

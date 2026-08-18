@@ -27,8 +27,8 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
 #' unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
 #' and \code{SCORE_QUALITY}, a human-readable description of that score's approximate rarity -
-#' e.g. \code{"Top 25 in 1,000"} for a combination scoring better than roughly 97.5\% of every
-#' possible combination, or \code{"Bottom 25 in 1,000"} for one scoring worse than roughly 97.5\%
+#' e.g. \code{"Top 1 in 40"} for a combination scoring better than roughly 97.5\% of every
+#' possible combination, or \code{"Bottom 1 in 40"} for one scoring worse than roughly 97.5\%
 #' of every possible combination.
 #' The table can be tailored to satisfy various constraints.
 #' 
@@ -646,7 +646,7 @@ get.optimal.armor.combos <- function(
             )
         )
 
-    ## SCORE_QUALITY: a human-readable rarity description ("Top K in N" / "Bottom K in N") built
+    ## SCORE_QUALITY: a human-readable rarity description ("Top 1 in N" / "Bottom 1 in N") built
     ## from SCORE_RAW's approximate normal-tail probability. A raw percentile isn't usable here -
     ## get.optimal.armor.combos returns exactly the best (or, under tight constraints, merely
     ## least-bad) combinations for the given weights, several standard deviations into a tail
@@ -655,30 +655,27 @@ get.optimal.armor.combos <- function(
     ## would be indistinguishable. Working with whichever tail SCORE_RAW actually sits in -
     ## pnorm(..., lower.tail = FALSE) above 0, pnorm(..., lower.tail = TRUE) below 0, chosen so
     ## the probability is always the *small*, informative one - stays numerically meaningful far
-    ## past where a plain percentile would saturate. N is chosen as the smallest power of 10 that
-    ## makes K a two-digit number, so e.g. a 2.5% exceedance probability reads as "Top 25 in
-    ## 1,000" rather than "97.5th percentile" or an unreadable absolute rank against the ~21.9
+    ## past where a plain percentile would saturate. N is just the reciprocal of that probability,
+    ## rounded to the nearest whole number, so e.g. a 2.5% exceedance probability reads as "Top 1
+    ## in 40" rather than "97.5th percentile" or an unreadable absolute rank against the ~21.9
     ## billion possible combinations (darksoulsarmor:::total.combo.count, kept in sysdata for
     ## documentation but intentionally not used here).
     ##
     ## This is an approximation in the same sense SCORE_RAW's normality is: the true distribution
-    ## of scores across all possible combinations isn't exactly normal, so N and K describe rarity
+    ## of scores across all possible combinations isn't exactly normal, so N describes rarity
     ## relative to that normal approximation, not an exact count of real armor combinations that
     ## would truly rank better or worse.
     quality.better <- out$data$SCORE_RAW >= 0
     quality.p <- ifelse(quality.better, pnorm(out$data$SCORE_RAW, lower.tail = FALSE), pnorm(out$data$SCORE_RAW, lower.tail = TRUE))
-    quality.n <- 10^ceiling(1-log10(quality.p))
-    quality.k <- round(quality.p*quality.n)
+    quality.n <- round(1/quality.p)
     out$data[,
         SCORE_QUALITY :=
             paste0(
-                ifelse(quality.better, "Top ", "Bottom "),
-                format(quality.k, big.mark = ",", scientific = FALSE, trim = TRUE),
-                " in ",
+                ifelse(quality.better, "Top 1 in ", "Bottom 1 in "),
                 format(quality.n, big.mark = ",", scientific = FALSE, trim = TRUE)
             )
     ]
-    rm(list = c("quality.better", "quality.p", "quality.n", "quality.k"))
+    rm(list = c("quality.better", "quality.p", "quality.n"))
     data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))

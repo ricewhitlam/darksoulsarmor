@@ -110,8 +110,8 @@ Produces a table of optimized armor combinations in Dark Souls.
 All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
 unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
 and \code{SCORE_QUALITY}, a human-readable description of that score's approximate rarity -
-e.g. \code{"Top 25 in 1,000"} for a combination scoring better than roughly 97.5\% of every
-possible combination, or \code{"Bottom 25 in 1,000"} for one scoring worse than roughly 97.5\%
+e.g. \code{"Top 1 in 40"} for a combination scoring better than roughly 97.5\% of every
+possible combination, or \code{"Bottom 1 in 40"} for one scoring worse than roughly 97.5\%
 of every possible combination.
 The table can be tailored to satisfy various constraints.
 }
