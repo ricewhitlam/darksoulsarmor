@@ -521,8 +521,12 @@ get.optimal.armor.combos <- function(
   
     ## Determine position of the Mask of the Father in head data to apply its equip load bonus.
     ## NO_FATHER_MASK_INDEX (999) means it isn't present in the filtered head data at all.
+    ## Compares only the ARMOR column, not the whole table: which(data.table == x) compares every
+    ## cell and returns a linear index into the flattened, column-major layout rather than a row
+    ## index - it would only coincidentally equal the row number for as long as ARMOR happens to
+    ## stay column 1.
     NO_FATHER_MASK_INDEX <- 999
-    father.mask.index <- which(working.head.data == "Mask of the Father")
+    father.mask.index <- which(working.head.data$ARMOR == "Mask of the Father")
     if(length(father.mask.index) == 0){
         father.mask.index <- NO_FATHER_MASK_INDEX
     }
