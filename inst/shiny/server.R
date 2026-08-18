@@ -54,9 +54,8 @@ server <- function(input, output, session){
                     Weight Inputs: <br>  
                     Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
                     (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
-                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed into 'SCORE_RANK', its approximate rank out of every possible armor combination across every upgrade level.
-                    A value of 1 is the best possible for the set of weights specified.
-                    The rank is computed by applying the upper-tail standard normal cumulative distribution function to SCORE_RAW and scaling by the total number of possible combinations.
+                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed into 'SCORE_QUALITY', a description of that score's approximate rarity such as 'Top 25 in 1,000' or 'Bottom 25 in 1,000'.
+                    This is computed by applying the standard normal cumulative distribution function to SCORE_RAW (the upper tail above a score of 0, the lower tail below it), then expressing that probability as the smallest 'K in N' fraction that gives K two meaningful digits.
                     These scores are global within the same set of weights: direct comparisons can be made across different inputs. <br> <br>
 
                     Miscellaneous notes: <br> <br>
@@ -645,7 +644,7 @@ server <- function(input, output, session){
                 data = 
                     data.table::data.table(
                         SCORE_RAW = numeric(0),
-                        SCORE_RANK = numeric(0),
+                        SCORE_QUALITY = character(0),
                         # SCORE_RESID_RAW = numeric(0),
                         # SCORE_RESID_PCT = numeric(0),
                         HEAD = factor(0),
@@ -695,7 +694,6 @@ server <- function(input, output, session){
             DT::formatPercentage("PCT_LOAD", 2) |>
             # DT::formatPercentage(c("SCORE_RESID_PCT"), 2) |>
             # DT::formatCurrency("SCORE_RESID_RAW", currency = "", interval = 3, mark = ",", digits = 3) |>
-            DT::formatCurrency("SCORE_RANK", currency = "", interval = 3, mark = ",", digits = 2) |>
             DT::formatCurrency(c(
               "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",
                 "MAG_DEF", "FIRE_DEF", "LITNG_DEF",

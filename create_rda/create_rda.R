@@ -51,9 +51,11 @@ N_inv <- (1/nrow(sel.head.data))*(1/nrow(sel.chest.data))*(1/nrow(sel.hands.data
 metric.indices <- c(1, 2, 3, 4, 5, 6, 7, 9, 10, 11)
 
 ## Total number of possible armor combinations across every upgrade level (every regular level
-## 0-10 and twinkling level 0-5 stacked as separate rows per slot in total.*.data above) - the
-## population size get.optimal.armor.combos' SCORE_RANK is expressed "out of". Computed as an
-## exact integer product (not via 1/N_inv, which would round-trip through floating-point
+## 0-10 and twinkling level 0-5 stacked as separate rows per slot in total.*.data above). Not
+## currently used by any exported function (get.optimal.armor.combos' SCORE_QUALITY works
+## entirely from SCORE_RAW's normal-tail probability, independent of the true population size),
+## but kept as a documented, non-duplicated fact for anyone who wants it - see R/data.R. Computed
+## as an exact integer product (not via 1/N_inv, which would round-trip through floating-point
 ## division first) since it is itself an exact count, not a probability.
 total.combo.count <- as.numeric(nrow(total.head.data)) * nrow(total.chest.data) * nrow(total.hands.data) * nrow(total.legs.data)
 

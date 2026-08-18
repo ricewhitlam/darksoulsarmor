@@ -26,9 +26,10 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' Produces a table of optimized armor combinations in Dark Souls.
 #' All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
 #' unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
-#' and \code{SCORE_RANK}, its approximate rank out of every possible armor combination (across
-#' every upgrade level), where \code{1} is the single best combination achievable for the given
-#' weights.
+#' and \code{SCORE_QUALITY}, a human-readable description of that score's approximate rarity -
+#' e.g. \code{"Top 25 in 1,000"} for a combination scoring better than roughly 97.5\% of every
+#' possible combination, or \code{"Bottom 25 in 1,000"} for one scoring worse than roughly 97.5\%
+#' of every possible combination.
 #' The table can be tailored to satisfy various constraints.
 #' 
 #' @param
@@ -466,7 +467,8 @@ get.optimal.armor.combos <- function(
     n.hands <- nrow(working.hands.data)
     n.legs <- nrow(working.legs.data)
     if(n.head == 0 || n.chest == 0 || n.hands == 0 || n.legs == 0){
-        out$data[, c("SCORE_RAW", "SCORE_RANK") := numeric(0)]
+        out$data[, "SCORE_RAW" := numeric(0)]
+        out$data[, "SCORE_QUALITY" := character(0)]
         # out$data[, c("SCORE_RESID_RAW", "SCORE_RESID_PCT") := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
@@ -581,7 +583,8 @@ get.optimal.armor.combos <- function(
 
     ## If there are no allowable combos, return empty data
     if(is.na(init.size)){
-        out$data[, c("SCORE_RAW", "SCORE_RANK") := numeric(0)]
+        out$data[, "SCORE_RAW" := numeric(0)]
+        out$data[, "SCORE_QUALITY" := character(0)]
         # out$data[, c("SCORE_RESID_RAW", "SCORE_RESID_PCT") := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
@@ -643,14 +646,40 @@ get.optimal.armor.combos <- function(
             )
         )
 
-    ## SCORE_RANK: this combination's approximate rank out of every possible armor combination
-    ## (darksoulsarmor:::total.combo.count, across every upgrade level), 1 being the single best.
-    ## pnorm(..., lower.tail = FALSE) is used directly rather than 1-pnorm(...) because it stays
-    ## numerically precise far into the right tail, where pnorm(..., lower.tail = TRUE) saturates
-    ## to exactly 1 - and get.optimal.armor.combos returns exactly the combinations that land
-    ## there, where SCORE_PCT (its percentile predecessor) could no longer distinguish them.
-    out$data[, SCORE_RANK := pnorm(SCORE_RAW, lower.tail = FALSE)*total.combo.count]
-    data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_RANK"))
+    ## SCORE_QUALITY: a human-readable rarity description ("Top K in N" / "Bottom K in N") built
+    ## from SCORE_RAW's approximate normal-tail probability. A raw percentile isn't usable here -
+    ## get.optimal.armor.combos returns exactly the best (or, under tight constraints, merely
+    ## least-bad) combinations for the given weights, several standard deviations into a tail
+    ## where pnorm(SCORE_RAW) rounds to exactly 0 or 1 in double precision, and to "100.00%"/
+    ## "0.00%" well before that at ordinary display precision - every one of the top results
+    ## would be indistinguishable. Working with whichever tail SCORE_RAW actually sits in -
+    ## pnorm(..., lower.tail = FALSE) above 0, pnorm(..., lower.tail = TRUE) below 0, chosen so
+    ## the probability is always the *small*, informative one - stays numerically meaningful far
+    ## past where a plain percentile would saturate. N is chosen as the smallest power of 10 that
+    ## makes K a two-digit number, so e.g. a 2.5% exceedance probability reads as "Top 25 in
+    ## 1,000" rather than "97.5th percentile" or an unreadable absolute rank against the ~21.9
+    ## billion possible combinations (darksoulsarmor:::total.combo.count, kept in sysdata for
+    ## documentation but intentionally not used here).
+    ##
+    ## This is an approximation in the same sense SCORE_RAW's normality is: the true distribution
+    ## of scores across all possible combinations isn't exactly normal, so N and K describe rarity
+    ## relative to that normal approximation, not an exact count of real armor combinations that
+    ## would truly rank better or worse.
+    quality.better <- out$data$SCORE_RAW >= 0
+    quality.p <- ifelse(quality.better, pnorm(out$data$SCORE_RAW, lower.tail = FALSE), pnorm(out$data$SCORE_RAW, lower.tail = TRUE))
+    quality.n <- 10^ceiling(1-log10(quality.p))
+    quality.k <- round(quality.p*quality.n)
+    out$data[,
+        SCORE_QUALITY :=
+            paste0(
+                ifelse(quality.better, "Top ", "Bottom "),
+                format(quality.k, big.mark = ",", scientific = FALSE, trim = TRUE),
+                " in ",
+                format(quality.n, big.mark = ",", scientific = FALSE, trim = TRUE)
+            )
+    ]
+    rm(list = c("quality.better", "quality.p", "quality.n", "quality.k"))
+    data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask"))

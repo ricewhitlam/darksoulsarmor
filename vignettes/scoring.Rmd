@@ -12,7 +12,8 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
 `get.optimal.armor.combos()` ranks armor combinations using a single number, `SCORE_RAW`
-(and its rank form, `SCORE_RANK`). This vignette explains where that number comes from.
+(and its human-readable form, `SCORE_QUALITY`). This vignette explains where that number comes
+from.
 
 ## The problem: metrics on different scales
 
@@ -80,42 +81,62 @@ easiest way to divide that single subtraction across four separately-computed sl
 doesn't require (and isn't affected by) whether any individual slot's own average metric value
 happens to be exactly a quarter of the combo-level mean.
 
-## From SCORE_RAW to SCORE_RANK
+## From SCORE_RAW to SCORE_QUALITY
 
 Since `SCORE_RAW` is a sum of many roughly-independent standardized quantities, it's
 approximately normally distributed. A natural way to turn that into something more intuitive is
 a percentile: apply the standard normal cumulative distribution function to `SCORE_RAW`, giving
 a number between 0 and 1 where 1 is (approximately) the best score achievable for the weights
 given. In practice this doesn't work well here, because `get.optimal.armor.combos()` returns
-exactly the *best* combinations for the weights given - the ones several standard deviations out
-in the right tail, where `pnorm(SCORE_RAW, mean = 0, sd = 1)` is so close to 1 that it rounds to
-*exactly* `1` in double-precision floating point. Every one of the top results would display as
-"100.00%", with no way to tell the single best combination from the thousandth-best.
+exactly the *best* (or, under tight enough constraints, merely *least-bad*) combinations for the
+weights given - several standard deviations out in one tail or the other, where
+`pnorm(SCORE_RAW, mean = 0, sd = 1)` is so close to 0 or 1 that it rounds to *exactly* `0` or `1`
+in double-precision floating point, and to "0.00%"/"100.00%" well before that at ordinary display
+precision. Every one of the top results would display as "100.00%", with no way to tell the
+single best combination from the thousandth-best.
 
-`SCORE_RANK` fixes this by working with the upper tail directly instead of subtracting it from
-1. `pnorm(..., lower.tail = FALSE)` computes that upper-tail probability without ever forming
-the (already-rounded-to-1) lower-tail value first, so it stays numerically meaningful far
-further into the tail - down to probabilities many orders of magnitude smaller than floating
-point's usual `~1e-16` resolution. Multiplying that probability by the total number of possible
-armor combinations across every upgrade level converts it from a probability into an
-approximate **rank**:
+`SCORE_QUALITY` fixes this two ways. First, it works with whichever tail `SCORE_RAW` actually
+sits in, so the probability involved is always the *small*, informative one rather than the
+saturated one next to it:
 
 ```r
-SCORE_RANK <- pnorm(SCORE_RAW, mean = 0, sd = 1, lower.tail = FALSE) * total.combo.count
+quality.better <- SCORE_RAW >= 0
+quality.p <- ifelse(quality.better, pnorm(SCORE_RAW, lower.tail = FALSE), pnorm(SCORE_RAW, lower.tail = TRUE))
 ```
 
-giving a number where `1` is (approximately) the single best combination achievable for the
-weights given, and larger numbers are worse - with enough precision to distinguish the best
-combination from the thousandth-best even when both would have rounded to the same percentile.
-This is still an approximation - the true distribution of scores across all possible
-combinations isn't exactly normal - but it's generally accurate enough to give an intuitive
-sense of how good a combination is, without needing to know the score's scale.
+`pnorm(..., lower.tail = FALSE)` computes the upper-tail probability directly, without ever
+forming the already-saturated lower-tail value first, so it stays numerically meaningful far
+further into the tail - down to probabilities many orders of magnitude smaller than floating
+point's usual `~1e-16` resolution. The lower-tail branch does the same thing for combinations
+that score *below* average (which is what `get.optimal.armor.combos()` returns when the
+constraints given are tight enough that even the best feasible combination is a below-average
+one).
+
+Second, rather than showing that probability directly (or scaling it into an absolute rank
+against the ~21.9 billion possible combinations, `darksoulsarmor:::total.combo.count`, which is
+no more intuitive than a decimal probability), it's expressed as the smallest "K in N" fraction
+that gives K two meaningful digits:
+
+```r
+quality.n <- 10^ceiling(1 - log10(quality.p))
+quality.k <- round(quality.p * quality.n)
+SCORE_QUALITY <- paste0(ifelse(quality.better, "Top ", "Bottom "), quality.k, " in ", quality.n)
+```
+
+so a combination scoring better than roughly 97.5% of every possible combination
+(`quality.p = 0.025`) reads as `"Top 25 in 1,000"` rather than `"97.5th percentile"` - and a
+combination that's merely the *least-bad* option under harsh constraints, worse than roughly
+97.5% of every possible combination, reads as `"Bottom 25 in 1,000"`. This is still an
+approximation in the same sense `SCORE_RAW`'s normality is: the true distribution of scores
+across all possible combinations isn't exactly normal, so `N` and `K` describe rarity relative
+to that normal approximation, not an exact count of real armor combinations that would truly
+rank better or worse.
 
 ## What this does and doesn't let you compare
 
 Because `Var(SCORE) = 1` holds for any weights, scores are directly comparable across different
-filter and constraint choices *as long as the weights are held fixed* - a `SCORE_RANK` of 10
-under one set of filters really is better than a `SCORE_RANK` of 500 under a different set of
-filters, provided both used the same `weights`. Scores computed with *different* weights are not
-directly comparable to each other in the same way, since each weight vector defines its own
-notion of "average" combination.
+filter and constraint choices *as long as the weights are held fixed* - a `SCORE_QUALITY` of
+`"Top 10 in 1,000"` under one set of filters really is better than `"Top 500 in 1,000"` under a
+different set of filters, provided both used the same `weights`. Scores computed with
+*different* weights are not directly comparable to each other in the same way, since each weight
+vector defines its own notion of "average" combination.

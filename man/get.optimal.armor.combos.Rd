@@ -109,9 +109,10 @@ A \code{list} holding (1) the list of arguments which defined the table and (2) 
 Produces a table of optimized armor combinations in Dark Souls.
 All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
 unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
-and \code{SCORE_RANK}, its approximate rank out of every possible armor combination (across
-every upgrade level), where \code{1} is the single best combination achievable for the given
-weights.
+and \code{SCORE_QUALITY}, a human-readable description of that score's approximate rarity -
+e.g. \code{"Top 25 in 1,000"} for a combination scoring better than roughly 97.5\% of every
+possible combination, or \code{"Bottom 25 in 1,000"} for one scoring worse than roughly 97.5\%
+of every possible combination.
 The table can be tailored to satisfy various constraints.
 }
 \examples{

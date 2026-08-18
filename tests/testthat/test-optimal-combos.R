@@ -90,21 +90,37 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     expect_equal(actual$SCORE_RAW, expected$SCORE[match.idx], tolerance = 1e-6)
 })
 
-## SCORE_RANK is pnorm(SCORE_RAW, lower.tail = FALSE)*total.combo.count - an approximate rank
-## (1 = best) rather than a percentile, chosen specifically because pnorm(SCORE_RAW) rounds to
-## exactly 1 for the best combinations get.optimal.armor.combos returns, which would make a
-## percentile column unable to distinguish them.
-test_that("SCORE_RANK matches its formula and is correctly positioned as the second column", {
+## SCORE_QUALITY expresses SCORE_RAW's normal-tail probability as "Top/Bottom K in N", using
+## whichever tail SCORE_RAW actually sits in - chosen specifically because pnorm(SCORE_RAW)
+## rounds to exactly 0 or 1 for the best (or, under tight constraints, least-bad) combinations
+## get.optimal.armor.combos returns, which would make a plain percentile unable to distinguish
+## them.
+expected.score.quality <- function(score.raw){
+    better <- score.raw >= 0
+    p <- ifelse(better, pnorm(score.raw, lower.tail = FALSE), pnorm(score.raw, lower.tail = TRUE))
+    n <- 10^ceiling(1-log10(p))
+    k <- round(p*n)
+    paste0(ifelse(better, "Top ", "Bottom "), format(k, big.mark = ",", scientific = FALSE, trim = TRUE), " in ", format(n, big.mark = ",", scientific = FALSE, trim = TRUE))
+}
+
+test_that("SCORE_QUALITY matches its formula and is correctly positioned as the second column", {
+    ## Generous constraints (high endurance, both rings, loose roll) push SCORE_RAW well above
+    ## average even for the best feasible combination, exercising the upper-tail branch.
+    result <- get.optimal.armor.combos(max.table.size = 20, endurance.level = 99, havel.ring = TRUE, favor.ring = TRUE, roll = "Fat")$data
+    expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_QUALITY"))
+    expect_equal(result$SCORE_QUALITY, expected.score.quality(result$SCORE_RAW))
+    expect_true(all(result$SCORE_RAW > 0))
+    expect_true(all(grepl("^Top ", result$SCORE_QUALITY)))
+})
+
+test_that("SCORE_QUALITY reads 'Bottom ... in ...' when even the best feasible combination scores below average", {
+    ## The default constraints (endurance.level = 10, roll = "Fast") are tight enough that even
+    ## the best feasible combination scores below the full population average, exercising the
+    ## lower-tail branch.
     result <- get.optimal.armor.combos(max.table.size = 20)$data
-    expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_RANK"))
-    expect_equal(
-        result$SCORE_RANK,
-        pnorm(result$SCORE_RAW, lower.tail = FALSE) * darksoulsarmor:::total.combo.count,
-        tolerance = 1e-10
-    )
-    ## SCORE_RANK should increase (worsen) down the table, since results are sorted by SCORE_RAW
-    ## descending and SCORE_RANK is a monotonic transform of it.
-    expect_true(all(diff(result$SCORE_RANK) >= 0))
+    expect_true(all(result$SCORE_RAW < 0))
+    expect_true(all(grepl("^Bottom ", result$SCORE_QUALITY)))
+    expect_equal(result$SCORE_QUALITY, expected.score.quality(result$SCORE_RAW))
 })
 
 ## EQUIP_LOAD is derived from (endurance.level+40)*ring multipliers, always exactly a multiple of
