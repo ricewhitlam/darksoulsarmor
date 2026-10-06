@@ -280,3 +280,28 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
     expect_gte(cutoff.ties, 3)
 
 })
+
+## The result's columns are written out by hand in three places: the C++ DataFrame::create, the
+## two empty-result tables get.optimal.armor.combos returns early with, and the app's initial
+## empty table (inst/shiny/server.R). A search with no results must still have exactly the
+## columns, order, and types of a normal one.
+test_that("empty results and the app's initial table match a normal result's columns", {
+    column.types <- function(dt){ vapply(dt, function(x) class(x)[1], character(1)) }
+    normal <- get.optimal.armor.combos(max.table.size = 5)$data
+    expect_gt(nrow(normal), 0)
+
+    ## No head piece left after filtering: Mask of the Father needs areas that aren't completed
+    no.pieces <- get.optimal.armor.combos(head.filter = "Mask of the Father", areas.completed = character(0))$data
+    ## Pieces left, but no combination can meet the minima
+    no.combos <- get.optimal.armor.combos(minima = c(999, rep(0, 11)))$data
+    for(empty in list(no.pieces, no.combos)){
+        expect_equal(nrow(empty), 0)
+        expect_identical(column.types(empty), column.types(normal))
+    }
+
+    ## The app shows the four armor columns as factors (for its column filters)
+    app.normal <- data.table::copy(normal)[, c("HEAD", "CHEST", "HANDS", "LEGS") := lapply(.SD, as.factor), .SDcols = c("HEAD", "CHEST", "HANDS", "LEGS")]
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        expect_identical(column.types(armordata()$data), column.types(app.normal))
+    })
+})
