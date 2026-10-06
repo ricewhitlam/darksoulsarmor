@@ -90,13 +90,19 @@ This ring increases maximum equip load by 20\%. Defaults to \code{FALSE}.}
 \item{wolf.ring}{A length 1 \code{logical} indicating whether the Wolf Ring is equipped. 
 This ring increases Poise by 40. Defaults to \code{FALSE}.}
 
-\item{minima}{A length 12 \code{numeric} indicating minimum allowable values for the following ordered metrics:
-PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, POISE, BLEED_RES, POIS_RES, CURSE_RES, DURABILITY.
+\item{minima}{A \code{numeric} indicating minimum allowable values for metrics. Either a named vector
+with any of the names PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF,
+POISE, BLEED_RES, POIS_RES, CURSE_RES, DURABILITY, in any order (omitted metrics have no minimum,
+i.e. 0) - e.g. \code{c(POISE = 30, DURABILITY = 200)} - or an unnamed length 12 vector in
+exactly that order.
 Defaults to \code{c(0,0,0,0,0,0,0,0,0,0,0,0)}.
 Passed values are clamped between 0 and 999.}
 
-\item{weights}{A length 10 \code{numeric} indicating weights for the following ordered metrics:
-PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
+\item{weights}{A \code{numeric} indicating weights for the scored metrics. Either a named vector with any
+of the names PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES,
+POIS_RES, CURSE_RES, in any order - e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)} - or an unnamed
+length 10 vector in exactly that order. Note that with a named vector, omitted metrics get weight
+0 (they don't count toward the score at all) rather than their default weights.
 Defaults to \code{c(0.16,0.16,0.16,0.16,0.08,0.08,0.08,0.04,0.04,0.04)}.
 These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 Increasing the weight on a metric increases its importance to the final score.
@@ -117,5 +123,8 @@ The table can be tailored to satisfy various constraints.
 }
 \examples{
 optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, roll = "Fast")
+
+## At least 30 poise, scored only on physical and magic defense (physical counting double)
+poise.combos <- get.optimal.armor.combos(endurance.level = 40, roll = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
 
 }

@@ -305,3 +305,25 @@ test_that("empty results and the app's initial table match a normal result's col
         expect_identical(column.types(armordata()$data), column.types(app.normal))
     })
 })
+
+test_that("named minima/weights match their positional equivalents in any order", {
+    positional <- get.optimal.armor.combos(
+        max.table.size = 50, endurance.level = 40, roll = "Mid",
+        minima = c(0, 0, 0, 0, 20, 0, 0, 30, 0, 0, 0, 200),
+        weights = c(2, 0, 0, 0, 1, 0, 0, 0.5, 0, 0)
+    )
+    named <- get.optimal.armor.combos(
+        max.table.size = 50, endurance.level = 40, roll = "Mid",
+        minima = c(DURABILITY = 200, POISE = 30, MAG_DEF = 20),
+        weights = c(BLEED_RES = 0.5, MAG_DEF = 1, PHYS_DEF = 2)
+    )
+    expect_identical(named$data, positional$data)
+    ## args stay unnamed, in positional order (the app compares them with identical())
+    expect_identical(named$args$minima, positional$args$minima)
+    expect_identical(named$args$weights, positional$args$weights)
+    expect_null(names(named$args$weights))
+
+    ## A full named vector in shuffled order
+    w <- c(PHYS_DEF = 0.16, STRIKE_DEF = 0.16, SLASH_DEF = 0.16, THRUST_DEF = 0.16, MAG_DEF = 0.08, FIRE_DEF = 0.08, LITNG_DEF = 0.08, BLEED_RES = 0.04, POIS_RES = 0.04, CURSE_RES = 0.04)
+    expect_identical(get.optimal.armor.combos(max.table.size = 50, weights = rev(w))$data, get.optimal.armor.combos(max.table.size = 50)$data)
+})

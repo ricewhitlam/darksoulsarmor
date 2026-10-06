@@ -18,6 +18,30 @@ area.requirement.met <- function(match.type, area.list, completed){
     }, types, clauses))
 }
 
+## Maps a named minima/weights vector (e.g. c(POISE = 30, PHYS_DEF = 50)) onto the positional
+## order get.optimal.armor.combos works in (metric.names), in any order, filling omitted metrics
+## with 0. Unnamed vectors are returned unchanged, so positional calls behave exactly as before;
+## anything else that's wrong with the values is caught by the regular argument checks afterward.
+expand.named.metrics <- function(x, metric.names, arg.name){
+    if(!is.numeric(x) || is.null(names(x))){
+        return(x)
+    }
+    x.names <- names(x)
+    if(any(is.na(x.names) | x.names == "")){
+        stop(sprintf("Invalid argument '%s': name every entry or none", arg.name))
+    }
+    if(anyDuplicated(x.names) > 0){
+        stop(sprintf("Invalid argument '%s': duplicated names: %s", arg.name, paste(unique(x.names[duplicated(x.names)]), collapse = ", ")))
+    }
+    unknown <- setdiff(x.names, metric.names)
+    if(length(unknown) > 0){
+        stop(sprintf("Invalid argument '%s': unknown names: %s. Valid names are: %s", arg.name, paste(unknown, collapse = ", "), paste(metric.names, collapse = ", ")))
+    }
+    out <- rep(0, length(metric.names))
+    out[match(x.names, metric.names)] <- unname(x)
+    return(out)
+}
+
 #' @name get.optimal.armor.combos
 #' 
 #' @title Create a \code{data.table} of optimized Dark Souls armor combinations
@@ -113,14 +137,20 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' This ring increases Poise by 40. Defaults to \code{FALSE}.
 #' 
 #' @param 
-#' minima A length 12 \code{numeric} indicating minimum allowable values for the following ordered metrics:
-#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, POISE, BLEED_RES, POIS_RES, CURSE_RES, DURABILITY.
+#' minima A \code{numeric} indicating minimum allowable values for metrics. Either a named vector
+#' with any of the names PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF,
+#' POISE, BLEED_RES, POIS_RES, CURSE_RES, DURABILITY, in any order (omitted metrics have no minimum,
+#' i.e. 0) - e.g. \code{c(POISE = 30, DURABILITY = 200)} - or an unnamed length 12 vector in
+#' exactly that order.
 #' Defaults to \code{c(0,0,0,0,0,0,0,0,0,0,0,0)}.
 #' Passed values are clamped between 0 and 999.
 #' 
 #' @param 
-#' weights A length 10 \code{numeric} indicating weights for the following ordered metrics:
-#' PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES.
+#' weights A \code{numeric} indicating weights for the scored metrics. Either a named vector with any
+#' of the names PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES,
+#' POIS_RES, CURSE_RES, in any order - e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)} - or an unnamed
+#' length 10 vector in exactly that order. Note that with a named vector, omitted metrics get weight
+#' 0 (they don't count toward the score at all) rather than their default weights.
 #' Defaults to \code{c(0.16,0.16,0.16,0.16,0.08,0.08,0.08,0.04,0.04,0.04)}.
 #' These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 #' Increasing the weight on a metric increases its importance to the final score.
@@ -131,6 +161,9 @@ area.requirement.met <- function(match.type, area.list, completed){
 #'
 #' @examples
 #' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, roll = "Fast")
+#'
+#' ## At least 30 poise, scored only on physical and magic defense (physical counting double)
+#' poise.combos <- get.optimal.armor.combos(endurance.level = 40, roll = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
 #'
 get.optimal.armor.combos <- function(
     max.table.size = 1000,
@@ -349,6 +382,7 @@ get.optimal.armor.combos <- function(
     }
     
     ## Check minima
+    minima <- expand.named.metrics(minima, METRICS[order(minima.index), metric], "minima")
     if(!is.numeric(minima)){
         stop("Invalid argument 'minima'")
     } else if(length(minima) != 12){
@@ -360,6 +394,7 @@ get.optimal.armor.combos <- function(
     }
 
     ## Check weights
+    weights <- expand.named.metrics(weights, METRICS[!is.na(weight.index)][order(weight.index), metric], "weights")
     if(!is.numeric(weights)){
         stop("Invalid argument 'weights'")
     } else if(length(weights) != 10){

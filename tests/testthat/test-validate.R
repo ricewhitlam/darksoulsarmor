@@ -53,3 +53,17 @@ test_that("get.optimal.armor.combos treats NULL and character(0) slot filters id
     expect_true(all(r.legs.empty$data$LEGS == "No Legs"))
     expect_equal(r.legs.null$data, r.legs.empty$data)
 })
+
+## minima and weights also accept named vectors; malformed names get a specific error
+test_that("named minima/weights reject unknown, duplicated, and partial names", {
+    expect_error(get.optimal.armor.combos(weights = c(PHYS = 1)), "weights.*unknown names: PHYS. Valid names are: PHYS_DEF")
+    expect_error(get.optimal.armor.combos(minima = c(POISE = 30, Poise = 5)), "minima.*unknown names: Poise")
+    expect_error(get.optimal.armor.combos(weights = c(PHYS_DEF = 1, PHYS_DEF = 2)), "weights.*duplicated names: PHYS_DEF")
+    expect_error(get.optimal.armor.combos(minima = setNames(c(30, 5), c("POISE", ""))), "minima.*name every entry or none")
+    ## POISE and DURABILITY are minima-only metrics, not scored
+    expect_error(get.optimal.armor.combos(weights = c(POISE = 1)), "weights.*unknown names: POISE")
+    ## Value checks still apply to named vectors
+    expect_error(get.optimal.armor.combos(weights = c(PHYS_DEF = 0)), "weights")
+    expect_error(get.optimal.armor.combos(weights = c(PHYS_DEF = -1, MAG_DEF = 2)), "weights")
+    expect_error(get.optimal.armor.combos(minima = c(POISE = NA)), "minima")
+})
