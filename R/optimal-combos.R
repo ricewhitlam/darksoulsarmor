@@ -26,10 +26,10 @@ area.requirement.met <- function(match.type, area.list, completed){
 #' Produces a table of optimized armor combinations in Dark Souls.
 #' All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
 #' unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
-#' and \code{SCORE_QUALITY}, a human-readable description of that score's approximate rarity -
-#' e.g. \code{"Top 1 in 40"} for a combination scoring better than roughly 97.5\% of every
-#' possible combination, or \code{"Bottom 1 in 40"} for one scoring worse than roughly 97.5\%
-#' of every possible combination.
+#' and \code{SCORE_QUALITY}, that score's exact rarity among every possible combination at the
+#' selected upgrade levels (regardless of the other filters) - e.g. \code{"Top 1 in 40"} when 1 in
+#' every 40 such combinations scores at least as well, or \code{"Bottom 1 in 40"} when 1 in every
+#' 40 scores at most as well.
 #' The table can be tailored to satisfy various constraints.
 #' 
 #' @param
@@ -418,6 +418,33 @@ get.optimal.armor.combos <- function(
     working.hands.data <- get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
     working.legs.data <- get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
 
+    ## Calc scores for each dataset (sorted on further below, once filtered)
+    score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
+    scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
+    metric.cols <- scored.metrics$metric
+    # lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
+    # lm.alpha <- -lm.beta*mean.weight
+    # lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
+
+    working.head.data[, SCORE := 0]
+    working.chest.data[, SCORE := 0]
+    working.hands.data[, SCORE := 0]
+    working.legs.data[, SCORE := 0]
+    for(i in seq_along(metric.cols)){
+        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+    }
+
+    ## Every piece's score at this upgrade level, kept from before any filtering below:
+    ## SCORE_QUALITY ranks each result against every combination at this level (see
+    ## score.quality() in R/score-quality.R), not just the ones the filters allow.
+    level.head.scores <- working.head.data$SCORE
+    level.chest.scores <- working.chest.data$SCORE
+    level.hands.scores <- working.hands.data$SCORE
+    level.legs.scores <- working.legs.data$SCORE
+
     ## Calc equip load values
     base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(favor.ring, 1.2, 1)
     roll.mult <- c(0.25, 0.5, 1.0, 999.0)[match(roll, c("Fast", "Mid", "Fat", "None"))]
@@ -502,24 +529,7 @@ get.optimal.armor.combos <- function(
     working.hands.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
     working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
 
-    ## Calc scores for each dataset and sort on these
-    score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
-    scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
-    metric.cols <- scored.metrics$metric
-    # lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
-    # lm.alpha <- -lm.beta*mean.weight
-    # lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
-
-    working.head.data[, SCORE := 0]
-    working.chest.data[, SCORE := 0]
-    working.hands.data[, SCORE := 0]
-    working.legs.data[, SCORE := 0]
-    for(i in seq_along(metric.cols)){
-        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-    }
+    ## Sort each dataset on its scores
     data.table::setorder(working.head.data, -SCORE, WEIGHT)
     data.table::setorder(working.chest.data, -SCORE, WEIGHT)
     data.table::setorder(working.hands.data, -SCORE, WEIGHT)
@@ -646,41 +656,15 @@ get.optimal.armor.combos <- function(
             )
         )
 
-    ## SCORE_QUALITY: a human-readable rarity description ("Top 1 in N" / "Bottom 1 in N") built
-    ## from SCORE_RAW's approximate normal-tail probability. A raw percentile isn't usable here -
-    ## get.optimal.armor.combos returns exactly the best (or, under tight constraints, merely
-    ## least-bad) combinations for the given weights, several standard deviations into a tail
-    ## where pnorm(SCORE_RAW) rounds to exactly 0 or 1 in double precision, and to "100.00%"/
-    ## "0.00%" well before that at ordinary display precision - every one of the top results
-    ## would be indistinguishable. Working with whichever tail SCORE_RAW actually sits in -
-    ## pnorm(..., lower.tail = FALSE) above 0, pnorm(..., lower.tail = TRUE) below 0, chosen so
-    ## the probability is always the *small*, informative one - stays numerically meaningful far
-    ## past where a plain percentile would saturate. N is just the reciprocal of that probability,
-    ## rounded to the nearest whole number, so e.g. a 2.5% exceedance probability reads as "Top 1
-    ## in 40" rather than "97.5th percentile" or an unreadable absolute rank against the ~21.9
-    ## billion possible combinations (darksoulsarmor:::total.combo.count, kept in sysdata for
-    ## documentation but intentionally not used here).
-    ##
-    ## This is an approximation in the same sense SCORE_RAW's normality is: the true distribution
-    ## of scores across all possible combinations isn't exactly normal, so N describes rarity
-    ## relative to that normal approximation, not an exact count of real armor combinations that
-    ## would truly rank better or worse.
-    quality.better <- out$data$SCORE_RAW >= 0
-    quality.p <- ifelse(quality.better, pnorm(out$data$SCORE_RAW, lower.tail = FALSE), pnorm(out$data$SCORE_RAW, lower.tail = TRUE))
-    quality.n <- round(1/quality.p)
-    out$data[,
-        SCORE_QUALITY :=
-            paste0(
-                ifelse(quality.better, "Top 1 in ", "Bottom 1 in "),
-                format(quality.n, big.mark = ",", scientific = FALSE, trim = TRUE)
-            )
-    ]
-    rm(list = c("quality.better", "quality.p", "quality.n"))
+    ## SCORE_QUALITY: each result's exact rarity among every combination at this upgrade level
+    ## ("Top 1 in N" / "Bottom 1 in N") - see score.quality() in R/score-quality.R
+    out$data[, SCORE_QUALITY := score.quality(SCORE_RAW, level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)]
     data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask"))
     rm(list = c("score.scalars", "scored.metrics", "metric.cols"))
+    rm(list = c("level.head.scores", "level.chest.scores", "level.hands.scores", "level.legs.scores"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
     rm(list = c("weight.check", "minima.check", "init.size"))
     rm(list = c("father.mask.index", "NO_FATHER_MASK_INDEX"))

@@ -83,57 +83,59 @@ happens to be exactly a quarter of the combo-level mean.
 
 ## From SCORE_RAW to SCORE_QUALITY
 
-Since `SCORE_RAW` is a sum of many roughly-independent standardized quantities, it's
-approximately normally distributed. A natural way to turn that into something more intuitive is
-a percentile: apply the standard normal cumulative distribution function to `SCORE_RAW`, giving
-a number between 0 and 1 where 1 is (approximately) the best score achievable for the weights
-given. In practice this doesn't work well here, because `get.optimal.armor.combos()` returns
-exactly the *best* (or, under tight enough constraints, merely *least-bad*) combinations for the
-weights given - several standard deviations out in one tail or the other, where
-`pnorm(SCORE_RAW, mean = 0, sd = 1)` is so close to 0 or 1 that it rounds to *exactly* `0` or `1`
-in double-precision floating point, and to "0.00%"/"100.00%" well before that at ordinary display
-precision. Every one of the top results would display as "100.00%", with no way to tell the
-single best combination from the thousandth-best.
+`SCORE_RAW` is a number of standard deviations, which isn't very intuitive on its own.
+`SCORE_QUALITY` turns it into a rarity: how many of all the possible combinations at the selected
+upgrade levels score at least as well. A combination that 1 in every 40 combinations matches or
+beats reads `"Top 1 in 40"`; the single best combination at a level reads
+`"Top 1 in 11,930,328"` - every combination there is. Combinations in the bottom half read
+`"Bottom 1 in N"` instead, counting the combinations that score *at most* as well. Ties count
+toward the number in both cases.
 
-`SCORE_QUALITY` fixes this two ways. First, it works with whichever tail `SCORE_RAW` actually
-sits in, so the probability involved is always the *small*, informative one rather than the
-saturated one next to it:
+The comparison is against every combination at the selected `regular.level`/`twinkling.level`,
+regardless of the other filters (areas, starting class, equip load, minima, and so on), so it
+describes how good a result is among everything a player at that upgrade level could wear.
 
-```r
-quality.better <- SCORE_RAW >= 0
-quality.p <- ifelse(quality.better, pnorm(SCORE_RAW, lower.tail = FALSE), pnorm(SCORE_RAW, lower.tail = TRUE))
-```
+### An exact count, not an estimate
 
-`pnorm(..., lower.tail = FALSE)` computes the upper-tail probability directly, without ever
-forming the already-saturated lower-tail value first, so it stays numerically meaningful far
-further into the tail - down to probabilities many orders of magnitude smaller than floating
-point's usual `~1e-16` resolution. The lower-tail branch does the same thing for combinations
-that score *below* average (which is what `get.optimal.armor.combos()` returns when the
-constraints given are tight enough that even the best feasible combination is a below-average
-one).
-
-Second, rather than showing that probability directly (or scaling it into an absolute rank
-against the ~21.9 billion possible combinations, `darksoulsarmor:::total.combo.count`, which is
-no more intuitive than a decimal probability), it's expressed as its reciprocal, "1 in N":
+There are about 11.9 million combinations at each upgrade level, but counting the ones that
+score at least as well as a given result doesn't require visiting them. A combination's score is
+just the sum of its four pieces' scores (see the previous section), so the count is a question
+about sums of numbers drawn from four short lists:
 
 ```r
-quality.n <- round(1 / quality.p)
-SCORE_QUALITY <- paste0(ifelse(quality.better, "Top 1 in ", "Bottom 1 in "), quality.n)
+## every head+chest+legs sum (~221 thousand values), computed once and sorted
+other.sums <- sort(as.vector(outer(outer(head.scores, chest.scores, `+`), legs.scores, `+`)))
+## for each hands piece, a binary search counts the sums that complete a combination at or past
+## the target score
+at.least <- 0
+for(hands.score in hands.scores){
+    at.least <- at.least + sum(other.sums >= target - hands.score)
+}
 ```
 
-so a combination scoring better than roughly 97.5% of every possible combination
-(`quality.p = 0.025`) reads as `"Top 1 in 40"` rather than `"97.5th percentile"` - and a
-combination that's merely the *least-bad* option under harsh constraints, worse than roughly
-97.5% of every possible combination, reads as `"Bottom 1 in 40"`. This is still an approximation
-in the same sense `SCORE_RAW`'s normality is: the true distribution of scores across all possible
-combinations isn't exactly normal, so `N` describes rarity relative to that normal approximation,
-not an exact count of real armor combinations that would truly rank better or worse.
+(the package itself uses `findInterval()` for the binary search, handles every result in one
+pass, and allows a tiny floating-point tolerance - see `R/score-quality.R`). Looping over hands,
+the slot with the fewest pieces, keeps the per-result cost to about 54 binary searches; the
+sorted list of the other three slots' sums is built once per call.
+
+### Why not a normal approximation?
+
+An earlier version of `SCORE_QUALITY` assumed `SCORE_RAW` was normally distributed across every
+combination at every upgrade level pooled together, and converted it with `pnorm()`. That turned
+out to be off by large factors in both directions. The score is a sum of only four independent
+terms (one per slot), not of many, and its tails aren't normal: the README example's top result
+read "1 in 318" against an exact "1 in 193", the best combination at +10/+5 read "1 in 702
+million" when only about 11.9 million combinations exist at that level, and single-stat weights
+produced numbers like "1 in 3 x 10^27". Pooling every upgrade level also made upgraded builds
+look far rarer than they are among the combinations a player at that level can actually choose
+from.
 
 ## What this does and doesn't let you compare
 
-Because `Var(SCORE) = 1` holds for any weights, scores are directly comparable across different
-filter and constraint choices *as long as the weights are held fixed* - a `SCORE_QUALITY` of
-`"Top 1 in 1,000"` under one set of filters really is better than `"Top 1 in 20"` under a
-different set of filters, provided both used the same `weights`. Scores computed with
-*different* weights are not directly comparable to each other in the same way, since each weight
-vector defines its own notion of "average" combination.
+Because `Var(SCORE) = 1` holds for any weights, `SCORE_RAW` is directly comparable across
+different filter and constraint choices, including different upgrade levels, *as long as the
+weights are held fixed*. `SCORE_QUALITY` is comparable across filter and constraint choices at
+the *same* upgrade levels - `"Top 1 in 1,000"` under one set of filters really is better than
+`"Top 1 in 20"` under another - but is always relative to the selected upgrade levels. Scores
+computed with *different* weights are not directly comparable to each other in the same way,
+since each weight vector defines its own notion of "average" combination.

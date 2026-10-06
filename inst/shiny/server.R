@@ -59,9 +59,9 @@ server <- function(input, output, session){
                     Weight Inputs: <br>  
                     Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
                     (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
-                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW' and is also transformed into 'SCORE_QUALITY', a description of that score's approximate rarity such as 'Top 1 in 40' or 'Bottom 1 in 40'.
-                    This is computed by applying the standard normal cumulative distribution function to SCORE_RAW (the upper tail above a score of 0, the lower tail below it), then expressing that probability as its reciprocal, rounded to the nearest whole number, as '1 in N'.
-                    These scores are global within the same set of weights: direct comparisons can be made across different inputs. <br> <br>
+                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
+                    It is an exact count, not an estimate: 'Top 1 in 40' means 1 in every 40 combinations at those upgrade levels scores at least as well (ties included), regardless of the filters chosen. Combinations in the bottom half read 'Bottom 1 in N' instead, counting those that score at most as well.
+                    SCORE_RAW is global within the same set of weights: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",

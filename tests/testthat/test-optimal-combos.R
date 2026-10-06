@@ -90,36 +90,45 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     expect_equal(actual$SCORE_RAW, expected$SCORE[match.idx], tolerance = 1e-6)
 })
 
-## SCORE_QUALITY expresses SCORE_RAW's normal-tail probability as "Top/Bottom 1 in N", using
-## whichever tail SCORE_RAW actually sits in - chosen specifically because pnorm(SCORE_RAW)
-## rounds to exactly 0 or 1 for the best (or, under tight constraints, least-bad) combinations
-## get.optimal.armor.combos returns, which would make a plain percentile unable to distinguish
-## them.
-expected.score.quality <- function(score.raw){
-    better <- score.raw >= 0
-    p <- ifelse(better, pnorm(score.raw, lower.tail = FALSE), pnorm(score.raw, lower.tail = TRUE))
-    n <- round(1/p)
-    paste0(ifelse(better, "Top 1 in ", "Bottom 1 in "), format(n, big.mark = ",", scientific = FALSE, trim = TRUE))
-}
-
-test_that("SCORE_QUALITY matches its formula and is correctly positioned as the second column", {
-    ## Generous constraints (high endurance, both rings, loose roll) push SCORE_RAW well above
-    ## average even for the best feasible combination, exercising the upper-tail branch.
-    result <- get.optimal.armor.combos(max.table.size = 20, endurance.level = 99, havel.ring = TRUE, favor.ring = TRUE, roll = "Fat")$data
-    expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_QUALITY"))
-    expect_equal(result$SCORE_QUALITY, expected.score.quality(result$SCORE_RAW))
-    expect_true(all(result$SCORE_RAW > 0))
-    expect_true(all(grepl("^Top ", result$SCORE_QUALITY)))
+## score.quality() counts combinations scoring at least (or at most) as well via sorted sums and
+## binary search rather than by visiting them. Checked here against literally enumerating every
+## combination of small random slot score lists - including tied scores (rounded scores make
+## many ties), scores exactly equal to a real combination's total, and both Top and Bottom.
+test_that("score.quality matches a brute-force count over every combination", {
+    set.seed(20261006)
+    for(trial in 1:20){
+        h <- round(rnorm(sample(1:8, 1)), 1); c <- round(rnorm(sample(1:8, 1)), 1)
+        g <- round(rnorm(sample(1:8, 1)), 1); l <- round(rnorm(sample(1:8, 1)), 1)
+        all.totals <- as.vector(outer(outer(outer(h, c, `+`), g, `+`), l, `+`))
+        ## Real totals, summed in SCORE_RAW's order (head+chest+hands+legs), plus off-grid values
+        targets <- c(sample(all.totals, 10, replace = TRUE), runif(5, min(all.totals), max(all.totals)))
+        at.least <- sapply(targets, function(s) sum(all.totals >= s - 1e-9))
+        at.most <- sapply(targets, function(s) sum(all.totals <= s + 1e-9))
+        n <- length(all.totals)
+        expected <- ifelse(
+            at.least <= n/2,
+            paste0("Top 1 in ", format(round(n/at.least), big.mark = ",", scientific = FALSE, trim = TRUE)),
+            paste0("Bottom 1 in ", format(round(n/at.most), big.mark = ",", scientific = FALSE, trim = TRUE))
+        )
+        expect_equal(darksoulsarmor:::score.quality(targets, h, c, g, l), expected)
+    }
 })
 
-test_that("SCORE_QUALITY reads 'Bottom ... in ...' when even the best feasible combination scores below average", {
-    ## The default constraints (endurance.level = 10, roll = "Fast") are tight enough that even
-    ## the best feasible combination scores below the full population average, exercising the
-    ## lower-tail branch.
+## Every one of the 68 x 57 x 54 x 57 = 11,930,328 combinations at a level counts toward
+## SCORE_QUALITY regardless of filters, so the best combination at +10/+5 with no load limit -
+## which no other combination ties or beats - is exactly "Top 1 in 11,930,328".
+test_that("SCORE_QUALITY ranks the best combination at a level against every combination there", {
+    result <- get.optimal.armor.combos(max.table.size = 20, roll = "None", regular.level = "+10", twinkling.level = "+5")$data
+    expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_QUALITY"))
+    expect_equal(result$SCORE_QUALITY[1], "Top 1 in 11,930,328")
+    expect_true(all(grepl("^Top 1 in ", result$SCORE_QUALITY)))
+})
+
+test_that("SCORE_QUALITY reads 'Bottom 1 in N' when even the best feasible combination is in the bottom half", {
+    ## The default constraints (endurance.level = 10, roll = "Fast") leave only 2.5 units of
+    ## equip load for armor, so even the best feasible combination is a below-median one.
     result <- get.optimal.armor.combos(max.table.size = 20)$data
-    expect_true(all(result$SCORE_RAW < 0))
-    expect_true(all(grepl("^Bottom ", result$SCORE_QUALITY)))
-    expect_equal(result$SCORE_QUALITY, expected.score.quality(result$SCORE_RAW))
+    expect_true(all(grepl("^Bottom 1 in ", result$SCORE_QUALITY)))
 })
 
 ## EQUIP_LOAD is derived from (endurance.level+40)*ring multipliers, always exactly a multiple of

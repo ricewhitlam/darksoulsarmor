@@ -58,9 +58,8 @@ NULL
 ## directly, so unlike areas/classes they are internal (sysdata.rda) rather than exported data.
 ## total.combo.count (R/sysdata.rda) is the exact count of armor combinations that population is
 ## drawn from (~21.9 billion, across every upgrade level). Not currently used by any exported
-## function - SCORE_QUALITY works entirely from SCORE_RAW's normal-tail probability, independent
-## of the true population size - but kept here as a documented, non-duplicated fact for anyone
-## who wants it (e.g. to sanity-check how large a SCORE_QUALITY denominator can meaningfully get).
+## function - SCORE_QUALITY counts combinations at the selected upgrade level only (see
+## R/score-quality.R) - but kept here as a documented, non-duplicated fact for anyone who wants it.
 ## mean.stddev.corr.list (R/sysdata.rda) holds the same shape of data as means/stddevs/corrs, but
 ## broken out WITHIN each individual (regular.level, twinkling.level) pair rather than pooled
 ## across every level - i.e. the population where every armor slot is evaluated at the same
