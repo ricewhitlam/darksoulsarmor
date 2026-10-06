@@ -757,10 +757,16 @@ server <- function(input, output, session){
 
     shiny::observeEvent(input$go, {
 
+        ## Errors abort the refresh (tryCatch below) and leave the previous results in place, but
+        ## warnings must not: tryCatch(warning = ...) would stop at the first warning exactly like
+        ## an error. withCallingHandlers records each warning and lets the refresh carry on; any
+        ## recorded warnings are shown as a notification once it finishes.
+        refresh.warnings <- character(0)
+
         tryCatch(
 
-        {   
-            
+        withCallingHandlers({
+
             shinybusy::show_modal_spinner()
 
             armordata({
@@ -801,12 +807,17 @@ server <- function(input, output, session){
             output$refreshmessage <- shiny::renderText("")
             output$errormessage <- shiny::renderText("")
 
+            for(message in unique(refresh.warnings)){
+                shiny::showNotification(message, type = "warning")
+            }
+
         },
-        
+
         warning = function(w){
-            output$errormessage <- shiny::renderText(conditionMessage(w))
-        },
-            
+            refresh.warnings <<- c(refresh.warnings, conditionMessage(w))
+            invokeRestart("muffleWarning")
+        }),
+
         error = function(e) {
             output$errormessage <- shiny::renderText(conditionMessage(e))
         },

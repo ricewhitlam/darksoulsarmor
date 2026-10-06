@@ -233,3 +233,32 @@ test_that("'Normalize to 100%' rescales the weights to sum to exactly 100.0 at o
         expect_true(all(abs(normalized - 100*raw/sum(raw)) <= 0.1 + 1e-9))
     })
 })
+
+## tryCatch(warning = ...) stops at the first warning just like an error does, so any warning
+## raised during a refresh (e.g. a dependency's deprecation notice) used to abandon the refresh
+## halfway and show the warning as if it were an error. Warnings must let the refresh finish and
+## be shown as a notification instead.
+test_that("a warning during refresh doesn't abort it, and is shown as a notification", {
+    search <- darksoulsarmor::get.optimal.armor.combos
+    local_mocked_bindings(
+        get.optimal.armor.combos = function(...){
+            warning("simulated dependency warning")
+            search(...)
+        },
+        .package = "darksoulsarmor"
+    )
+    notifications <- character(0)
+    local_mocked_bindings(
+        showNotification = function(ui, ...){
+            notifications <<- c(notifications, as.character(ui))
+        },
+        .package = "shiny"
+    )
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(go = 1)
+        expect_gt(nrow(armordata()$data), 0)
+        expect_true(been.refreshed())
+        expect_equal(output$errormessage, "")
+        expect_match(notifications, "simulated dependency warning")
+    })
+})
