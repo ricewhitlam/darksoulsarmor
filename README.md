@@ -5,8 +5,10 @@ An R package for finding optimized armor combinations in *Dark Souls Remastered*
 ## Installation
 
 ```r
-devtools::install_github("ricewhitlam/darksoulsarmor")
+devtools::install_github("ricewhitlam/darksoulsarmor", build_vignettes = TRUE)
 ```
+
+`build_vignettes = TRUE` installs the "scoring" vignette referenced below; without it, the same content is readable on GitHub at [`vignettes/scoring.Rmd`](vignettes/scoring.Rmd).
 
 ## Quick start
 
