@@ -485,6 +485,10 @@ get.optimal.armor.combos <- function(
     roll.mult <- c(0.25, 0.5, 1.0, 999.0)[match(roll, c("Fast", "Mid", "Fat", "None"))]
     load.threshold <- base.load*roll.mult
     load.threshold.father.mask <- load.threshold*1.05
+    ## Mask of the Father's own weight, for "with the Mask on, how much is left for the other slots"
+    ## below. Taken from the unfiltered table (weight doesn't change with upgrade level), so it's
+    ## defined even when the Mask is filtered out - the pre-filters then just use a looser bound.
+    father.mask.weight <- head.data.unupgraded[ARMOR == "Mask of the Father", WEIGHT]
 
     ## Filter datasets based on inputs
     working.head.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -502,7 +506,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% chest.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Chest") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) & 
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-1.2)+1e-10))
+            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10))
         ]
 
     working.hands.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -511,7 +515,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% hands.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Hands") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) &
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-1.2)+1e-10))
+            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10))
         ]
 
     working.legs.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
@@ -520,7 +524,7 @@ get.optimal.armor.combos <- function(
             (ARMOR %in% legs.filter) & 
             (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Legs") & 
             (AREAFILTER == TRUE | STARTING_CLASS == starting.class) &
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-1.2)+1e-10))
+            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10))
         ]
 
     ## If any tables empty, return empty data
@@ -593,7 +597,7 @@ get.optimal.armor.combos <- function(
     } else{
         weight.check <-
             ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10)) |
-            c(rep(FALSE, father.mask.index-1), ((weight.check[father.mask.index:n.max]+1.2) <= (-unarmored.weight+load.threshold.father.mask+1e-10)))
+            c(rep(FALSE, father.mask.index-1), ((weight.check[father.mask.index:n.max]+father.mask.weight) <= (-unarmored.weight+load.threshold.father.mask+1e-10)))
     }
     minima.check <- 
         pmin(
@@ -697,7 +701,7 @@ get.optimal.armor.combos <- function(
     data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
-    rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask"))
+    rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask", "father.mask.weight"))
     rm(list = c("score.scalars", "scored.metrics", "metric.cols"))
     rm(list = c("level.head.scores", "level.chest.scores", "level.hands.scores", "level.legs.scores"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
