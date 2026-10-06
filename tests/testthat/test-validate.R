@@ -67,3 +67,13 @@ test_that("named minima/weights reject unknown, duplicated, and partial names", 
     expect_error(get.optimal.armor.combos(weights = c(PHYS_DEF = -1, MAG_DEF = 2)), "weights")
     expect_error(get.optimal.armor.combos(minima = c(POISE = NA)), "minima")
 })
+
+test_that("duplicated filter, area, and upgrade-type entries are removed from args without changing results", {
+    heads <- head.data.unupgraded$ARMOR[1:5]
+    plain <- get.optimal.armor.combos(max.table.size = 50, head.filter = heads, areas.completed = areas[1:6], upgrade.types = c("Regular", "None"))
+    duplicated <- get.optimal.armor.combos(max.table.size = 50, head.filter = c(heads, heads[2:3]), areas.completed = c(areas[1:6], areas[1]), upgrade.types = c("Regular", "None", "Regular"))
+    expect_identical(duplicated$data, plain$data)
+    expect_identical(duplicated$args$head.filter, heads)
+    expect_identical(duplicated$args$areas.completed, areas[1:6])
+    expect_identical(duplicated$args$upgrade.types, c("Regular", "None"))
+})

@@ -219,7 +219,6 @@ get.optimal.armor.combos <- function(
         if(!all(upgrade.types %in% c("Regular", "Twinkling", "None"))){
             stop("Invalid argument 'upgrade.types'")
         }
-    } else{
         upgrade.types <- unique(upgrade.types)
     }
 
@@ -245,7 +244,6 @@ get.optimal.armor.combos <- function(
         if(!all(areas.completed %in% areas)){
             stop("Invalid argument 'areas.completed'")
         }
-    } else{
         areas.completed <- unique(areas.completed)
     }
 
@@ -261,10 +259,9 @@ get.optimal.armor.combos <- function(
         if(!all(head.filter %in% head.data.unupgraded$ARMOR)){
             stop("Invalid argument 'head.filter'")
         }
-    } else if(length(head.filter) == 0){
-        head.filter <- "No Head"
-    } else{
         head.filter <- unique(head.filter)
+    } else{
+        head.filter <- "No Head"
     }
 
     ## Check chest.filter
@@ -279,10 +276,9 @@ get.optimal.armor.combos <- function(
         if(!all(chest.filter %in% chest.data.unupgraded$ARMOR)){
             stop("Invalid argument 'chest.filter'")
         }
-    } else if(length(chest.filter) == 0){
-        chest.filter <- "No Chest"
-    } else{
         chest.filter <- unique(chest.filter)
+    } else{
+        chest.filter <- "No Chest"
     }
     
     ## Check hands.filter
@@ -297,10 +293,9 @@ get.optimal.armor.combos <- function(
         if(!all(hands.filter %in% hands.data.unupgraded$ARMOR)){
             stop("Invalid argument 'hands.filter'")
         }
-    } else if(length(hands.filter) == 0){
-        hands.filter <- "No Hands"
-    } else{
         hands.filter <- unique(hands.filter)
+    } else{
+        hands.filter <- "No Hands"
     }
 
     ## Check legs.filter
@@ -315,10 +310,9 @@ get.optimal.armor.combos <- function(
         if(!all(legs.filter %in% legs.data.unupgraded$ARMOR)){
             stop("Invalid argument 'legs.filter'")
         }
-    } else if(length(legs.filter) == 0){
-        legs.filter <- "No Legs"
-    } else{
         legs.filter <- unique(legs.filter)
+    } else{
+        legs.filter <- "No Legs"
     }
 
     ## Check endurance.level
