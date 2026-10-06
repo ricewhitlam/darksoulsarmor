@@ -143,3 +143,18 @@ test_that("EQUIP_LOAD recovers the exact capacity despite floating-point noise",
     expect_equal(unique(non.motf$EQUIP_LOAD), 49.2)
     expect_true(all(non.motf$PCT_LOAD <= 0.25))
 })
+
+## optimal_armor_combinations reserves heap storage up front, capped at the number of combinations
+## the filtered tables can form - without the cap, max.table.size = 1e8 against 2 pieces per slot
+## committed ~2.4 GB for at most 16 results. testthat can't observe peak memory, so this guards the
+## behavior: a huge max.table.size over tiny tables still returns exactly every combination.
+test_that("a max.table.size far above the possible combinations returns exactly those combinations", {
+    result <- get.optimal.armor.combos(
+        max.table.size = 1e8,
+        head.filter = head.data.unupgraded$ARMOR[1:2], chest.filter = chest.data.unupgraded$ARMOR[1:2],
+        hands.filter = hands.data.unupgraded$ARMOR[1:2], legs.filter = legs.data.unupgraded$ARMOR[1:2],
+        roll = "None"
+    )$data
+    expect_equal(nrow(result), 16)
+    expect_equal(nrow(unique(result[, .(HEAD, CHEST, HANDS, LEGS)])), 16)
+})

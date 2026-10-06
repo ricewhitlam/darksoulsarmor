@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <queue>
 #include <vector>
 
@@ -155,10 +156,14 @@ DataFrame optimal_armor_combinations(
     int max_loop_size = std::max(I, std::max(J, std::max(K, L)));
     armor_combo curr_combo;
     // Reserve capacity for the heap's backing storage up front, so it never has to reallocate
-    // and copy its contents as it fills to max_output_size. priority_queue exposes no reserve()
-    // of its own, but its constructor can take ownership of an already-reserved container.
+    // and copy its contents as it fills. priority_queue exposes no reserve() of its own, but its
+    // constructor can take ownership of an already-reserved container. The heap can never hold
+    // more than the I*J*K*L combinations these tables form, so the reservation is capped there -
+    // otherwise a large max_output_size against small tables would commit memory (24 bytes per
+    // entry, ~2.4 GB at 1e8) for results that can't exist. Computed in 64 bits to avoid overflow.
+    long long possible_combos = static_cast<long long>(I)*J*K*L;
     std::vector<armor_combo> armor_combos_storage;
-    armor_combos_storage.reserve(max_output_size);
+    armor_combos_storage.reserve(static_cast<std::size_t>(std::min<long long>(max_output_size, possible_combos)));
     std::priority_queue<armor_combo> armor_combos(std::less<armor_combo>(), std::move(armor_combos_storage));
     bool at_max_queue_size = false;
     int loop_size_1;
