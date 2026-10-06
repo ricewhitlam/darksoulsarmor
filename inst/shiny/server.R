@@ -608,8 +608,11 @@ server <- function(input, output, session){
         }
 
         if(been.refreshed()){
-            ## Custom logic here due to special nature of weights argument
-            inputs.unchanged$weight.values <- (abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 1e-10)
+            ## Custom logic here due to special nature of weights argument. isTRUE(all(...)) keeps
+            ## this a single TRUE/FALSE like every other inputs.unchanged entry - all-zero weights
+            ## normalize to 0/0 = NaN, and an NA here would reach the if(all(...)) in the
+            ## refresh-message observer above, erroring inside an observer and ending the session.
+            inputs.unchanged$weight.values <- isTRUE(all(abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 1e-10))
         }
 
         shiny::removeModal()
