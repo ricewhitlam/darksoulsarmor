@@ -61,10 +61,11 @@ $$
 = \frac{1}{k^2} w^\top \text{corr} \, w = \frac{1}{k^2} \cdot k^2 = 1
 $$
 
-This is what makes scores comparable across *different* weight choices: a `SCORE_RAW` of 1.5
-means "one and a half standard deviations above average for this combination of priorities",
-regardless of which priorities were chosen. `tests/testthat/test-scoring.R` checks this
-algebraic identity directly, for a battery of random weight vectors.
+This puts every choice of weights on the same scale: a `SCORE_RAW` of 1.5 always means "one and
+a half standard deviations above the average combination, as judged by these weights", whichever
+weights were chosen. It doesn't make scores under *different* weights interchangeable, though -
+see "What this does and doesn't let you compare" below. `tests/testthat/test-scoring.R` checks
+this algebraic identity directly, for a battery of random weight vectors.
 
 ## Why each armor slot subtracts a quarter of the mean
 
