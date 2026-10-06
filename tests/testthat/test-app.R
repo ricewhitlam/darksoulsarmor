@@ -29,3 +29,37 @@ test_that("all-zero score weights submitted after a refresh don't crash the app"
         expect_equal(nrow(armordata()$data), rows.before)
     })
 })
+
+## The Max Table Size widget only limits its value to 1-100,000 in the browser - a client can send
+## any value (e.g. Shiny.setInputValue from the browser console), and 5,000,000 once produced a
+## 48 second refresh holding 840 MB in that session. The server must clamp it itself.
+test_that("max.table.size is clamped to 1-100,000 on the server", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        ## Opening the modal binds every filter widget, which sends its current value along with
+        ## whatever the client chooses to send for max.table.size
+        submit.max.table.size <- function(value, click){
+            session$setInputs(filters = click)
+            session$setInputs(
+                max.table.size = value,
+                starting.class = filter.values$starting.class,
+                areas.completed = filter.values$areas.completed,
+                upgrade.types = filter.values$upgrade.types,
+                head.filter = filter.values$head.filter,
+                chest.filter = filter.values$chest.filter,
+                hands.filter = filter.values$hands.filter,
+                legs.filter = filter.values$legs.filter
+            )
+            session$setInputs(dismiss_filter_modal = click)
+        }
+
+        submit.max.table.size(5e6, 1)
+        expect_equal(filter.values$max.table.size, 100000)
+
+        submit.max.table.size(-5, 2)
+        expect_equal(filter.values$max.table.size, 1)
+
+        session$setInputs(go = 1)
+        expect_equal(armordata()$args$max.table.size, 1)
+        expect_equal(nrow(armordata()$data), 1)
+    })
+})

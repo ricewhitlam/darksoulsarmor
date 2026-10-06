@@ -1,6 +1,11 @@
 
 server <- function(input, output, session){
-    
+
+
+    ## Largest Max Table Size the app allows. The widget enforces it in the browser, but a client can
+    ## send any value (e.g. via Shiny.setInputValue), so the filter modal also clamps it server-side -
+    ## an unbounded value can make one refresh hold gigabytes of results.
+    MAX_TABLE_SIZE <- 100000
 
     output$mode_label <- shiny::renderText("Mode (Light or Dark)")
 
@@ -147,7 +152,7 @@ server <- function(input, output, session){
                         decimalCharacter = ".",
                         digitGroupSeparator = ",",
                         decimalPlaces = 0,
-                        maximumValue = 100000,
+                        maximumValue = MAX_TABLE_SIZE,
                         minimumValue = 1
                     ),
                     shinyWidgets::pickerInput(
@@ -274,7 +279,7 @@ server <- function(input, output, session){
 
     shiny::observeEvent(input$dismiss_filter_modal, {
 
-        if(shiny::isTruthy(input$max.table.size)){filter.values$max.table.size <- round(input$max.table.size, 0)}
+        if(shiny::isTruthy(input$max.table.size)){filter.values$max.table.size <- min(MAX_TABLE_SIZE, max(1, round(input$max.table.size, 0)))}
         if(shiny::isTruthy(input$starting.class)){filter.values$starting.class <- input$starting.class}
         if(shiny::isTruthy(input$areas.completed)){filter.values$areas.completed <- input$areas.completed} else if(length(input$areas.completed) == 0){filter.values$areas.completed <- character(0)}
         if(shiny::isTruthy(input$upgrade.types)){filter.values$upgrade.types <- input$upgrade.types} else if(length(input$upgrade.types) == 0){filter.values$upgrade.types <- character(0)}
