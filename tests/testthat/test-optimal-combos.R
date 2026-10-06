@@ -174,6 +174,7 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
     metric.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
     heap.filled <- 0
     father.mask.returned <- 0
+    cutoff.ties <- 0
 
     for(trial in 1:40){
 
@@ -195,7 +196,9 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
             favor.ring = runif(1) < 0.3,
             wolf.ring = runif(1) < 0.4,
             minima = c(sample(c(0, 0, 0, 20, 60), 7, replace = TRUE), sample(c(0, 0, 10, 30, 50), 1), sample(c(0, 0, 5, 20), 3, replace = TRUE), sample(c(0, 0, 0, 200, 300), 1)),
-            weights = runif(10)*(runif(10) < 0.8) + c(1e-3, rep(0, 9)),
+            ## A single scored resistance (whole numbers with few distinct values) makes exact score ties
+            ## common, exercising the tie-break - including at the max.table.size cutoff
+            weights = if(runif(1) < 0.5) replace(rep(0, 10), sample(8:10, 1), 1) else runif(10)*(runif(10) < 0.8) + c(1e-3, rep(0, 9)),
             max.table.size = sample(c(1, 3, 10, 50, 200, 1e5), 1)
         )
         actual <- do.call(get.optimal.armor.combos, args)$data
@@ -207,6 +210,20 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
         c <- darksoulsarmor:::get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, reg, twink)[ARMOR %in% args$chest.filter]
         g <- darksoulsarmor:::get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, reg, twink)[ARMOR %in% args$hands.filter]
         l <- darksoulsarmor:::get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, reg, twink)[ARMOR %in% args$legs.filter]
+
+        ## Each piece's score and each slot's order exactly as get.optimal.armor.combos computes
+        ## them, so totals are bit-identical to SCORE_RAW and row positions match the C++ search's
+        ## indices (its last tie-break)
+        weights <- args$weights/sum(args$weights)
+        score.scalars <- weights/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
+        for(slot in list(h, c, g, l)){
+            slot[, SCORE := 0]
+            for(i in seq_along(metric.cols)){
+                slot[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+            }
+            data.table::setorder(slot, -SCORE, WEIGHT)
+        }
+
         grid <- data.table::CJ(H = seq_len(nrow(h)), C = seq_len(nrow(c)), G = seq_len(nrow(g)), L = seq_len(nrow(l)))
         for(col in c(metric.cols, "POISE", "WEIGHT")){
             data.table::set(grid, j = col, value = h[[col]][grid$H] + c[[col]][grid$C] + g[[col]][grid$G] + l[[col]][grid$L])
@@ -214,13 +231,9 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
         grid[, DURABILITY := pmin(h$DURABILITY[H], c$DURABILITY[C], g$DURABILITY[G], l$DURABILITY[L])]
         grid[, KEY := paste(h$ARMOR[H], c$ARMOR[C], g$ARMOR[G], l$ARMOR[L], sep = "|")]
         grid[, FATHER_MASK := h$ARMOR[H] == "Mask of the Father"]
-
-        weights <- args$weights/sum(args$weights)
-        score.scalars <- weights/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
-        grid[, SCORE := 0]
-        for(i in seq_along(metric.cols)){
-            grid[, SCORE := SCORE + score.scalars[i]*(get(metric.cols[i]) - means[i])]
-        }
+        grid[, SCORE := h$SCORE[H] + c$SCORE[C] + g$SCORE[G] + l$SCORE[L]]
+        ## The C++ search's score comparison key: llround(score*1e9)
+        grid[, SCORE_KEY := sign(SCORE)*floor(abs(SCORE)*1e9 + 0.5)]
 
         base.load <- (args$endurance.level + 40)*ifelse(args$havel.ring, 1.5, 1)*ifelse(args$favor.ring, 1.2, 1)
         load.threshold <- base.load*c(Fast = 0.25, Mid = 0.5, Fat = 1)[[args$roll]]
@@ -231,9 +244,12 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
             PHYS_DEF >= mn[1] - eps & STRIKE_DEF >= mn[2] - eps & SLASH_DEF >= mn[3] - eps & THRUST_DEF >= mn[4] - eps &
             MAG_DEF >= mn[5] - eps & FIRE_DEF >= mn[6] - eps & LITNG_DEF >= mn[7] - eps & POISE + 40*args$wolf.ring >= mn[8] - eps &
             BLEED_RES >= mn[9] - eps & POIS_RES >= mn[10] - eps & CURSE_RES >= mn[11] - eps & DURABILITY >= mn[12] - eps
-        ][order(-SCORE)]
+        ][order(-SCORE_KEY, WEIGHT, -POISE, -DURABILITY, H, C, G, L)]
 
         k <- min(args$max.table.size, nrow(expected))
+        if(k > 0 && k < nrow(expected) && expected$SCORE_KEY[k] == expected$SCORE_KEY[k + 1]){
+            cutoff.ties <- cutoff.ties + 1
+        }
         if(k < nrow(expected)){
             heap.filled <- heap.filled + 1
         }
@@ -243,24 +259,24 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
 
         expect_equal(nrow(actual), k, info = paste("trial", trial))
         if(k > 0){
-            ## Ties at the cutoff make which combos are kept order-dependent, so compare the top-k
-            ## score values, then check every returned combination's own values directly
-            expect_equal(actual$SCORE_RAW, expected$SCORE[seq_len(k)], tolerance = 1e-9, info = paste("trial", trial))
-            match.idx <- match(paste(actual$HEAD, actual$CHEST, actual$HANDS, actual$LEGS, sep = "|"), expected$KEY)
-            expect_false(anyNA(match.idx), info = paste("trial", trial))
-            matched <- expected[match.idx]
+            ## The tie-break (lighter, then more poise, then more durability, then row position)
+            ## makes the result fully determined: exactly these rows, in exactly this order,
+            ## including which tied combinations make the cut at max.table.size
+            matched <- expected[seq_len(k)]
+            expect_identical(paste(actual$HEAD, actual$CHEST, actual$HANDS, actual$LEGS, sep = "|"), matched$KEY, info = paste("trial", trial))
+            expect_identical(actual$SCORE_RAW, matched$SCORE, info = paste("trial", trial))
             expect_equal(actual$TOTAL_POISE, matched$POISE + 40*args$wolf.ring, info = paste("trial", trial))
             expect_equal(actual$DURABILITY, matched$DURABILITY, info = paste("trial", trial))
             expect_equal(actual$ARMOR_WEIGHT, matched$WEIGHT, info = paste("trial", trial))
             equip.load <- ifelse(matched$FATHER_MASK, 0.1*floor(10*round(1.05*base.load, 4)), 0.1*floor(10*round(base.load, 4)))
             expect_equal(actual$EQUIP_LOAD, equip.load, info = paste("trial", trial))
             expect_equal(actual$PCT_LOAD, (matched$WEIGHT + args$unarmored.weight)/equip.load, info = paste("trial", trial))
-            expect_false(is.unsorted(rev(actual$SCORE_RAW)), info = paste("trial", trial))
         }
 
     }
 
     expect_gte(heap.filled, 10)
     expect_gte(father.mask.returned, 5)
+    expect_gte(cutoff.ties, 3)
 
 })

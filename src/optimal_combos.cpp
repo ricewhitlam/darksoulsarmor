@@ -1,24 +1,44 @@
 
 #include <algorithm>
+#include <cmath>
 #include <queue>
+#include <tuple>
 #include <vector>
 
 #include <Rcpp.h>
 using namespace Rcpp;
 
-// Only the score and the four per-slot row indices are cached per candidate: every other
-// metric can be recomputed from the indices, and only needs to be for the (at most
-// max_output_size) combos that survive to the output loop, rather than for every candidate
-// that touches the heap.
+// Scores are compared as whole numbers of 1e-9 rather than as raw doubles. Different pieces whose
+// stats add up to the same totals (e.g. one set's gloves+boots vs. another's) can produce sums
+// that differ in the last bits (~1e-15), while genuinely different scores differ by ~1e-6 or more.
+// Rounding to an integer key puts float-noise ties together while keeping the comparison a valid
+// (transitive) ordering, which an "equal within epsilon" test is not. Two near-equal scores
+// straddling a rounding boundary would just be ordered by score, as without a tie-break.
+inline long long score_key(const double score){
+    return std::llround(score*1.0e9);
+}
+
+// Per candidate, the score plus the tie-break metrics and the four per-slot row indices are
+// cached: every other metric can be recomputed from the indices, and only needs to be for the
+// (at most max_output_size) combos that survive to the output loop, rather than for every
+// candidate that touches the heap.
 struct armor_combo {
-    double score;
+    double score; long long key;
+    double weight; double poise; double durability;
     int32_t h; int32_t c; int32_t g; int32_t l;
-    // Reversed on purpose: std::priority_queue is a max-heap by operator<, and this makes
-    // "less than" mean "higher score". So the heap's top() is the *lowest*-scoring combo
-    // currently kept - the one to evict first once the heap is full and something better shows up.
+    // "Better than": higher score; among equal scores, lighter, then more poise, then more
+    // durability, then the earlier row indices, so that which tied combos are kept - and their
+    // order - never depends on the order candidates were visited in. Reversed on purpose:
+    // std::priority_queue is a max-heap by operator<, and this makes "less than" mean "better".
+    // So the heap's top() is the *worst* combo currently kept - the one to evict first once the
+    // heap is full and something better shows up.
     bool operator<(const armor_combo& comparison) const
     {
-        return score > comparison.score;
+        if(key != comparison.key){ return key > comparison.key; }
+        if(weight != comparison.weight){ return weight < comparison.weight; }
+        if(poise != comparison.poise){ return poise > comparison.poise; }
+        if(durability != comparison.durability){ return durability > comparison.durability; }
+        return std::tie(h, c, g, l) < std::tie(comparison.h, comparison.c, comparison.g, comparison.l);
     }
 };
 
@@ -95,9 +115,11 @@ DataFrame optimal_armor_combinations(
     // so element 0 of each is the best score achievable from that slot alone. Once the output heap is
     // full, curr_head_SCORE/curr_chest_SCORE/curr_hands_SCORE plus these bounds give the best possible
     // score reachable from the remaining, not-yet-fixed slots at each nesting level. If that best case
-    // cannot beat the heap's current worst kept score, neither can this candidate or any later one in
-    // the same (descending-sorted) loop, since the loop only ever advances forward - so it is safe to
-    // break out of that level entirely rather than merely skip the current candidate.
+    // scores strictly below the heap's current worst kept score (compared as score_key()s, the same
+    // way the heap compares them), neither this candidate nor any later one in the same
+    // (descending-sorted) loop can be kept, since the loop only ever advances forward - so it is safe
+    // to break out of that level entirely rather than merely skip the current candidate. It must be
+    // strictly below: a candidate tying the worst kept score can still win on the tie-break metrics.
     double best_chest_SCORE = chest.SCORE[0];
     double best_hands_SCORE = hands.SCORE[0];
     double best_legs_SCORE = legs.SCORE[0];
@@ -159,8 +181,8 @@ DataFrame optimal_armor_combinations(
     // and copy its contents as it fills. priority_queue exposes no reserve() of its own, but its
     // constructor can take ownership of an already-reserved container. The heap can never hold
     // more than the I*J*K*L combinations these tables form, so the reservation is capped there -
-    // otherwise a large max_output_size against small tables would commit memory (24 bytes per
-    // entry, ~2.4 GB at 1e8) for results that can't exist. Computed in 64 bits to avoid overflow.
+    // otherwise a large max_output_size against small tables would commit memory (56 bytes per
+    // entry, ~5.6 GB at 1e8) for results that can't exist. Computed in 64 bits to avoid overflow.
     long long possible_combos = static_cast<long long>(I)*J*K*L;
     std::vector<armor_combo> armor_combos_storage;
     armor_combos_storage.reserve(static_cast<std::size_t>(std::min<long long>(max_output_size, possible_combos)));
@@ -214,7 +236,7 @@ DataFrame optimal_armor_combinations(
 
             curr_head_SCORE = head.SCORE[i];
 
-            if(at_max_queue_size && (curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
+            if(at_max_queue_size && score_key(curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.top().key){
                 break;
             }
 
@@ -240,7 +262,7 @@ DataFrame optimal_armor_combinations(
 
                 curr_chest_SCORE = chest.SCORE[j];
 
-                if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
+                if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.top().key){
                     break;
                 }
 
@@ -266,7 +288,7 @@ DataFrame optimal_armor_combinations(
 
                     curr_hands_SCORE = hands.SCORE[k];
 
-                    if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) <= armor_combos.top().score){
+                    if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) < armor_combos.top().key){
                         break;
                     }
 
@@ -292,7 +314,7 @@ DataFrame optimal_armor_combinations(
 
                         curr_legs_SCORE = legs.SCORE[l];
 
-                        if(at_max_queue_size && (curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) <= armor_combos.top().score){
+                        if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) < armor_combos.top().key){
                             break;
                         }
 
@@ -368,6 +390,8 @@ DataFrame optimal_armor_combinations(
                         }
 
                         curr_combo.score = curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE;
+                        curr_combo.key = score_key(curr_combo.score);
+                        curr_combo.weight = curr_WEIGHT; curr_combo.poise = curr_POISE; curr_combo.durability = curr_DURABILITY;
                         curr_combo.h = i; curr_combo.c = j; curr_combo.g = k; curr_combo.l = l;
 
                         if(at_max_queue_size){
