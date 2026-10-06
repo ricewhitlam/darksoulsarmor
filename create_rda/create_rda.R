@@ -1,14 +1,10 @@
 
 
-## Load packages and set up for parallel calcs
+## Load packages
 require("devtools")
-require("dsa.rda")
-require("doParallel")
-registerDoParallel(cores = detectCores()-1)
 
 ## Use the package's own get.interp.data rather than maintaining a second copy of it here.
-## This is a script-time convenience only - it adds no DESCRIPTION-level dependency in either
-## direction between darksoulsarmor and create_rda/dsa.rda.
+## This is a script-time convenience only - it adds no DESCRIPTION-level dependency.
 pkgload::load_all(".")
 
 
@@ -47,27 +43,15 @@ sel.chest.data <- copy(total.chest.data)
 sel.hands.data <- copy(total.hands.data)
 sel.legs.data <- copy(total.legs.data)
 
-N_inv <- (1/nrow(sel.head.data))*(1/nrow(sel.chest.data))*(1/nrow(sel.hands.data))*(1/nrow(sel.legs.data))
-metric.indices <- c(1, 2, 3, 4, 5, 6, 7, 9, 10, 11)
+metric.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
 
 ## Total number of possible armor combinations across every upgrade level (every regular level
 ## 0-10 and twinkling level 0-5 stacked as separate rows per slot in total.*.data above). Not
 ## currently used by any exported function (get.optimal.armor.combos' SCORE_QUALITY counts
 ## combinations at the selected upgrade level only - see R/score-quality.R), but kept as a
 ## documented, non-duplicated fact for anyone who wants it - see R/data.R. Computed
-## as an exact integer product (not via 1/N_inv, which would round-trip through floating-point
-## division first) since it is itself an exact count, not a probability.
+## as an exact integer product since it is itself an exact count, not a probability.
 total.combo.count <- as.numeric(nrow(total.head.data)) * nrow(total.chest.data) * nrow(total.hands.data) * nrow(total.legs.data)
-
-## Every distinct (i, j) metric pair, i < j, encoded as a single integer 10*(i-1)+(j-1) so a
-## single foreach can iterate all 45 pairs. Fixed regardless of which population
-## compute.mean.sd.corr() below is run on.
-indices <- integer(0)
-for(i in 1:9){
-    for(j in (i+1):10){
-        indices <- c(indices, as.integer(10*(i-1)+(j-1)))
-    }
-}
 
 ## Computes the population mean, sd, and correlation matrix (over the 10 scored metrics) for one
 ## armor population, given as a head/chest/hands/legs table set. Used both for the population
@@ -75,48 +59,31 @@ for(i in 1:9){
 ## population within each individual (regular.level, twinkling.level) pair (mean.stddev.corr.list
 ## below) - the only difference between the two is which tables are passed in.
 ##
-## metric.indices/pair.indices are passed explicitly (not referenced via lexical scoping from the
-## enclosing script) because foreach's %dopar% auto-export only inspects this function's own
-## execution frame for variables to ship to parallel workers, not the frame it was lexically
-## defined in - a variable that's otherwise perfectly visible by normal R scoping rules can still
-## come back "object not found" on the workers if it's only reachable by walking further up.
-compute.mean.sd.corr <- function(head.data, chest.data, hands.data, legs.data, metric.indices, pair.indices){
-    n.inv <- (1/nrow(head.data))*(1/nrow(chest.data))*(1/nrow(hands.data))*(1/nrow(legs.data))
-
-    metric.means <-
-        foreach(i = 1:10, .combine = c, .packages = "dsa.rda") %dopar% {
-            n.inv*dsa_get_metric_mean(head.data, chest.data, hands.data, legs.data, metric.indices[i])
-        }
-    names(metric.means) <- names(head.data)[metric.indices+1]
-
-    metric.stddevs <-
-        foreach(i = 1:10, .combine = c, .packages = "dsa.rda") %dopar% {
-            sqrt(n.inv*dsa_get_metric_var(head.data, chest.data, hands.data, legs.data, metric.indices[i], metric.means[i]))
-        }
-    names(metric.stddevs) <- names(head.data)[metric.indices+1]
-
-    corr.vec <-
-        foreach(i = pair.indices, .combine = c, .packages = "dsa.rda") %dopar% {
-            m <- i %% 10
-            n <- (i-m)/10
-            (n.inv/(metric.stddevs[m+1]*metric.stddevs[n+1]))*dsa_get_metrics_covar(head.data, chest.data, hands.data, legs.data, metric.indices[m+1], metric.indices[n+1], metric.means[m+1], metric.means[n+1])
-        }
-    metric.corrs <- diag(10)
-    for(i in seq_along(pair.indices)){
-        index <- pair.indices[i]
-        val <- corr.vec[i]
-        m <- index %% 10
-        n <- (index-m)/10
-        metric.corrs[m+1, n+1] <- val
-        metric.corrs[n+1, m+1] <- val
+## The population is every head x chest x hands x legs combination, each counted once, so the
+## piece chosen in each slot is independent of the other slots' pieces. A combination's metric is
+## the sum of its four pieces' values, and for a sum of independent parts the mean is the sum of
+## the parts' means and the covariance matrix is the sum of the parts' covariance matrices. So the
+## statistics follow exactly from each slot table's own (population, divide-by-n) means and
+## covariances, without visiting the combinations themselves (~21.9 billion for the pooled
+## population) - this reproduces the brute-force enumeration this script previously did to within
+## floating-point noise (~1e-14).
+compute.mean.sd.corr <- function(head.data, chest.data, hands.data, legs.data, metric.cols){
+    slot.means <- function(d){ colMeans(as.matrix(d[, ..metric.cols])) }
+    slot.covar <- function(d){
+        m <- as.matrix(d[, ..metric.cols])
+        crossprod(sweep(m, 2, colMeans(m)))/nrow(m)
     }
-    rownames(metric.corrs) <- names(metric.means)
-    colnames(metric.corrs) <- names(metric.means)
+
+    metric.means <- slot.means(head.data)+slot.means(chest.data)+slot.means(hands.data)+slot.means(legs.data)
+    metric.covar <- slot.covar(head.data)+slot.covar(chest.data)+slot.covar(hands.data)+slot.covar(legs.data)
+    metric.stddevs <- sqrt(diag(metric.covar))
+    metric.corrs <- metric.covar/outer(metric.stddevs, metric.stddevs)
+    diag(metric.corrs) <- 1
 
     list(means = metric.means, stddevs = metric.stddevs, corrs = metric.corrs)
 }
 
-pooled.stats <- compute.mean.sd.corr(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, metric.indices, indices)
+pooled.stats <- compute.mean.sd.corr(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, metric.cols)
 means <- pooled.stats$means
 stddevs <- pooled.stats$stddevs
 corrs <- pooled.stats$corrs
@@ -141,7 +108,7 @@ for(reg in 0:10){
         level.chest.data <- get.interp.data(armor_00[TYPE == "Chest"], armor_10[TYPE == "Chest"], reg, twink)
         level.hands.data <- get.interp.data(armor_00[TYPE == "Hands"], armor_10[TYPE == "Hands"], reg, twink)
         level.legs.data <- get.interp.data(armor_00[TYPE == "Legs"], armor_10[TYPE == "Legs"], reg, twink)
-        mean.stddev.corr.list[[level.key]] <- compute.mean.sd.corr(level.head.data, level.chest.data, level.hands.data, level.legs.data, metric.indices, indices)
+        mean.stddev.corr.list[[level.key]] <- compute.mean.sd.corr(level.head.data, level.chest.data, level.hands.data, level.legs.data, metric.cols)
     }
 }
 mean.stddev.corr.list[["overall"]] <- pooled.stats
@@ -168,9 +135,13 @@ test.meansd <- function(weights = runif(10)){
         working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
         working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
     }
+    ## Same closed form as compute.mean.sd.corr(): the score is a sum over slots, so its population
+    ## mean and variance are the sums of each slot's own
+    slot.score.mean <- function(d){ mean(d$SCORE) }
+    slot.score.var <- function(d){ mean((d$SCORE-mean(d$SCORE))^2) }
     print(weights)
-    print(N_inv*dsa_get_metric_mean(working.head.data, working.chest.data, working.hands.data, working.legs.data, which(colnames(working.head.data) == "SCORE")-1))
-    print(sqrt(N_inv*dsa_get_metric_var(working.head.data, working.chest.data, working.hands.data, working.legs.data, which(colnames(working.head.data) == "SCORE")-1, 0)))
+    print(slot.score.mean(working.head.data)+slot.score.mean(working.chest.data)+slot.score.mean(working.hands.data)+slot.score.mean(working.legs.data))
+    print(sqrt(slot.score.var(working.head.data)+slot.score.var(working.chest.data)+slot.score.var(working.hands.data)+slot.score.var(working.legs.data)))
 }
 test.meansd()
 
@@ -232,10 +203,6 @@ test.meansd()
 # d[, summary(lm(SCORE ~ WEIGHT))]
 # d[, plot(WEIGHT, SCORE-FITTED_SCORE)]
 # d[, qqnorm(SCORE-FITTED_SCORE)]
-
-
-## Stop parallel computing
-stopImplicitCluster()
 
 
 ## Create other data files

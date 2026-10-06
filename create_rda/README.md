@@ -16,26 +16,18 @@ correction, etc.).
 - `create_rda.R` - the script that reads the CSVs above, builds every upgrade level via
   `get.interp.data()`, computes population mean/sd/correlation across all combinations, and
   writes the resulting `.rda` files with `usethis::use_data()`.
-- `dsa.rda/` - a small standalone Rcpp helper package (see below).
 
-## Why `dsa.rda` exists
-
-Computing `means`, `stddevs`, and `corrs` requires summing each metric over every possible
-four-piece combination (head x chest x hands x legs, all upgrade levels) - tens of millions of
-combinations. `create_rda.R` parallelizes this with `doParallel`/`foreach`, and each parallel
-worker is a separate R process that needs the summation code available to it. `dsa.rda` packages
-that C++ summation logic (`src/create_rda.cpp`: Kahan-summed mean/variance/covariance) as an
-installable package purely so `foreach(..., .packages = "dsa.rda")` can load it into each worker.
-
-`dsa.rda` is **not** a dependency of `darksoulsarmor` in either direction - it isn't listed in
-`darksoulsarmor`'s `DESCRIPTION`, and it doesn't call into `darksoulsarmor` itself. The one
-place the two touch is at script-time convenience: `create_rda.R` calls `pkgload::load_all(".")`
-to reuse the package's own `get.interp.data()` rather than maintaining a second copy of it here.
+The population statistics cover every possible four-piece combination (head x chest x hands x
+legs - ~21.9 billion across all upgrade levels), but are computed without visiting them: each
+combination counts once, so the four slots' pieces are independent of one another, and the mean
+and covariance matrix of a combination's summed metrics are just the sums of each slot table's own
+means and covariance matrices. The whole script runs in seconds. `create_rda.R` calls
+`pkgload::load_all(".")` to reuse the package's own `get.interp.data()` rather than maintaining
+a second copy of it here; that's a script-time convenience only, not a package dependency.
 
 ## Running it
 
-From the package root, with `dsa.rda` installed (`R CMD INSTALL create_rda/dsa.rda` or
-`devtools::install("create_rda/dsa.rda")`):
+From the package root, with `devtools` installed:
 
 ```r
 source("create_rda/create_rda.R")
