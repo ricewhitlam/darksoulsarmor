@@ -234,6 +234,30 @@ test_that("the User Guide describes the current app", {
     }
 })
 
+## The app computes with exact values (e.g. strike 5.1499996) and rounds only what it shows: the
+## Results table's column filters take their ranges from the data it's given, so it's given values
+## already at display precision (raw 32-bit values made those filters show ~14 decimals), and the
+## chart's hover shows a defense to 1 decimal. The download and the links keep the exact values.
+test_that("the app keeps exact values and shows them at display precision", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(go = 1)
+        strike <- armordata()$data$STRIKE_DEF
+        expect_false(all(strike == round(strike, 1)))
+        filters <- jsonlite::fromJSON(output$table, simplifyVector = FALSE)$x$filterHTML
+        scales <- as.numeric(sub('data-scale="([0-9]+)"', "\\1", regmatches(filters, gregexpr('data-scale="[0-9]+"', filters))[[1]]))
+        expect_gt(length(scales), 0)
+        expect_true(all(scales <= 4))
+        bounds <- sub('data-(min|max)="([^"]*)"', "\\2", regmatches(filters, gregexpr('data-(min|max)="[^"]*"', filters))[[1]])
+        expect_false(any(grepl("[.][0-9]{5,}", bounds)))
+
+        session$setInputs(tradeoff_metric = "STRIKE_DEF", main_tabs = "Trade-offs")
+        shown <- sub("Strike Defense: ", "", regmatches(output$tradeoff_plot, gregexpr("Strike Defense: [^<]*", output$tradeoff_plot))[[1]])
+        expect_gt(length(shown), 0)
+        expect_true(all(grepl("^[0-9]+[.][0-9]$", shown)))
+        expect_true(any(abs(tradeoffdata()$data$BEST_VALUE - round(tradeoffdata()$data$BEST_VALUE, 1)) > 1e-6, na.rm = TRUE))
+    })
+})
+
 ## "Download Armor Data" saves one workbook describing the last refresh: the Results table, the
 ## Trade-offs table for the current Maximize choice - computed for the download if the tab
 ## hasn't shown it since that refresh, and reused otherwise - and the settings behind both.

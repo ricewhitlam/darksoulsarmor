@@ -695,10 +695,21 @@ server <- function(input, output, session){
         )
 
     
-    output$table <- 
+    output$table <-
         DT::renderDataTable({
+            ## The table shows each column at its display precision, from a rounded copy of the exact
+            ## values (armordata() keeps those, for the links and the download): its column filters
+            ## take their ranges from the data, so they then show the same precision as the cells
+            one.decimal <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES", "ARMOR_WEIGHT", "TOTAL_WEIGHT", "EQUIP_LOAD")
+            whole <- c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE")
+            three.decimals <- c("SCORE_RAW", "POISE_TIMER")
+            shown <- data.table::copy(armordata()$data)
+            shown[, (one.decimal) := lapply(.SD, round, 1), .SDcols = one.decimal]
+            shown[, (whole) := lapply(.SD, round, 0), .SDcols = whole]
+            shown[, (three.decimals) := lapply(.SD, round, 3), .SDcols = three.decimals]
+            shown[, PCT_LOAD := round(PCT_LOAD, 4)]
             DT::datatable(
-                armordata()$data,
+                shown,
                 selection = "single",
                 filter = "top", 
                 options = 
@@ -713,14 +724,9 @@ server <- function(input, output, session){
                 )
             ) |> 
             DT::formatPercentage("PCT_LOAD", 2) |>
-            DT::formatCurrency(c(
-              "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",
-                "MAG_DEF", "FIRE_DEF", "LITNG_DEF",
-                "BLEED_RES", "POIS_RES", "CURSE_RES",
-                "ARMOR_WEIGHT", "TOTAL_WEIGHT", "EQUIP_LOAD"
-            ), currency = "", interval = 3, mark = ",", digits = 1) |>
-            DT::formatCurrency(c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE"), currency = "", interval = 3, mark = ",", digits = 0) |>
-            DT::formatCurrency(c("SCORE_RAW", "POISE_TIMER"), currency = "", interval = 3, mark = ",", digits = 3)
+            DT::formatCurrency(one.decimal, currency = "", interval = 3, mark = ",", digits = 1) |>
+            DT::formatCurrency(whole, currency = "", interval = 3, mark = ",", digits = 0) |>
+            DT::formatCurrency(three.decimals, currency = "", interval = 3, mark = ",", digits = 3)
         })
 
 
@@ -1000,13 +1006,16 @@ server <- function(input, output, session){
         shiny::req(result)
         d <- data.table::copy(result$data)
         metric.label <- tradeoff.metric.labels[[result$metric]]
+        ## The charted stat at its display precision: the score to 3 decimals, poise whole, a
+        ## defense or resistance to 1 decimal
+        value.digits <- if(result$metric == "SCORE") 3 else if(result$metric == "POISE") 0 else 1
         d$hover <-
             ifelse(
                 is.na(d$BEST_VALUE),
                 sprintf("Armor weight up to %.1f<br>No armor set fits the other settings", d$ARMOR_WEIGHT_LIMIT),
                 sprintf(
                     "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - Movement: %s<br>Score %.3f (%s)",
-                    d$ARMOR_WEIGHT_LIMIT, metric.label, format(round(d$BEST_VALUE, 3)),
+                    d$ARMOR_WEIGHT_LIMIT, metric.label, formatC(round(d$BEST_VALUE, value.digits), format = "f", digits = value.digits),
                     ## The Mask of the Father abbreviated, to keep the hover box narrow
                     d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, sub("Mask of the Father bonus", "MotF bonus", d$MOVEMENT, fixed = TRUE), d$SCORE_RAW, d$SCORE_QUALITY
                 )
