@@ -54,6 +54,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' selected upgrade levels (regardless of the other filters) - e.g. \code{"Top 1 in 40"} when 1 in
 #' every 40 such combinations scores at least as well, or \code{"Bottom 1 in 40"} when 1 in every
 #' 40 scores at most as well.
+#' Combinations with equal scores are ordered lighter first, then more poise, then more durability.
 #' The table can be tailored to satisfy various constraints.
 #' 
 #' @param
@@ -125,7 +126,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' Passed values are clamped between 0 and 99 and rounded to an integer.
 #' 
 #' @param 
-#' havel.ring A length 1 \code{logical} indicating whether Havels Ring is equipped. 
+#' havel.ring A length 1 \code{logical} indicating whether Havel's Ring is equipped. 
 #' This ring increases maximum equip load by 50\%. Defaults to \code{FALSE}.
 #' 
 #' @param 

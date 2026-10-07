@@ -11,9 +11,11 @@
 #' armor weight and that stat: e.g. how much more Poise each extra unit of armor weight can buy, or
 #' the lightest armor that reaches a Poise breakpoint.
 #'
-#' The weight limit is varied the way the game varies it - by the weight carried besides armor - so
-#' the Mask of the Father's equip load bonus applies at every limit, and a combination wearing it
-#' can weigh slightly more than the limit itself.
+#' The weight limit is varied the way the game varies it, by the weight carried besides armor. So
+#' the Mask of the Father's equip load bonus applies at every limit (except with
+#' \code{movement = "Poop"}, which has no load limit), and a combination wearing it can weigh
+#' slightly more than the limit itself. Among combinations tied on the stat, the best-scoring one is
+#' returned.
 #'
 #' @param
 #' metric A length 1 \code{character}: the stat to maximize. \code{"SCORE"} (the score built from

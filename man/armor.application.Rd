@@ -13,9 +13,11 @@ armor.application(...)
 No value is returned - rather, a Shiny application is run.
 }
 \description{
-Runs an R Shiny application which facilitates Dark Souls armor optimization.
-Various UI elements allow constraints and goals to be specified.
-A table is produced which displays optimal armor combinations.
+Runs a Shiny app for Dark Souls armor optimization. The sidebar sets the constraints and goals,
+the same settings as \code{\link{get.optimal.armor.combos}}. 'Refresh Armor Data' fills two tabs:
+Results, a table of the top-scoring combinations, and Trade-offs, a chart of the most of a chosen
+stat any combination can reach at every armor weight (see \code{\link{get.armor.tradeoffs}}).
+'Download Armor Data' saves both, with their settings, as an Excel workbook.
 Some links are included in this app. To ensure that they work, launch the app in a browser.
 }
 \examples{

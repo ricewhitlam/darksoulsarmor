@@ -5,7 +5,7 @@ Version: 2.0
 Authors@R: person("Package", "Maintainer", email = "package-maintainer@example.com", role = c("aut", "cre"))
 Description:
     This package contains full datasets for the unupgraded and fully upgraded armor pieces of Dark Souls.
-    It also has a function which can be used to produce a table of armor combinations with an associated score.
+    It also has functions which produce a table of scored armor combinations, and the best value of a stat at each armor weight.
     This functionality is available in an interactive Shiny application.
 License: GPL (>= 2)
 Encoding: UTF-8

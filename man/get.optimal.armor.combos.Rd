@@ -81,7 +81,7 @@ Passed values are clamped between 0 and 999 and rounded to the nearest decimal p
 This stat increases maximum equip load. Defaults to \code{10}. 
 Passed values are clamped between 0 and 99 and rounded to an integer.}
 
-\item{havel.ring}{A length 1 \code{logical} indicating whether Havels Ring is equipped. 
+\item{havel.ring}{A length 1 \code{logical} indicating whether Havel's Ring is equipped. 
 This ring increases maximum equip load by 50\%. Defaults to \code{FALSE}.}
 
 \item{favor.ring}{A length 1 \code{logical} indicating whether the Ring of Favor and Protection is equipped.
@@ -119,6 +119,7 @@ and \code{SCORE_QUALITY}, that score's exact rarity among every possible combina
 selected upgrade levels (regardless of the other filters) - e.g. \code{"Top 1 in 40"} when 1 in
 every 40 such combinations scores at least as well, or \code{"Bottom 1 in 40"} when 1 in every
 40 scores at most as well.
+Combinations with equal scores are ordered lighter first, then more poise, then more durability.
 The table can be tailored to satisfy various constraints.
 }
 \examples{
