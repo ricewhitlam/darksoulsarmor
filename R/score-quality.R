@@ -30,9 +30,12 @@ score.quality <- function(score.raw, head.scores, chest.scores, hands.scores, le
     targets <- unique(score.raw)
     at.least <- numeric(length(targets))
     at.most <- numeric(length(targets))
+    ## checkSorted/checkNA = FALSE: other.sums is sorted just above and holds sums of real piece
+    ## scores, so findInterval's own checks - a full scan of all ~221 thousand values on every one
+    ## of these ~108 calls, ~20 ms per search - can never catch anything (arguments need R >= 4.3)
     for(hands.score in hands.scores){
-        at.least <- at.least+(length(other.sums)-findInterval(targets-hands.score-1e-9, other.sums, left.open = TRUE))
-        at.most <- at.most+findInterval(targets-hands.score+1e-9, other.sums)
+        at.least <- at.least+(length(other.sums)-findInterval(targets-hands.score-1e-9, other.sums, left.open = TRUE, checkSorted = FALSE, checkNA = FALSE))
+        at.most <- at.most+findInterval(targets-hands.score+1e-9, other.sums, checkSorted = FALSE, checkNA = FALSE)
     }
 
     top <- at.least <= total/2

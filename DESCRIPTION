@@ -22,7 +22,7 @@ Imports:
     shinybusy,
     plotly
 Depends:
-    R (>= 4.1.0)
+    R (>= 4.3.0)
 Suggests:
     testthat (>= 3.0.0),
     knitr,
