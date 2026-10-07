@@ -54,7 +54,9 @@ server <- function(input, output, session){
                     Load Inputs: <br>  
                     'Movement' is used to specify the heaviest movement type the character may have: Light (armor and other equipment at or below 25% of equip load, for a light roll),
                     Mid (at or below 50%, mid roll), Fat (at or below 100%, fat roll), or Poop (no limit: over 100%, the character can't roll and walks slowly). <br>
-                    'Weight without Armor' is used to specify the character's weight before any armor pieces have been equipped. <br>  
+                    'Left Hand Weapon 1' through 'Right Hand Weapon 2' are the weapons, shields, catalysts, talismans and bows in the four weapon slots. Only their weight is used, and rings and ammunition weigh nothing,
+                    so together with your armor they are everything you carry. They're chosen per slot because the game adds up equipment weight one item at a time, in slot order, with limited precision.
+                    A set weighing exactly 25.0% on paper can still give a mid roll, and with two or more talismans equipped, which slot holds what can make the difference. The app checks movement exactly as the game does. <br>
                     'Endurance Level' is used to specify the character's current level in the Endurance stat - Endurance affects equip load. <br> <br>  
 
                     Minimum Inputs: <br>  
@@ -72,9 +74,9 @@ server <- function(input, output, session){
                     that any armor set can reach without weighing more. It uses the settings of the last refresh (filters, upgrade levels, rings, load, and minima).
                     Among sets tied on the chosen stat, the best-scoring one is shown. This shows what each extra unit of armor weight buys; for example, the lightest armor that reaches a Poise breakpoint
                     (drawn as dotted red lines when charting Poise). <br>
-                    Vertical lines mark the armor weights at which your movement type changes (Light | Mid, Mid | Fat, Fat | Poop), given your equip load and weight without armor.
-                    The line for the movement type chosen in 'Load Inputs' is solid, and each set's movement type is shown with it. Up to the Fat line the Mask of the Father's equip load bonus is credited,
-                    so a set wearing it can weigh slightly more than the weight it's charted at and keep the same movement type. Past the Fat line there's no load limit, so there's no bonus. <br>
+                    Vertical lines mark the armor weights at which your movement type changes (Light | Mid, Mid | Fat, Fat | Poop), given your equip load and weapons.
+                    The line for the movement type chosen in 'Load Inputs' is solid, and each set's movement type is shown with it. Each set's movement type is checked exactly as the game checks it,
+                    including the Mask of the Father's equip load bonus, so just past a line a set wearing the Mask can still have the lighter movement type. <br>
                     A minimum on the charted stat itself is ignored, since it would only cut the curve off below it. It's drawn as a dashed blue line instead. Every other minimum still applies. <br>
                     The chart is computed when the tab is opened after a refresh, which takes a few seconds. Hover anywhere above or below a point to see its set and movement type.
                     Click there, or click a row of the table below the chart, for the pieces' links. <br> <br>

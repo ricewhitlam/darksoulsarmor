@@ -21,6 +21,13 @@
   download holds exact values.
 * The `head.data.fullupgrade`, `chest.data.fullupgrade`,
   `hands.data.fullupgrade` and `legs.data.fullupgrade` datasets are removed.
+* `unarmored.weight` is replaced by `weapons`: the weapons in the four weapon
+  slots, by name. The movement type is now checked exactly as the game checks
+  it: equip load and weights in 32-bit floating point, with the weapons and
+  then the armor added in the game's slot order. A combination sitting
+  exactly on a movement line on paper can fall on either side of it, as it
+  does in-game. `EQUIP_LOAD`, `ARMOR_WEIGHT` and `TOTAL_WEIGHT` are the exact
+  32-bit values.
 * R 4.3 or later is required.
 
 ## New features
@@ -33,6 +40,7 @@
 * `minima` and `weights` accept named vectors in any order, e.g.
   `minima = c(POISE = 30)` or `weights = c(PHYS_DEF = 2, MAG_DEF = 1)`; stats
   left out are 0. Unnamed vectors work as before.
+* `weapon.data`: every weapon, shield, bow and catalyst, with its weight.
 
 ## The app
 
@@ -44,6 +52,7 @@
   the last refresh.
 * "Download Armor Data" saves an Excel workbook (Results, Trade-offs and
   Settings sheets) instead of a CSV.
+* Four weapon dropdowns replace "Weight without Armor".
 * Fixed:
   * submitting all-zero score weights no longer ends the session;
   * a warning during a refresh no longer aborts it;

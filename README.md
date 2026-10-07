@@ -21,7 +21,7 @@ library(darksoulsarmor)
 armor.application()
 ```
 
-Adjust the settings in the sidebar (which armor pieces to consider, upgrade levels, rings, movement type, minimum stats, and how much each stat should matter) and click "Refresh Armor Data". The Results tab lists the top combinations. The Trade-offs tab charts the most of a chosen stat (the score, Poise, or one defense or resistance) that any combination can reach at every armor weight, with lines where the movement type changes. Click a row or point for links to the armor pieces on the Dark Souls wiki. "Download Armor Data" saves an Excel workbook of both tabs and the settings behind them. The in-app "User Guide" button explains every input in detail.
+Adjust the settings in the sidebar (which armor pieces to consider, upgrade levels, rings, weapons, movement type, minimum stats, and how much each stat should matter) and click "Refresh Armor Data". The Results tab lists the top combinations. The Trade-offs tab charts the most of a chosen stat (the score, Poise, or one defense or resistance) that any combination can reach at every armor weight, with lines where the movement type changes. Click a row or point for links to the armor pieces on the Dark Souls wiki. "Download Armor Data" saves an Excel workbook of both tabs and the settings behind them. The in-app "User Guide" button explains every input in detail.
 
 The same search is available directly as a function, for scripting or exploring results outside the app:
 

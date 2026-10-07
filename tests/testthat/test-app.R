@@ -236,10 +236,10 @@ test_that("the User Guide describes the current app", {
     guide <- modals[1]
     for(text in c("Both tabs, Results and Trade-offs, show the settings of the last refresh", "saves an Excel workbook",
                   "'Movement' is used to specify", "Poop (no limit", "Score Inputs:", "Fat | Poop", "A minimum on the charted stat itself is ignored",
-                  "or on a point or row in the Trade-offs tab", "with the game's own upgrade rates, exactly as the game computes them", "The download holds the exact values", "install_github(\"ricewhitlam/darksoulsarmor\")")){
+                  "or on a point or row in the Trade-offs tab", "with the game's own upgrade rates, exactly as the game computes them", "The download holds the exact values", "Left Hand Weapon 1' through 'Right Hand Weapon 2' are the weapons", "given your equip load and weapons", "install_github(\"ricewhitlam/darksoulsarmor\")")){
         expect_match(guide, text, fixed = TRUE)
     }
-    for(text in c("Compute Trade-offs", "Roll Type", "Weight Inputs", "Overloaded", "Fast", "Detail", "approximated")){
+    for(text in c("Compute Trade-offs", "Roll Type", "Weight Inputs", "Overloaded", "Fast", "Detail", "approximated", "Weight without Armor", "weigh slightly more than the weight it's charted at")){
         expect_false(grepl(text, guide, fixed = TRUE), info = text)
     }
 })
