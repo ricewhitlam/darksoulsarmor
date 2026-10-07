@@ -1,3 +1,55 @@
+# darksoulsarmor 2.0
+
+## Breaking changes
+
+* The `roll` argument of `get.optimal.armor.combos()` is now `movement`, and
+  its values `"Fast"`, `"Mid"`, `"Fat"` and `"None"` are now `"Light"`,
+  `"Mid"`, `"Fat"` and `"Poop"`. Each still names the heaviest movement
+  allowed; `"Poop"` (over 100% equip load, where the character can't roll and
+  walks slowly) means no load limit. Calls using `roll =` now fail with
+  "unused argument".
+* `SCORE_QUALITY` is now an exact count among every combination at the
+  selected upgrade levels, rather than a normal approximation, so its values
+  change. `SCORE_RAW` is unchanged.
+* R 4.3 or later is required.
+
+## New features
+
+* `get.armor.tradeoffs()` finds the best value of one stat (the score, Poise,
+  or one defense or resistance) at each armor-weight limit, with the same
+  settings as `get.optimal.armor.combos()`. `weight.step`, `min.armor.weight`
+  and `max.armor.weight` set which limits are computed. Among combinations
+  tied on the stat, the best-scoring one is returned.
+* `minima` and `weights` accept named vectors in any order, e.g.
+  `minima = c(POISE = 30)` or `weights = c(PHYS_DEF = 2, MAG_DEF = 1)`; stats
+  left out are 0. Unnamed vectors work as before.
+
+## The app
+
+* A new Trade-offs tab charts the most of a chosen stat that any combination
+  can reach at every armor weight, every 0.1, with lines where the movement
+  type changes. Hover over or click a point, or click a table row, for its set
+  and links.
+* "Refresh Armor Data" updates both tabs, which always show the settings of
+  the last refresh.
+* "Download Armor Data" saves an Excel workbook (Results, Trade-offs and
+  Settings sheets) instead of a CSV.
+* Fixed:
+  * submitting all-zero score weights no longer ends the session;
+  * a warning during a refresh no longer aborts it;
+  * Max Table Size is enforced on the server.
+
+## Other changes
+
+* Combinations with equal scores are now ordered lighter first, then more
+  poise, then more durability. They are also chosen that way at the
+  `max.table.size` cutoff; previously the order was arbitrary.
+* The search is faster.
+* `library(darksoulsarmor)` no longer loads the Shiny packages; they load when
+  `armor.application()` runs.
+* The scoring vignette no longer contradicts itself about comparing scores
+  across different weights, and the README's install command now builds it.
+
 # darksoulsarmor 1.0
 
 Initial release.
