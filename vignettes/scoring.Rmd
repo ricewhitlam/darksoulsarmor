@@ -15,6 +15,9 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 (and its human-readable form, `SCORE_QUALITY`). This vignette explains where that number comes
 from.
 
+`get.armor.tradeoffs()` uses the same score: it's the stat maximized with `metric = "SCORE"`, and
+the tie-break when maximizing any other stat.
+
 ## The problem: metrics on different scales
 
 An armor combination is described by ten metrics: physical, strike, slash, and thrust defense;
@@ -30,7 +33,9 @@ its raw number. `get.optimal.armor.combos()` does this using the population mean
 deviation of each metric, computed once across every possible armor combination (including
 every upgrade level) when the package's data was built - see `create_rda/create_rda.R`. These
 live in the package's internal data as `means`, `stddevs`, and `corrs` (the population
-correlation matrix across the ten metrics).
+correlation matrix across the ten metrics). Because the four slots are chosen independently, these
+follow exactly from each slot's own means and covariances (the combination's mean is the sum of the
+slots' means, and likewise its covariance matrix), so no combination ever needs to be enumerated.
 
 ## Building a score from weights
 
