@@ -1,7 +1,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <queue>
 #include <tuple>
 #include <vector>
 
@@ -28,10 +27,10 @@ struct armor_combo {
     int32_t h; int32_t c; int32_t g; int32_t l;
     // "Better than": higher score; among equal scores, lighter, then more poise, then more
     // durability, then the earlier row indices, so that which tied combos are kept - and their
-    // order - never depends on the order candidates were visited in. Reversed on purpose:
-    // std::priority_queue is a max-heap by operator<, and this makes "less than" mean "better".
-    // So the heap's top() is the *worst* combo currently kept - the one to evict first once the
-    // heap is full and something better shows up.
+    // order - never depends on the order candidates were visited in. Reversed on purpose: the
+    // results heap below is a max-heap by operator< (std::push_heap/std::pop_heap's convention),
+    // and this makes "less than" mean "better". So the heap's front() is the *worst* combo
+    // currently kept - the one to evict first once the heap is full and something better shows up.
     bool operator<(const armor_combo& comparison) const
     {
         if(key != comparison.key){ return key > comparison.key; }
@@ -41,6 +40,31 @@ struct armor_combo {
         return std::tie(h, c, g, l) < std::tie(comparison.h, comparison.c, comparison.g, comparison.l);
     }
 };
+
+// Replaces a full heap's front() (its worst kept combo) with a better one in a single sift down
+// the tree - what push() then pop() on a std::priority_queue does in two passes (one up, one down).
+// It also never grows the heap past its reserved size, so it never reallocates: push() on a full
+// heap would need room for one more entry, doubling the storage once per search.
+inline void heap_replace_top(std::vector<armor_combo>& heap, const armor_combo& replacement){
+    std::size_t n = heap.size();
+    std::size_t i = 0;
+    while(true){
+        std::size_t child = 2*i+1;
+        if(child >= n){
+            break;
+        }
+        // The worse ("larger") of the two children
+        if(child+1 < n && heap[child] < heap[child+1]){
+            ++child;
+        }
+        if(!(replacement < heap[child])){
+            break;
+        }
+        heap[i] = heap[child];
+        i = child;
+    }
+    heap[i] = replacement;
+}
 
 // One armor slot's columns (head/chest/hands/legs are all shaped the same way), as raw
 // pointers for use in the hot loop below. The wrapping NumericVector/CharacterVector members
@@ -172,16 +196,15 @@ DataFrame optimal_armor_combinations(
     bool I_capped = false; bool J_capped = false; bool K_capped = false; bool L_capped = false;
     int max_loop_size = std::max(I, std::max(J, std::max(K, L)));
     armor_combo curr_combo;
-    // Reserve capacity for the heap's backing storage up front, so it never has to reallocate
-    // and copy its contents as it fills. priority_queue exposes no reserve() of its own, but its
-    // constructor can take ownership of an already-reserved container. The heap can never hold
-    // more than the I*J*K*L combinations these tables form, so the reservation is capped there -
-    // otherwise a large max_output_size against small tables would commit memory (56 bytes per
-    // entry, ~5.6 GB at 1e8) for results that can't exist. Computed in 64 bits to avoid overflow.
+    // The results heap (std::push_heap/std::pop_heap/heap_replace_top over a vector). Its storage
+    // is reserved up front, so it never has to reallocate and copy its contents as it fills. The
+    // heap can never hold more than the I*J*K*L combinations these tables form, so the reservation
+    // is capped there - otherwise a large max_output_size against small tables would commit memory
+    // (56 bytes per entry, ~5.6 GB at 1e8) for results that can't exist. Computed in 64 bits to
+    // avoid overflow.
     long long possible_combos = static_cast<long long>(I)*J*K*L;
-    std::vector<armor_combo> armor_combos_storage;
-    armor_combos_storage.reserve(static_cast<std::size_t>(std::min<long long>(max_output_size, possible_combos)));
-    std::priority_queue<armor_combo> armor_combos(std::less<armor_combo>(), std::move(armor_combos_storage));
+    std::vector<armor_combo> armor_combos;
+    armor_combos.reserve(static_cast<std::size_t>(std::min<long long>(max_output_size, possible_combos)));
     bool at_max_queue_size = false;
     int loop_size_1;
     for(int loop_size = starting_loop_size; loop_size <= max_loop_size; ++loop_size){
@@ -231,7 +254,7 @@ DataFrame optimal_armor_combinations(
 
             curr_head_SCORE = head.SCORE[i];
 
-            if(at_max_queue_size && score_key(curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.top().key){
+            if(at_max_queue_size && score_key(curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.front().key){
                 break;
             }
 
@@ -257,7 +280,7 @@ DataFrame optimal_armor_combinations(
 
                 curr_chest_SCORE = chest.SCORE[j];
 
-                if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.top().key){
+                if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.front().key){
                     break;
                 }
 
@@ -283,7 +306,7 @@ DataFrame optimal_armor_combinations(
 
                     curr_hands_SCORE = hands.SCORE[k];
 
-                    if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) < armor_combos.top().key){
+                    if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) < armor_combos.front().key){
                         break;
                     }
 
@@ -309,7 +332,7 @@ DataFrame optimal_armor_combinations(
 
                         curr_legs_SCORE = legs.SCORE[l];
 
-                        if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) < armor_combos.top().key){
+                        if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) < armor_combos.front().key){
                             break;
                         }
 
@@ -390,12 +413,12 @@ DataFrame optimal_armor_combinations(
                         curr_combo.h = i; curr_combo.c = j; curr_combo.g = k; curr_combo.l = l;
 
                         if(at_max_queue_size){
-                            if(curr_combo < armor_combos.top()){
-                                armor_combos.push(curr_combo);
-                                armor_combos.pop();
+                            if(curr_combo < armor_combos.front()){
+                                heap_replace_top(armor_combos, curr_combo);
                             }
                         } else{
-                            armor_combos.push(curr_combo);
+                            armor_combos.push_back(curr_combo);
+                            std::push_heap(armor_combos.begin(), armor_combos.end());
                             ++curr_count;
                             if(curr_count >= max_output_size){
                                 at_max_queue_size = true;
@@ -445,7 +468,9 @@ DataFrame optimal_armor_combinations(
     double out_WEIGHT; double out_load; int out_poise_count;
 
     for(int n = (out_size-1); n > -1; --n){
-        curr_combo = armor_combos.top();
+        // Worst remaining combo to the back, then out - filling the output from its last row up
+        std::pop_heap(armor_combos.begin(), armor_combos.end());
+        curr_combo = armor_combos.back();
         out_h = curr_combo.h; out_c = curr_combo.c; out_g = curr_combo.g; out_l = curr_combo.l;
 
         SCORE_RAW[n] = curr_combo.score;
@@ -487,7 +512,7 @@ DataFrame optimal_armor_combinations(
         out_WEIGHT = head.WEIGHT[out_h]+chest.WEIGHT[out_c]+hands.WEIGHT[out_g]+legs.WEIGHT[out_l];
         out_load = (out_h == father_mask_index) ? load_father_mask : load;
         ARMOR_WEIGHT[n] = out_WEIGHT; TOTAL_WEIGHT[n] = out_WEIGHT+base_weight; EQUIP_LOAD[n] = out_load; PCT_LOAD[n] = (out_WEIGHT+base_weight)/out_load;
-        armor_combos.pop();
+        armor_combos.pop_back();
     }
 
     return out;
