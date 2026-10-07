@@ -63,6 +63,12 @@ server <- function(input, output, session){
                     It is an exact count, not an estimate: 'Top 1 in 40' means 1 in every 40 combinations at those upgrade levels scores at least as well (ties included), regardless of the filters chosen. Combinations in the bottom half read 'Bottom 1 in N' instead, counting those that score at most as well.
                     SCORE_RAW is global within the same set of weights: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
 
+                    Trade-offs Tab: <br>
+                    Choose a stat (the score, Poise, or a single defense or resistance) and click 'Compute Trade-offs' to chart the most of that stat any armor set can reach at each armor weight,
+                    from 0 up to what your current settings allow, with every other setting in the sidebar applied (filters, upgrade levels, rings, and minima).
+                    Among sets tied on the chosen stat, the best-scoring one is shown. This shows what each extra unit of armor weight buys - for example, the lightest armor reaching a Poise breakpoint.
+                    The Mask of the Father's equip load bonus applies at every weight, so a set wearing it can weigh slightly more than the limit. Hover over a point to see its set; click a point or a table row for links. <br> <br>
+
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
                     shiny::tags$a("Stamina", href = "http://darksouls.wikidot.com/stamina#toc3 ", target = "_blank"), " <br> <br>
@@ -709,8 +715,9 @@ server <- function(input, output, session){
         })
 
 
-    shiny::observeEvent(input$table_rows_selected, {
-        data.selected <- armordata()$data[input$table_rows_selected]
+    ## Wiki links for one armor set (a one-row table with HEAD, CHEST, HANDS and LEGS), in a modal -
+    ## for a row of the results table, or a point of the trade-offs chart or its table
+    show.armor.links <- function(data.selected){
         head.link <- head.data.unupgraded$LINK[match(data.selected$HEAD, head.data.unupgraded$ARMOR)]
         if(head.link != "N/A"){
             output$tabhead <- shiny::renderUI({shiny::tagList("Head: ", shiny::a(data.selected$HEAD, href = head.link, target = "_blank"))})
@@ -748,8 +755,36 @@ server <- function(input, output, session){
                 )
             )
         )
+    }
+
+    shiny::observeEvent(input$table_rows_selected, {
+        show.armor.links(armordata()$data[input$table_rows_selected])
     })
 
+
+    ## The search settings currently saved from the sidebar's modals - shared by "Refresh Armor Data"
+    ## and the Trade-offs tab's "Compute", so a setting can't be wired into one and missed in the other
+    current.settings <- function(){
+        list(
+            starting.class = filter.values$starting.class,
+            areas.completed = filter.values$areas.completed,
+            upgrade.types = filter.values$upgrade.types,
+            head.filter = filter.values$head.filter,
+            chest.filter = filter.values$chest.filter,
+            hands.filter = filter.values$hands.filter,
+            legs.filter = filter.values$legs.filter,
+            regular.level = upgrade.values$regular.level,
+            twinkling.level = upgrade.values$twinkling.level,
+            roll = constraint.values$roll,
+            unarmored.weight = constraint.values$unarmored.weight,
+            endurance.level = constraint.values$endurance.level,
+            havel.ring = ring.values$havel.ring,
+            favor.ring = ring.values$favor.ring,
+            wolf.ring = ring.values$wolf.ring,
+            minima = minimum.values$minima,
+            weights = weight.values$weights
+        )
+    }
 
     shiny::observeEvent(input$go, {
 
@@ -766,26 +801,7 @@ server <- function(input, output, session){
             shinybusy::show_modal_spinner()
 
             armordata({
-                result <- get.optimal.armor.combos(
-                    max.table.size = filter.values$max.table.size,
-                    starting.class = filter.values$starting.class,
-                    areas.completed = filter.values$areas.completed,
-                    upgrade.types = filter.values$upgrade.types,
-                    head.filter = filter.values$head.filter,
-                    chest.filter = filter.values$chest.filter,
-                    hands.filter = filter.values$hands.filter,
-                    legs.filter = filter.values$legs.filter,
-                    regular.level = upgrade.values$regular.level,
-                    twinkling.level = upgrade.values$twinkling.level,
-                    roll = constraint.values$roll,
-                    unarmored.weight = constraint.values$unarmored.weight,
-                    endurance.level = constraint.values$endurance.level,
-                    havel.ring = ring.values$havel.ring,
-                    favor.ring = ring.values$favor.ring,
-                    wolf.ring = ring.values$wolf.ring,
-                    minima = minimum.values$minima,
-                    weights = weight.values$weights
-                )
+                result <- do.call(get.optimal.armor.combos, c(list(max.table.size = filter.values$max.table.size), current.settings()))
                 result$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := lapply(.SD, as.factor), .SDcols = c("HEAD", "CHEST", "HANDS", "LEGS")]
                 result
             })
@@ -824,6 +840,121 @@ server <- function(input, output, session){
 
         )
 
+    })
+
+
+    ## Trade-offs tab: the most of one stat any armor set can reach at each armor weight (see
+    ## get.armor.tradeoffs), for the sidebar's current settings, in 1.0-unit steps
+    tradeoff.metric.labels <- c(
+        SCORE = "Score", POISE = "Poise",
+        PHYS_DEF = "Physical Defense", STRIKE_DEF = "Strike Defense", SLASH_DEF = "Slash Defense", THRUST_DEF = "Thrust Defense",
+        MAG_DEF = "Magic Defense", FIRE_DEF = "Fire Defense", LITNG_DEF = "Lightning Defense",
+        BLEED_RES = "Bleed Resistance", POIS_RES = "Poison Resistance", CURSE_RES = "Curse Resistance"
+    )
+    tradeoffdata <- shiny::reactiveVal(NULL)
+
+    shiny::observeEvent(input$tradeoff_go, {
+
+        ## Same error/warning handling as "Refresh Armor Data" above
+        tradeoff.warnings <- character(0)
+
+        tryCatch(
+
+        withCallingHandlers({
+
+            shinybusy::show_modal_spinner()
+            tradeoffdata(do.call(get.armor.tradeoffs, c(list(metric = input$tradeoff_metric, weight.step = 1), current.settings())))
+            output$errormessage <- shiny::renderText("")
+
+            for(message in unique(tradeoff.warnings)){
+                shiny::showNotification(message, type = "warning")
+            }
+
+        },
+
+        warning = function(w){
+            tradeoff.warnings <<- c(tradeoff.warnings, conditionMessage(w))
+            invokeRestart("muffleWarning")
+        }),
+
+        error = function(e) {
+            output$errormessage <- shiny::renderText(conditionMessage(e))
+        },
+
+        finally = {
+            shinybusy::remove_modal_spinner()
+        }
+
+        )
+
+    })
+
+    output$tradeoff_plot <- plotly::renderPlotly({
+        curve <- tradeoffdata()
+        shiny::req(curve)
+        d <- curve$data
+        metric.label <- tradeoff.metric.labels[[curve$args$metric]]
+        d$hover <-
+            ifelse(
+                is.na(d$BEST_VALUE),
+                sprintf("Armor weight up to %.1f<br>No armor set fits the other settings", d$ARMOR_WEIGHT_LIMIT),
+                sprintf(
+                    "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f; score %.3f (%s)",
+                    d$ARMOR_WEIGHT_LIMIT, metric.label, format(round(d$BEST_VALUE, 3)),
+                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, d$SCORE_RAW, d$SCORE_QUALITY
+                )
+            )
+        d$point <- seq_len(nrow(d))
+        allowance <- max(d$ARMOR_WEIGHT_LIMIT)
+        shapes <- list(list(type = "line", x0 = allowance, x1 = allowance, y0 = 0, y1 = 1, yref = "paper", line = list(dash = "dash", color = "gray")))
+        annotations <- list(list(x = allowance, y = 1, yref = "paper", text = "current allowance", showarrow = FALSE, xanchor = "right", yanchor = "bottom"))
+        ## Poise breakpoints players aim for (see the User Guide)
+        if(curve$args$metric == "POISE"){
+            for(breakpoint in c(21, 31, 46, 61)){
+                shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = breakpoint, y1 = breakpoint, line = list(dash = "dot", color = "firebrick"))
+                annotations[[length(annotations)+1]] <- list(x = 0, xref = "paper", y = breakpoint, text = paste("Poise", breakpoint), showarrow = FALSE, xanchor = "left", yanchor = "bottom")
+            }
+        }
+        p <-
+            plotly::plot_ly(
+                d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
+                type = "scatter", mode = "lines+markers", line = list(shape = "hv"), source = "tradeoffs"
+            ) |>
+            plotly::layout(
+                xaxis = list(title = "Armor weight limit"), yaxis = list(title = paste("Best", metric.label)),
+                shapes = shapes, annotations = annotations
+            )
+        plotly::event_register(p, "plotly_click")
+    })
+
+    ## Clicking a point: its armor set's links. event_data() warns until the chart has been drawn
+    ## and registered its click event, which is expected before the first Compute.
+    shiny::observeEvent(suppressWarnings(plotly::event_data("plotly_click", source = "tradeoffs")), {
+        click <- suppressWarnings(plotly::event_data("plotly_click", source = "tradeoffs"))
+        point <- tradeoffdata()$data[click$customdata[1]]
+        if(nrow(point) == 1 && !is.na(point$HEAD)){
+            show.armor.links(point)
+        }
+    })
+
+    output$tradeoff_table <- DT::renderDataTable({
+        curve <- tradeoffdata()
+        shiny::req(curve)
+        DT::datatable(
+            curve$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ARMOR_WEIGHT, TOTAL_POISE, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)],
+            selection = "single",
+            options = list(scrollX = TRUE, pageLength = 10)
+        ) |>
+        DT::formatCurrency(c("ARMOR_WEIGHT_LIMIT", "ARMOR_WEIGHT"), currency = "", interval = 3, mark = ",", digits = 1) |>
+        DT::formatCurrency(c("BEST_VALUE", "SCORE_RAW"), currency = "", interval = 3, mark = ",", digits = 3) |>
+        DT::formatCurrency("TOTAL_POISE", currency = "", interval = 3, mark = ",", digits = 0)
+    })
+
+    shiny::observeEvent(input$tradeoff_table_rows_selected, {
+        point <- tradeoffdata()$data[input$tradeoff_table_rows_selected]
+        if(!is.na(point$HEAD)){
+            show.armor.links(point)
+        }
     })
 
 

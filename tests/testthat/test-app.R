@@ -262,3 +262,36 @@ test_that("a warning during refresh doesn't abort it, and is shown as a notifica
         expect_match(notifications, "simulated dependency warning")
     })
 })
+
+test_that("the Trade-offs tab computes the curve for the sidebar's settings, charts it, and links its sets", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(constraints = 1)
+        session$setInputs(roll = "Mid", unarmored.weight = 12, endurance.level = 40)
+        session$setInputs(dismiss_constraint_modal = 1)
+        session$setInputs(rings = 1)
+        session$setInputs(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE)
+        session$setInputs(dismiss_ring_modal = 1)
+
+        session$setInputs(tradeoff_metric = "POISE", tradeoff_go = 1)
+        expected <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, roll = "Mid", unarmored.weight = 12, wolf.ring = TRUE)$data
+        expect_equal(tradeoffdata()$data, expected)
+        expect_equal(range(tradeoffdata()$data$ARMOR_WEIGHT_LIMIT), c(0, 28))
+        expect_equal(output$errormessage, "")
+        expect_no_error(output$tradeoff_plot)
+        expect_no_error(output$tradeoff_table)
+
+        ## A table row with a head piece: its links open
+        row <- which(!is.na(expected$HEAD) & expected$HEAD != "No Head")[1]
+        session$setInputs(tradeoff_table_rows_selected = row)
+        expect_match(output$tabhead$html, head.data.unupgraded[ARMOR == expected$HEAD[row], LINK], fixed = TRUE)
+
+        ## Clicking a chart point (plotly's click event, as the browser sends it): its links open
+        point <- which(!is.na(expected$CHEST) & expected$CHEST != "No Chest")[1]
+        session$setInputs(`plotly_click-tradeoffs` = sprintf('[{"curveNumber":0,"pointNumber":%d,"customdata":%d}]', point - 1, point))
+        expect_match(output$tabchest$html, chest.data.unupgraded[ARMOR == expected$CHEST[point], LINK], fixed = TRUE)
+
+        ## Switching the metric recomputes
+        session$setInputs(tradeoff_metric = "MAG_DEF", tradeoff_go = 2)
+        expect_equal(tradeoffdata()$args$metric, "MAG_DEF")
+    })
+})

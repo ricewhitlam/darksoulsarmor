@@ -19,7 +19,8 @@ Imports:
     shinyWidgets,
     bslib,
     DT,
-    shinybusy
+    shinybusy,
+    plotly
 Depends:
     R (>= 4.1.0)
 Suggests:

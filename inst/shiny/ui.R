@@ -60,6 +60,38 @@ bslib::page_sidebar(
 
         shiny::textOutput("errormessage"),
         shiny::textOutput("refreshmessage"),
-        DT::dataTableOutput(outputId = "table")
-    
+
+        bslib::navset_card_tab(
+            id = "main_tabs",
+            bslib::nav_panel(
+                "Results",
+                DT::dataTableOutput(outputId = "table")
+            ),
+            bslib::nav_panel(
+                "Trade-offs",
+                shiny::fluidRow(
+                    shiny::column(
+                        4,
+                        shiny::selectInput(
+                            inputId = "tradeoff_metric",
+                            label = "Maximize",
+                            choices = c(
+                                "Score" = "SCORE", "Poise" = "POISE",
+                                "Physical Defense" = "PHYS_DEF", "Strike Defense" = "STRIKE_DEF", "Slash Defense" = "SLASH_DEF", "Thrust Defense" = "THRUST_DEF",
+                                "Magic Defense" = "MAG_DEF", "Fire Defense" = "FIRE_DEF", "Lightning Defense" = "LITNG_DEF",
+                                "Bleed Resistance" = "BLEED_RES", "Poison Resistance" = "POIS_RES", "Curse Resistance" = "CURSE_RES"
+                            )
+                        )
+                    ),
+                    shiny::column(4, shiny::br(), shiny::actionButton(inputId = "tradeoff_go", label = "Compute Trade-offs"))
+                ),
+                shiny::helpText(
+                    "For each armor weight from 0 up to what your current settings allow, the most of the chosen stat any armor set can reach,",
+                    "with every other setting in the sidebar applied. Hover over a point for its set; click a point or a table row for its links."
+                ),
+                plotly::plotlyOutput(outputId = "tradeoff_plot"),
+                DT::dataTableOutput(outputId = "tradeoff_table")
+            )
+        )
+
     )
