@@ -485,16 +485,23 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
     scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
     metric.cols <- scored.metrics$metric
 
-    working.head.data[, SCORE := 0]
-    working.chest.data[, SCORE := 0]
-    working.hands.data[, SCORE := 0]
-    working.legs.data[, SCORE := 0]
+    ## Accumulated in plain vectors rather than as 40 data.table SCORE := ... calls: the same
+    ## arithmetic in the same order (so bit-identical scores), without each call's overhead
+    head.score <- rep(0, nrow(working.head.data))
+    chest.score <- rep(0, nrow(working.chest.data))
+    hands.score <- rep(0, nrow(working.hands.data))
+    legs.score <- rep(0, nrow(working.legs.data))
     for(i in seq_along(metric.cols)){
-        working.head.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-        working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-        working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
-        working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(metric.cols[i])-0.25*means[i])]
+        head.score <- head.score+score.scalars[i]*(working.head.data[[metric.cols[i]]]-0.25*means[i])
+        chest.score <- chest.score+score.scalars[i]*(working.chest.data[[metric.cols[i]]]-0.25*means[i])
+        hands.score <- hands.score+score.scalars[i]*(working.hands.data[[metric.cols[i]]]-0.25*means[i])
+        legs.score <- legs.score+score.scalars[i]*(working.legs.data[[metric.cols[i]]]-0.25*means[i])
     }
+    data.table::set(working.head.data, j = "SCORE", value = unname(head.score))
+    data.table::set(working.chest.data, j = "SCORE", value = unname(chest.score))
+    data.table::set(working.hands.data, j = "SCORE", value = unname(hands.score))
+    data.table::set(working.legs.data, j = "SCORE", value = unname(legs.score))
+    rm(list = c("head.score", "chest.score", "hands.score", "legs.score"))
 
     ## Every piece's score at this upgrade level, kept from before any filtering below:
     ## SCORE_QUALITY ranks each result against every combination at this level (see
