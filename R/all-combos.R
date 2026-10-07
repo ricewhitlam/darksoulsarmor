@@ -11,21 +11,20 @@
 #' All relevant metrics are included.
 #' All metrics are aggregated as would be expected with perhaps one exception: 
 #' Durability is aggregated by taking the minimum across all armor pieces.
-#' 
+#' Stats are exact (what the game computes, in 32-bit floating point), not rounded to the one
+#' decimal place the game displays. For example, Black Sorcerer Hat's strike defense is 5.1499996,
+#' which the game shows as 5.1.
+#'
 #' @param
 #' regular.level A length 1 \code{character} indicating the upgrade level of armor pieces ascended via regular titanite. 
 #' Options are \code{"+0"} thru \code{"+10"}. 
-#' Metrics are exact for \code{"+0"} and \code{"+10"}. 
-#' For the other options, metrics are approximated based on the game's default upgrade patterns.
-#' These approximations should be very accurate but will differ from true values slightly.
+#' Each defense and resistance is computed from the piece's +0 value with the game's own upgrade rates, exactly as the game computes it.
 #' Defaults to \code{"+0"}.
 #' 
 #' @param 
 #' twinkling.level A length 1 \code{character} indicating the upgrade level of armor pieces ascended via twinkling titanite. 
 #' Options are \code{"+0"} thru \code{"+5"}. 
-#' Metrics are exact for \code{"+0"} and \code{"+5"}. 
-#' For the other options, metrics are approximated based on the game's default upgrade patterns.
-#' These approximations should be very accurate but will differ from true values slightly.
+#' Each defense and resistance is computed from the piece's +0 value with the game's own upgrade rates, exactly as the game computes it.
 #' Defaults to \code{"+0"}.
 #' 
 #' @return

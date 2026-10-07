@@ -51,7 +51,8 @@
 #' one row per armor-weight limit (\code{ARMOR_WEIGHT_LIMIT}): the best achievable value of the
 #' metric (\code{BEST_VALUE}), and the combination achieving it - its \code{SCORE_RAW},
 #' \code{SCORE_QUALITY}, \code{ARMOR_WEIGHT}, \code{TOTAL_POISE}, and pieces. Limits at which no
-#' combination satisfies the other settings have \code{NA} values.
+#' combination satisfies the other settings have \code{NA} values. Values are exact, as in
+#' \code{\link{get.optimal.armor.combos}}.
 #'
 #' @examples
 #' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", unarmored.weight = 12)

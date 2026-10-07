@@ -11,6 +11,16 @@
 * `SCORE_QUALITY` is now an exact count among every combination at the
   selected upgrade levels, rather than a normal approximation, so its values
   change. `SCORE_RAW` is unchanged.
+* Stats are now exact. Every upgrade level is computed from each piece's +0
+  values with the game's own upgrade rates, in 32-bit floating point as the
+  game does, and strike, slash and thrust defense hold their exact values
+  (e.g. 5.1499996, which the game shows as 5.1). Values are no longer rounded
+  to one decimal, and some change slightly: by up to about 0.05 per piece at
+  +0, and by 0.1 at some intermediate upgrade levels, where the old
+  interpolation was approximate. The app still shows one decimal; its
+  download holds exact values.
+* The `head.data.fullupgrade`, `chest.data.fullupgrade`,
+  `hands.data.fullupgrade` and `legs.data.fullupgrade` datasets are removed.
 * R 4.3 or later is required.
 
 ## New features

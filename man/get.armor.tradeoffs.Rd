@@ -42,7 +42,8 @@ A \code{list} holding (1) the arguments that defined the curve and (2) a \code{d
 one row per armor-weight limit (\code{ARMOR_WEIGHT_LIMIT}): the best achievable value of the
 metric (\code{BEST_VALUE}), and the combination achieving it - its \code{SCORE_RAW},
 \code{SCORE_QUALITY}, \code{ARMOR_WEIGHT}, \code{TOTAL_POISE}, and pieces. Limits at which no
-combination satisfies the other settings have \code{NA} values.
+combination satisfies the other settings have \code{NA} values. Values are exact, as in
+\code{\link{get.optimal.armor.combos}}.
 }
 \description{
 For a range of armor-weight limits, finds the combination with the most of one stat - the score,

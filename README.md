@@ -1,6 +1,6 @@
 # darksoulsarmor
 
-An R package for finding optimized armor combinations in *Dark Souls Remastered*. It ships full stat data for every armor piece in the game (unupgraded and fully upgraded), a combinatorial search that scores every valid head/chest/hands/legs combination against a set of weighted priorities and constraints, and an interactive Shiny app built on top of that search. It can also chart trade-offs: the most of a stat any combination can reach at every armor weight.
+An R package for finding optimized armor combinations in *Dark Souls Remastered*. It ships exact stats for every armor piece in the game, computing any upgrade level with the game's own upgrade rates, a combinatorial search that scores every valid head/chest/hands/legs combination against a set of weighted priorities and constraints, and an interactive Shiny app built on top of that search. It can also chart trade-offs: the most of a stat any combination can reach at every armor weight.
 
 ## Installation
 

@@ -57,16 +57,12 @@ A vector of available pieces can be accessed via \code{legs.data.unupgraded$ARMO
 
 \item{regular.level}{A length 1 \code{character} indicating the upgrade level of armor pieces ascended via regular titanite. 
 Options are \code{"+0"} thru \code{"+10"}. 
-Metrics are exact for \code{"+0"} and \code{"+10"}. 
-For the other options, metrics are approximated based on the game's default upgrade patterns.
-These approximations should be very accurate but will differ from true values slightly.
+Each defense and resistance is computed from the piece's +0 value with the game's own upgrade rates, exactly as the game computes it.
 Defaults to \code{"+0"}.}
 
 \item{twinkling.level}{A length 1 \code{character} indicating the upgrade level of armor pieces ascended via twinkling titanite. 
 Options are \code{"+0"} thru \code{"+5"}. 
-Metrics are exact for \code{"+0"} and \code{"+5"}. 
-For the other options, metrics are approximated based on the game's default upgrade patterns.
-These approximations should be very accurate but will differ from true values slightly.
+Each defense and resistance is computed from the piece's +0 value with the game's own upgrade rates, exactly as the game computes it.
 Defaults to \code{"+0"}.}
 
 \item{movement}{A length 1 \code{character}: the heaviest movement type to allow, by the share of max equip load carried.
@@ -120,6 +116,9 @@ selected upgrade levels (regardless of the other filters) - e.g. \code{"Top 1 in
 every 40 such combinations scores at least as well, or \code{"Bottom 1 in 40"} when 1 in every
 40 scores at most as well.
 Combinations with equal scores are ordered lighter first, then more poise, then more durability.
+Stats are exact (what the game computes, in 32-bit floating point), not rounded to the one
+decimal place the game displays. For example, Black Sorcerer Hat's strike defense is 5.1499996,
+which the game shows as 5.1.
 The table can be tailored to satisfy various constraints.
 }
 \examples{

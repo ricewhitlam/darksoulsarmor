@@ -40,8 +40,9 @@ server <- function(input, output, session){
                     Upgrade Inputs: <br>  
                     'Armor Level (Regular)' is used to specify the upgrade level of armor pieces ascended via regular titanite. Options are +0 thru +10. <br>  
                     'Armor Level (Twinkling)' is used to specify the upgrade level of armor pieces ascended via twinkling titanite. Options are +0 thru +5. <br>  
-                    For the options between unupgraded and fully upgraded, metrics are approximated based on the game's default upgrade patterns.
-                    These approximations should be very accurate but will differ slightly from true values. <br> <br>
+                    Every upgrade level is computed from each piece's +0 values with the game's own upgrade rates, exactly as the game computes them.
+                    The app shows values rounded to one decimal; the game rounds an occasional exact tie (such as 9.25) the other way, so a value can differ from the game's own display by 0.1.
+                    The download holds the exact values. <br> <br>
 
                     Ring Inputs: <br>  
                     'Havel's Ring', 'Ring of Favor', and 'Wolf Ring' are used to specify whether the player has the relevant ring equipped.

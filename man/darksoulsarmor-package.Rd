@@ -7,7 +7,7 @@
   Explore and Optimize Armor Combinations
 }
 \description{
-  This package contains full datasets for the unupgraded and fully upgraded armor pieces of Dark Souls.
+  This package contains exact stats for every armor piece in Dark Souls, at any upgrade level.
   It also has functions which produce a table of scored armor combinations, and the best value of a stat at each armor weight.
   This functionality is available in an interactive Shiny application.
 }
