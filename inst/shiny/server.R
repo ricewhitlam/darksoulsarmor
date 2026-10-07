@@ -18,7 +18,9 @@ server <- function(input, output, session){
                 size = "l",
                 shiny::HTML(paste0("
 
-                    To use the app, adjust inputs in the sidebar at left and then click the button 'Refresh Armor Data'. <br> <br>  
+                    To use the app, adjust inputs in the sidebar at left and then click 'Refresh Armor Data'. Both tabs, Results and Trade-offs, show the settings of the last refresh;
+                    if you change a setting afterwards, a message says so until you refresh again. <br>
+                    'Download Armor Data' saves an Excel workbook of the last refresh: the Results table, the Trade-offs table for the stat currently chosen in that tab, and the settings behind both. <br> <br>
 
                     Filter Inputs: <br>  
                     'Max Table Size' is used to specify how large the created table can be and is used to avoid unnecessary slowness - it cannot be set higher than 100,000. <br> 
@@ -44,19 +46,20 @@ server <- function(input, output, session){
                     Ring Inputs: <br>  
                     'Havel's Ring', 'Ring of Favor', and 'Wolf Ring' are used to specify whether the player has the relevant ring equipped.
                     The app will allow all three to be selected, but this is obviously not possible in game. <br>  
-                    Havel's Ring and the Ring of Favor both boost equip load which is helpful when trying to achieve a faster roll speed. 
+                    Havel's Ring and the Ring of Favor both boost equip load which is helpful when trying to quicken movement.
                     The Wolf Ring gives 40 poise and is immensely helpful in hitting key poise breakpoints. These are 21/46/61 for PVE and 31/61 for PVP, as explained here: ", 
                     shiny::tags$a("Dark Souls Dissected #13 - Poise Mechanics (and glitches!)", href = "https://www.youtube.com/watch?v=pwffSOSzcAM", target = "_blank"), " . <br> <br>
 
                     Load Inputs: <br>  
-                    'Roll Type' is used to specify the player's desired roll speed. <br>  
+                    'Movement' is used to specify the heaviest movement type the character may have: Light (armor and other equipment at or below 25% of equip load, for a light roll),
+                    Mid (at or below 50%, mid roll), Fat (at or below 100%, fat roll), or Poop (no limit: over 100%, the character can't roll and walks slowly). <br>
                     'Weight without Armor' is used to specify the character's weight before any armor pieces have been equipped. <br>  
                     'Endurance Level' is used to specify the character's current level in the Endurance stat - Endurance affects equip load. <br> <br>  
 
                     Minimum Inputs: <br>  
                     Here, minima may be specified for a set of relevant metrics. Only combinations which achieve or exceed the specified minima will be considered. <br> <br>
 
-                    Weight Inputs: <br>  
+                    Score Inputs: <br>
                     Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
                     (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
                     This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
@@ -64,17 +67,23 @@ server <- function(input, output, session){
                     SCORE_RAW is global within the same set of weights: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
 
                     Trade-offs Tab: <br>
-                    Choose a stat (the score, Poise, or a single defense or resistance) and click 'Compute Trade-offs' to chart the most of that stat any armor set can reach at each armor weight,
-                    from 0 up to what your current settings allow, with every other setting in the sidebar applied (filters, upgrade levels, rings, and minima).
-                    Among sets tied on the chosen stat, the best-scoring one is shown. This shows what each extra unit of armor weight buys - for example, the lightest armor reaching a Poise breakpoint.
-                    The Mask of the Father's equip load bonus applies at every weight, so a set wearing it can weigh slightly more than the limit. Hover over a point to see its set; click a point or a table row for links. <br> <br>
+                    For every armor weight, from 0 up to the heaviest possible armor, every 0.1, the chart shows the most of the chosen stat ('Maximize': the score, Poise, or a single defense or resistance)
+                    that any armor set can reach without weighing more. It uses the settings of the last refresh (filters, upgrade levels, rings, load, and minima).
+                    Among sets tied on the chosen stat, the best-scoring one is shown. This shows what each extra unit of armor weight buys; for example, the lightest armor that reaches a Poise breakpoint
+                    (drawn as dotted red lines when charting Poise). <br>
+                    Vertical lines mark the armor weights at which your movement type changes (Light | Mid, Mid | Fat, Fat | Poop), given your equip load and weight without armor.
+                    The line for the movement type chosen in 'Load Inputs' is solid, and each set's movement type is shown with it. Up to the Fat line the Mask of the Father's equip load bonus is credited,
+                    so a set wearing it can weigh slightly more than the weight it's charted at and keep the same movement type. Past the Fat line there's no load limit, so there's no bonus. <br>
+                    A minimum on the charted stat itself is ignored, since it would only cut the curve off below it. It's drawn as a dashed blue line instead. Every other minimum still applies. <br>
+                    The chart is computed when the tab is opened after a refresh, which takes a few seconds. Hover anywhere above or below a point to see its set and movement type.
+                    Click there, or click a row of the table below the chart, for the pieces' links. <br> <br>
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
                     shiny::tags$a("Stamina", href = "http://darksouls.wikidot.com/stamina#toc3 ", target = "_blank"), " <br> <br>
                     Durability is aggregated by taking the minimum i.e. the total durability for a set is the lowest durability across each component of the set. <br> <br> 
                     The impact to equip load of Mask of the Father (x1.05) is accounted for, but the impact to magic defense of Crown of Dusk (x0.7) is not. <br> <br>
-                    Clicking on a row in the table will produce a set of links to the Dark Souls Wikidot site for the relevant armor pieces. <br> <br>",
+                    Clicking on a row in the Results table, or on a point or row in the Trade-offs tab, will produce a set of links to the Dark Souls Wikidot site for the relevant armor pieces. <br> <br>",
                     "If maximizing Physical Defenses, Elemental Defenses, or Resistances, the following non-armor items are useful: <br>",
                     shiny::tags$a("Ring of Steel Protection", href = "http://darksouls.wikidot.com/ring-of-steel-protection", target = "_blank"), " (+50 to all Physical Defenses) <br>",
                     shiny::tags$a("Spell Stoneplate Ring", href = "http://darksouls.wikidot.com/spell-stoneplate-ring", target = "_blank"), " (+50 Magic Defense) <br>",
@@ -98,7 +107,7 @@ server <- function(input, output, session){
 
                     This app is also available as an R package - here is the link to the codebase on GitHub: ",
                     shiny::tags$a("https://github.com/ricewhitlam/darksoulsarmor", href = "https://github.com/ricewhitlam/darksoulsarmor", target = "_blank"),
-                    ". To install the R package, run the following command in the R terminal: devtools::install_github(", '"', "https://github.com/ricewhitlam/darksoulsarmor", '"', ")
+                    ". To install the R package, run the following command in the R terminal: devtools::install_github(", '"', "ricewhitlam/darksoulsarmor", '"', ")
 
                 "))
             ) 

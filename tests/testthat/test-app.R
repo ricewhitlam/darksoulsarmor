@@ -209,6 +209,31 @@ test_that("row links, the results table, the download, and the User Guide all wo
     })
 })
 
+## The User Guide describes the current app: the refresh driving both tabs, the workbook download,
+## movement types, and the Trade-offs tab - not controls that no longer exist.
+test_that("the User Guide describes the current app", {
+    modals <- character(0)
+    local_mocked_bindings(
+        showModal = function(ui, ...){
+            modals <<- c(modals, as.character(ui))
+        },
+        .package = "shiny"
+    )
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(guide = 1)
+    })
+    expect_length(modals, 1)
+    guide <- modals[1]
+    for(text in c("Both tabs, Results and Trade-offs, show the settings of the last refresh", "saves an Excel workbook",
+                  "'Movement' is used to specify", "Poop (no limit", "Score Inputs:", "Fat | Poop", "A minimum on the charted stat itself is ignored",
+                  "or on a point or row in the Trade-offs tab", "install_github(\"ricewhitlam/darksoulsarmor\")")){
+        expect_match(guide, text, fixed = TRUE)
+    }
+    for(text in c("Compute Trade-offs", "Roll Type", "Weight Inputs", "Overloaded", "Fast", "Detail")){
+        expect_false(grepl(text, guide, fixed = TRUE), info = text)
+    }
+})
+
 ## "Download Armor Data" saves one workbook describing the last refresh: the Results table, the
 ## Trade-offs table for the current Maximize choice - computed for the download if the tab
 ## hasn't shown it since that refresh, and reused otherwise - and the settings behind both.
