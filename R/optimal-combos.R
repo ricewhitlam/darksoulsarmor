@@ -451,10 +451,20 @@ get.optimal.armor.combos <- function(
 ## trade-off curves can vary it past the 0-999 range user input is clamped to. Whatever it ranks by,
 ## the output reports each combination's real SCORE_RAW and SCORE_QUALITY - except for one point of
 ## a trade-off curve (curve.point = TRUE), which leaves SCORE_QUALITY and garbage collection to the
-## curve as a whole.
+## curve as a whole. Split in two so a curve can prepare once and run once per weight limit: see
+## prepare.armor.search and run.armor.search below.
 find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$unarmored.weight, curve.point = FALSE){
+    return(run.armor.search(prepare.armor.search(args, rank.metric), gear.weight, curve.point))
+}
 
-    max.table.size <- args$max.table.size
+## Everything about a search that doesn't depend on the gear weight: each slot's pieces at the
+## upgrade levels, scored (or ranked by rank.metric), filtered by piece, upgrade type, area and
+## starting class, and sorted by that ranking. Also every piece's score at the level, unfiltered,
+## for SCORE_QUALITY. Sorting before run.armor.search's weight filter gives the same tables in the
+## same order as filtering first: the sort is stable, and dropping rows from a sorted table leaves
+## the rest in order.
+prepare.armor.search <- function(args, rank.metric = "SCORE"){
+
     starting.class <- args$starting.class
     areas.completed <- args$areas.completed
     upgrade.types <- args$upgrade.types
@@ -464,15 +474,7 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
     legs.filter <- args$legs.filter
     regular.level <- args$regular.level
     twinkling.level <- args$twinkling.level
-    roll <- args$roll
-    unarmored.weight <- gear.weight
-    endurance.level <- args$endurance.level
-    havel.ring <- args$havel.ring
-    favor.ring <- args$favor.ring
-    wolf.ring <- args$wolf.ring
-    minima <- args$minima
     weights <- args$weights
-    out <- list(args = args, data = data.table::data.table())
 
     ## Get data at specified upgrade levels
     working.head.data <- get.interp.data(head.data.unupgraded, head.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
@@ -525,6 +527,85 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
         working.legs.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
     }
 
+    ## Filter datasets based on inputs (all but weight - see run.armor.search)
+    working.head.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
+    working.head.data <-
+        working.head.data[
+            (ARMOR %in% head.filter) &
+            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Head") &
+            (AREAFILTER == TRUE | STARTING_CLASS == starting.class)
+        ]
+
+    working.chest.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
+    working.chest.data <-
+        working.chest.data[
+            (ARMOR %in% chest.filter) &
+            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Chest") &
+            (AREAFILTER == TRUE | STARTING_CLASS == starting.class)
+        ]
+
+    working.hands.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
+    working.hands.data <-
+        working.hands.data[
+            (ARMOR %in% hands.filter) &
+            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Hands") &
+            (AREAFILTER == TRUE | STARTING_CLASS == starting.class)
+        ]
+
+    working.legs.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
+    working.legs.data <-
+        working.legs.data[
+            (ARMOR %in% legs.filter) &
+            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Legs") &
+            (AREAFILTER == TRUE | STARTING_CLASS == starting.class)
+        ]
+
+    ## Remove unneeded columns
+    working.head.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+    working.chest.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+    working.hands.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+    working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
+
+    ## Sort each dataset on its scores
+    data.table::setorder(working.head.data, -SCORE, WEIGHT)
+    data.table::setorder(working.chest.data, -SCORE, WEIGHT)
+    data.table::setorder(working.hands.data, -SCORE, WEIGHT)
+    data.table::setorder(working.legs.data, -SCORE, WEIGHT)
+
+    return(
+        list(
+            args = args,
+            rank.metric = rank.metric,
+            head = working.head.data, chest = working.chest.data, hands = working.hands.data, legs = working.legs.data,
+            level.scores = list(level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores),
+            metric.cols = metric.cols,
+            scored.metrics = scored.metrics
+        )
+    )
+
+}
+
+## The part of a search that depends on the gear weight: the per-piece weight limits, then the
+## C++ search over the prepared tables (see prepare.armor.search), and the output's scores.
+run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
+
+    args <- prepared$args
+    max.table.size <- args$max.table.size
+    roll <- args$roll
+    unarmored.weight <- gear.weight
+    endurance.level <- args$endurance.level
+    havel.ring <- args$havel.ring
+    favor.ring <- args$favor.ring
+    wolf.ring <- args$wolf.ring
+    minima <- args$minima
+    metric.cols <- prepared$metric.cols
+    scored.metrics <- prepared$scored.metrics
+    level.head.scores <- prepared$level.scores[[1]]
+    level.chest.scores <- prepared$level.scores[[2]]
+    level.hands.scores <- prepared$level.scores[[3]]
+    level.legs.scores <- prepared$level.scores[[4]]
+    out <- list(args = args, data = data.table::data.table())
+
     ## Calc equip load values
     base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(favor.ring, 1.2, 1)
     roll.mult <- c(0.25, 0.5, 1.0, 999.0)[match(roll, c("Fast", "Mid", "Fat", "None"))]
@@ -539,42 +620,12 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
     ## defined even when the Mask is filtered out - the pre-filters then just use a looser bound.
     father.mask.weight <- head.data.unupgraded[ARMOR == "Mask of the Father", WEIGHT]
 
-    ## Filter datasets based on inputs
-    working.head.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
-    working.head.data <- 
-        working.head.data[
-            (ARMOR %in% head.filter) & 
-            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Head") & 
-            (AREAFILTER == TRUE | STARTING_CLASS == starting.class) & 
-            (WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", -unarmored.weight+load.threshold.father.mask+1e-10, -unarmored.weight+load.threshold+1e-10))
-        ]
-
-    working.chest.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
-    working.chest.data <- 
-        working.chest.data[
-            (ARMOR %in% chest.filter) & 
-            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Chest") & 
-            (AREAFILTER == TRUE | STARTING_CLASS == starting.class) & 
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10))
-        ]
-
-    working.hands.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
-    working.hands.data <- 
-        working.hands.data[
-            (ARMOR %in% hands.filter) & 
-            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Hands") & 
-            (AREAFILTER == TRUE | STARTING_CLASS == starting.class) &
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10))
-        ]
-
-    working.legs.data[, AREAFILTER := mapply(area.requirement.met, AREA_MATCH_TYPE, AREA_LIST, MoreArgs = list(completed = areas.completed))]
-    working.legs.data <- 
-        working.legs.data[
-            (ARMOR %in% legs.filter) & 
-            (UPGRADE_TYPE %in% upgrade.types | ARMOR == "No Legs") & 
-            (AREAFILTER == TRUE | STARTING_CLASS == starting.class) &
-            (WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10))
-        ]
+    ## Pieces too heavy to fit even with every other slot empty (subsetting keeps the prepared order,
+    ## and copies, so the prepared tables are untouched for the next run)
+    working.head.data <- prepared$head[WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", -unarmored.weight+load.threshold.father.mask+1e-10, -unarmored.weight+load.threshold+1e-10)]
+    working.chest.data <- prepared$chest[WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10)]
+    working.hands.data <- prepared$hands[WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10)]
+    working.legs.data <- prepared$legs[WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10)]
 
     ## If any tables empty, return empty data
     n.head <- nrow(working.head.data)
@@ -585,7 +636,7 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
         out$data[, "SCORE_RAW" := numeric(0)]
         out$data[, "SCORE_QUALITY" := character(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
-        out$data[, 
+        out$data[,
             c(
                 "PHYS_DEF",
                 "STRIKE_DEF",
@@ -609,18 +660,6 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
         ]
         return(out)
     }
-
-    ## Remove unneeded columns
-    working.head.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
-    working.chest.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
-    working.hands.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
-    working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
-
-    ## Sort each dataset on its scores
-    data.table::setorder(working.head.data, -SCORE, WEIGHT)
-    data.table::setorder(working.chest.data, -SCORE, WEIGHT)
-    data.table::setorder(working.hands.data, -SCORE, WEIGHT)
-    data.table::setorder(working.legs.data, -SCORE, WEIGHT)
   
     ## Determine position of the Mask of the Father in head data to apply its equip load bonus.
     ## NO_FATHER_MASK_INDEX (999) means it isn't present in the filtered head data at all.
@@ -740,17 +779,16 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
 
     ## When ranked by another stat, the search's SCORE_RAW holds that stat's total - report the
     ## combinations' real scores instead (each piece's score, summed in the search's own order)
-    if(rank.metric != "SCORE"){
+    if(prepared$rank.metric != "SCORE"){
         out$data[, SCORE_RAW := unname(level.head.scores[HEAD]+level.chest.scores[CHEST]+level.hands.scores[HANDS]+level.legs.scores[LEGS])]
     }
 
     ## SCORE_QUALITY: each result's exact rarity among every combination at this upgrade level
     ## ("Top 1 in N" / "Bottom 1 in N") - see score.quality() in R/score-quality.R. One point of
     ## a get.armor.tradeoffs curve leaves it to the caller instead, which computes it once for all
-    ## its points from these per-piece scores.
+    ## its points from the prepared per-piece scores.
     if(curve.point){
         out$data[, SCORE_QUALITY := NA_character_]
-        attr(out$data, "level.scores") <- list(level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)
     } else{
         out$data[, SCORE_QUALITY := score.quality(SCORE_RAW, level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)]
     }
@@ -758,7 +796,7 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask", "father.mask.weight"))
-    rm(list = c("score.scalars", "scored.metrics", "metric.cols"))
+    rm(list = c("scored.metrics", "metric.cols", "prepared"))
     rm(list = c("level.head.scores", "level.chest.scores", "level.hands.scores", "level.legs.scores"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
     rm(list = c("weight.check", "minima.check", "init.size"))

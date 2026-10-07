@@ -109,19 +109,18 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, max.armor.wei
     ## to its own weight - or, wearing the Mask of the Father, to its weight less the Mask's 5% load
     ## bonus - and only limits below that need a new search. Once nothing fits, nothing fits lower.
     father.mask.bonus <- if(args$roll == "None") 0 else 0.05*load.threshold
+    ## Everything about the search that doesn't depend on the weight limit is done once, and only
+    ## the weight-dependent part runs at each limit
+    prepared <- prepare.armor.search(args, rank.metric = metric)
+    level.scores <- prepared$level.scores
     rows <- list()
     best <- NULL
     reuse.down.to <- Inf
-    level.scores <- NULL
     for(limit in limits){
         if(limit < reuse.down.to-1e-9){
-            best <- find.armor.combos(args, rank.metric = metric, gear.weight = load.threshold-limit, curve.point = TRUE)$data
+            best <- run.armor.search(prepared, gear.weight = load.threshold-limit, curve.point = TRUE)$data
             if(nrow(best) == 0){
                 break
-            }
-            ## Every piece's score at these upgrade levels - the same for every point
-            if(is.null(level.scores)){
-                level.scores <- attr(best, "level.scores")
             }
             reuse.down.to <- best$ARMOR_WEIGHT-ifelse(best$HEAD == "Mask of the Father", father.mask.bonus, 0)
         }
@@ -154,7 +153,7 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, max.armor.wei
     data.table::setcolorder(curve, c("ARMOR_WEIGHT_LIMIT", "BEST_VALUE"))
     out$data <- curve
 
-    rm(list = c("rows", "best", "curve", "level.scores"))
+    rm(list = c("rows", "best", "curve", "level.scores", "prepared"))
     gc()
 
     return(out)
