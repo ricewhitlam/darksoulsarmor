@@ -24,6 +24,7 @@ bslib::page_sidebar(
                 shiny::hr(),
 
                 shiny::actionButton(inputId = "go", label = "Refresh Armor Data"),
+                shiny::downloadButton(outputId = "download", label = "Download Armor Data"),
 
             ),
         
@@ -64,7 +65,6 @@ bslib::page_sidebar(
             id = "main_tabs",
             bslib::nav_panel(
                 "Results",
-                shiny::div(shiny::downloadButton("download", "Download Armor Data")),
                 DT::dataTableOutput(outputId = "table")
             ),
             bslib::nav_panel(

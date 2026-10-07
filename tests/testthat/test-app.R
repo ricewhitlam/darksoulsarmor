@@ -206,10 +206,66 @@ test_that("row links, the results table, the download, and the User Guide all wo
         session$setInputs(go = 2)
         expect_no_error(session$setInputs(table_rows_selected = 2))
         expect_match(output$tabchest$html, "Chest: ", fixed = TRUE)
+    })
+})
 
-        downloaded <- data.table::fread(output$download)
-        expect_equal(names(downloaded), names(armordata()$data))
-        expect_equal(nrow(downloaded), nrow(armordata()$data))
+## "Download Armor Data" saves one workbook describing the last refresh: the Results table, the
+## Trade-offs table for the current Maximize/Detail choices - computed for the download if the tab
+## hasn't shown it since that refresh, and reused otherwise - and the settings behind both.
+test_that("the download saves the results, trade-offs, and settings of the last refresh", {
+    skip_if_not_installed("readxl")
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        ## Nothing to save before the first refresh
+        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Results")
+        expect_error(output$download, "Refresh Armor Data")
+
+        values <- minima.inputs(minimum.values, minima.ids)
+        values[[metric.input.id("POISE", "minima")]] <- 30
+        submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE), 1)
+        submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
+        session$setInputs(go = 1)
+        ## An unsaved edit afterwards isn't part of the download
+        submit.modal(session, "constraints", "dismiss_constraint_modal", list(roll = "Mid", unarmored.weight = 10, endurance.level = 10), 1)
+
+        ## The Trade-offs tab was never opened, so the download computes the curve (and keeps it)
+        expect_null(tradeoffdata())
+        file <- output$download
+        expect_equal(readxl::excel_sheets(file), c("Results", "Trade-offs", "Settings"))
+        expect_equal(tradeoff.computations(), 1)
+        expect_equal(tradeoffdata()$metric, "POISE")
+
+        results <- as.data.frame(armordata()$data)
+        results[] <- lapply(results, function(x){ if(is.factor(x)) as.character(x) else x })
+        expect_equal(as.data.frame(readxl::read_xlsx(file, sheet = "Results")), results)
+        expect_equal(nrow(results), 200)
+        expect_equal(as.data.frame(readxl::read_xlsx(file, sheet = "Trade-offs")), as.data.frame(tradeoff.table(tradeoffdata())))
+
+        settings <- readxl::read_xlsx(file, sheet = "Settings")
+        setting <- function(name){ settings$VALUE[settings$SETTING == name] }
+        expect_equal(setting("Max Table Size"), "200")
+        expect_equal(setting("Roll Type"), "Fast")
+        expect_equal(setting("Wolf Ring"), "Yes")
+        expect_equal(setting("Havel's Ring"), "No")
+        expect_equal(setting("Minimum POISE"), "30")
+        expect_equal(setting("Minimum PHYS_DEF"), "0")
+        expect_equal(setting("Score Weight PHYS_DEF"), "16%")
+        expect_equal(setting("Score Weight CURSE_RES"), "4%")
+        expect_equal(setting("Head"), paste(armordata()$args$head.filter, collapse = "; "))
+        expect_equal(setting("Trade-offs: Maximize"), "Poise")
+        expect_equal(setting("Trade-offs: Detail"), "Standard (every 1.0)")
+        expect_equal(setting("Package Version"), as.character(utils::packageVersion("darksoulsarmor")))
+
+        ## A curve the tab already holds is reused, and the score's table has its own columns
+        session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
+        expect_equal(tradeoff.computations(), 2)
+        file <- output$download
+        expect_equal(tradeoff.computations(), 2)
+        trade.offs <- readxl::read_xlsx(file, sheet = "Trade-offs")
+        expect_equal(names(trade.offs), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "SCORE_QUALITY", "ROLL", "HEAD", "CHEST", "HANDS", "LEGS"))
+        expect_equal(as.data.frame(trade.offs), as.data.frame(tradeoff.table(tradeoffdata())))
+        settings <- readxl::read_xlsx(file, sheet = "Settings")
+        expect_equal(settings$VALUE[settings$SETTING == "Trade-offs: Maximize"], "Score")
     })
 })
 

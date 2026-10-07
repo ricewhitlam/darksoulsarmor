@@ -35,6 +35,6 @@ armor.application <- function(...){
 ## Their only uses are in inst/shiny, which R CMD check doesn't scan, so this never-called function
 ## names one export of each to mark the Imports as used.
 app.imports <- function(){
-    list(shiny::runApp, shinyWidgets::pickerInput, bslib::page_sidebar, DT::datatable, shinybusy::show_modal_spinner, plotly::plot_ly)
+    list(shiny::runApp, shinyWidgets::pickerInput, bslib::page_sidebar, DT::datatable, shinybusy::show_modal_spinner, plotly::plot_ly, writexl::write_xlsx)
 }
 

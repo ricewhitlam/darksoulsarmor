@@ -762,8 +762,8 @@ server <- function(input, output, session){
     })
 
 
-    ## The search settings currently saved from the sidebar's modals - shared by "Refresh Armor Data"
-    ## and the Trade-offs tab's "Compute", so a setting can't be wired into one and missed in the other
+    ## The search settings currently saved from the sidebar's modals, which "Refresh Armor Data" applies
+    ## (both tabs then read them back from armordata()$args)
     current.settings <- function(){
         list(
             starting.class = filter.values$starting.class,
@@ -844,7 +844,7 @@ server <- function(input, output, session){
 
 
     ## Trade-offs tab: the most of one stat any armor set can reach at each armor weight (see
-    ## get.armor.tradeoffs), for the sidebar's current settings, over every armor weight from 0 to
+    ## get.armor.tradeoffs), for the last refresh's settings, over every armor weight from 0 to
     ## the heaviest possible armor. The curve is computed in one segment per roll class - up to the
     ## Fast line under the Fast roll's load limit, from there to the Mid line under Mid's, and so on,
     ## then overloaded past the Fat line - so within each segment the Mask of the Father's equip load
@@ -873,6 +873,66 @@ server <- function(input, output, session){
     ## How many times the curve has been computed - lets the tests tell a recompute from a reuse
     tradeoff.computations <- shiny::reactiveVal(0)
 
+    ## What a curve depends on: a refresh's settings except the table size and the roll type (the
+    ## curve covers every roll class), and the Maximize/Detail choices
+    tradeoff.key <- function(snapshot, metric, detail){
+        list(settings = snapshot[setdiff(names(snapshot), c("max.table.size", "roll"))], metric = metric, detail = detail)
+    }
+
+    ## The curve of `metric`, every `detail` armor weight, for a refresh's settings (snapshot), as
+    ## tradeoffdata() holds it - for the tab and for the download
+    compute.tradeoffs <- function(snapshot, metric, detail){
+
+        ## The last refresh's (validated) settings, less the Results-only table size
+        settings <- snapshot[setdiff(names(snapshot), "max.table.size")]
+        ## A minimum on the charted stat itself would only cut the curve off below it, so it's
+        ## ignored here and drawn as a reference line instead; every other minimum still applies
+        stat.minimum <- 0
+        if(metric != "SCORE"){
+            stat.minimum <- settings$minima[minima.index.of(metric)]
+            settings$minima[minima.index.of(metric)] <- 0
+        }
+        equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
+        gear.weight <- settings$unarmored.weight
+        heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
+        ## Armor weight at which each roll class ends: Fast/Mid, Mid/Fat, Fat/overloaded
+        lines <- roll.shares*equip.load-gear.weight
+        step <- as.numeric(detail)
+
+        ## One segment per roll class, each from the previous line (exclusive) to its own
+        ## (inclusive), clipped to [0, heaviest armor]; past the Fat line, no load limit
+        segment.rolls <- c(names(roll.shares), "None")
+        segment.ends <- c(lines, Inf)
+        segments <- list()
+        covered.to <- -Inf
+        for(s in seq_along(segment.rolls)){
+            lower <- max(0, covered.to)
+            upper <- min(segment.ends[s], heaviest.armor)
+            if(upper >= lower){
+                segment.settings <- settings
+                segment.settings$roll <- segment.rolls[s]
+                curve <- do.call(get.armor.tradeoffs, c(list(metric = metric, weight.step = step, min.armor.weight = lower, max.armor.weight = upper), segment.settings))$data
+                ## A limit on the previous line belongs to the faster class
+                curve <- curve[ARMOR_WEIGHT_LIMIT > covered.to+1e-9]
+                if(nrow(curve) > 0){
+                    segments[[length(segments)+1]] <- curve[, ROLL_LIMIT := segment.rolls[s]]
+                }
+            }
+            covered.to <- max(covered.to, upper)
+        }
+        curve <- data.table::rbindlist(segments)
+
+        classes <- roll.class(curve$ARMOR_WEIGHT, !is.na(curve$HEAD) & curve$HEAD == "Mask of the Father", gear.weight, equip.load)
+        curve[, ROLL := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
+
+        tradeoff.computations(tradeoff.computations()+1)
+        list(
+            metric = metric, data = curve, lines = lines, selected.roll = settings$roll,
+            gear.weight = gear.weight, equip.load = equip.load, stat.minimum = stat.minimum,
+            key = tradeoff.key(snapshot, metric, detail)
+        )
+    }
+
     ## The chart shows the settings of the last successful refresh (armordata()$args), exactly like
     ## the Results table - never unsaved or newer sidebar settings - so both tabs always describe
     ## the same character. It's computed while its tab is open, whenever something it depends on has
@@ -882,9 +942,8 @@ server <- function(input, output, session){
     shiny::observeEvent(list(input$main_tabs, armordata(), input$tradeoff_metric, input$tradeoff_detail), {
         shiny::req(identical(input$main_tabs, "Trade-offs"), been.refreshed(), input$tradeoff_metric, input$tradeoff_detail)
         snapshot <- armordata()$args
-        key <- list(settings = snapshot[setdiff(names(snapshot), c("max.table.size", "roll"))], metric = input$tradeoff_metric, detail = input$tradeoff_detail)
         current <- tradeoffdata()
-        if(!is.null(current) && identical(current$key, key)){
+        if(!is.null(current) && identical(current$key, tradeoff.key(snapshot, input$tradeoff_metric, input$tradeoff_detail))){
             if(!identical(current$selected.roll, snapshot$roll)){
                 current$selected.roll <- snapshot$roll
                 tradeoffdata(current)
@@ -901,55 +960,7 @@ server <- function(input, output, session){
 
             shinybusy::show_modal_spinner()
 
-            ## The last refresh's (validated) settings, less the Results-only table size
-            settings <- snapshot[setdiff(names(snapshot), "max.table.size")]
-            ## A minimum on the charted stat itself would only cut the curve off below it, so it's
-            ## ignored here and drawn as a reference line instead; every other minimum still applies
-            stat.minimum <- 0
-            if(input$tradeoff_metric != "SCORE"){
-                stat.minimum <- settings$minima[minima.index.of(input$tradeoff_metric)]
-                settings$minima[minima.index.of(input$tradeoff_metric)] <- 0
-            }
-            equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
-            gear.weight <- settings$unarmored.weight
-            heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
-            ## Armor weight at which each roll class ends: Fast/Mid, Mid/Fat, Fat/overloaded
-            lines <- roll.shares*equip.load-gear.weight
-            step <- as.numeric(input$tradeoff_detail)
-
-            ## One segment per roll class, each from the previous line (exclusive) to its own
-            ## (inclusive), clipped to [0, heaviest armor]; past the Fat line, no load limit
-            segment.rolls <- c(names(roll.shares), "None")
-            segment.ends <- c(lines, Inf)
-            segments <- list()
-            covered.to <- -Inf
-            for(s in seq_along(segment.rolls)){
-                lower <- max(0, covered.to)
-                upper <- min(segment.ends[s], heaviest.armor)
-                if(upper >= lower){
-                    segment.settings <- settings
-                    segment.settings$roll <- segment.rolls[s]
-                    curve <- do.call(get.armor.tradeoffs, c(list(metric = input$tradeoff_metric, weight.step = step, min.armor.weight = lower, max.armor.weight = upper), segment.settings))$data
-                    ## A limit on the previous line belongs to the faster class
-                    curve <- curve[ARMOR_WEIGHT_LIMIT > covered.to+1e-9]
-                    if(nrow(curve) > 0){
-                        segments[[length(segments)+1]] <- curve[, ROLL_LIMIT := segment.rolls[s]]
-                    }
-                }
-                covered.to <- max(covered.to, upper)
-            }
-            curve <- data.table::rbindlist(segments)
-
-            classes <- roll.class(curve$ARMOR_WEIGHT, !is.na(curve$HEAD) & curve$HEAD == "Mask of the Father", gear.weight, equip.load)
-            curve[, ROLL := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
-
-            tradeoffdata(
-                list(
-                    metric = input$tradeoff_metric, data = curve, lines = lines, selected.roll = settings$roll,
-                    gear.weight = gear.weight, equip.load = equip.load, stat.minimum = stat.minimum, key = key
-                )
-            )
-            tradeoff.computations(tradeoff.computations()+1)
+            tradeoffdata(compute.tradeoffs(snapshot, input$tradeoff_metric, input$tradeoff_detail))
             output$errormessage <- shiny::renderText("")
 
             for(message in unique(tradeoff.warnings)){
@@ -1080,10 +1091,59 @@ server <- function(input, output, session){
     })
 
 
+    ## The settings behind a download, one per row, under the app's own labels
+    settings.sheet <- function(args, metric, detail){
+        yes.no <- function(x){ if(x) "Yes" else "No" }
+        listed <- function(x){ paste(x, collapse = "; ") }
+        data.table::data.table(
+            SETTING = c(
+                "Max Table Size", "Starting Class", "Areas Completed", "Upgrades With",
+                "Head", "Chest", "Hands", "Legs",
+                "Armor Level (Regular)", "Armor Level (Twinkling)",
+                "Havel's Ring", "Ring of Favor", "Wolf Ring",
+                "Roll Type", "Weight without Armor", "Endurance Level",
+                paste("Minimum", minima.metrics),
+                paste("Score Weight", weight.metrics),
+                "Trade-offs: Maximize", "Trade-offs: Detail",
+                "Package Version", "Downloaded"
+            ),
+            VALUE = c(
+                format(args$max.table.size, scientific = FALSE), args$starting.class, listed(args$areas.completed), listed(args$upgrade.types),
+                listed(args$head.filter), listed(args$chest.filter), listed(args$hands.filter), listed(args$legs.filter),
+                args$regular.level, args$twinkling.level,
+                yes.no(args$havel.ring), yes.no(args$favor.ring), yes.no(args$wolf.ring),
+                args$roll, as.character(args$unarmored.weight), as.character(args$endurance.level),
+                as.character(args$minima),
+                paste0(as.character(round(100*args$weights, 6)), "%"),
+                tradeoff.metric.labels[[metric]], c("1" = "Standard (every 1.0)", "0.1" = "Fine (every 0.1)")[[detail]],
+                as.character(utils::packageVersion("darksoulsarmor")), format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+            )
+        )
+    }
+
+    ## Everything the last refresh produced, in one workbook: the Results table, the Trade-offs table
+    ## for the current Maximize/Detail choices (computed now if the tab hasn't shown it since that
+    ## refresh), and the settings behind both
     output$download <- shiny::downloadHandler(
-        filename = function(){"ds_armor_data.csv"}, 
+        filename = function(){"ds_armor_data.xlsx"},
         content = function(file){
-            data.table::fwrite(armordata()$data, file)
+            if(!been.refreshed()){
+                stop("Click 'Refresh Armor Data' before downloading")
+            }
+            snapshot <- armordata()$args
+            tradeoffs <- tradeoffdata()
+            if(is.null(tradeoffs) || !identical(tradeoffs$key, tradeoff.key(snapshot, input$tradeoff_metric, input$tradeoff_detail))){
+                tradeoffs <- compute.tradeoffs(snapshot, input$tradeoff_metric, input$tradeoff_detail)
+                tradeoffdata(tradeoffs)
+            }
+            writexl::write_xlsx(
+                list(
+                    Results = armordata()$data,
+                    `Trade-offs` = tradeoff.table(tradeoffs),
+                    Settings = settings.sheet(snapshot, input$tradeoff_metric, input$tradeoff_detail)
+                ),
+                file
+            )
         }
     )
 
