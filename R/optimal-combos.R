@@ -110,9 +110,9 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' Defaults to \code{"+0"}.
 #' 
 #' @param 
-#' roll A length 1 \code{character} indicating desired roll speed.
-#' Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (no equip-load constraint applied).
-#' Defaults to \code{"Fast"}.
+#' movement A length 1 \code{character}: the heaviest movement type to allow, by the share of max equip load carried.
+#' Options are \code{"Light"} (weight at or below 25\% of max equip load: light roll), \code{"Mid"} (at or below 50\%: mid roll), \code{"Fat"} (at or below 100\%: fat roll), and \code{"Poop"} (no equip-load limit - over 100\%, the character can't roll and walks slowly).
+#' Defaults to \code{"Light"}.
 #' 
 #' @param 
 #' unarmored.weight A length 1 \code{numeric} indicating the unarmored weight of the character i.e. weight of weapons.
@@ -160,10 +160,10 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
 #'
 #' @examples
-#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, roll = "Fast")
+#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, movement = "Light")
 #'
 #' ## At least 30 poise, scored only on physical and magic defense (physical counting double)
-#' poise.combos <- get.optimal.armor.combos(endurance.level = 40, roll = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
+#' poise.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
 #'
 get.optimal.armor.combos <- function(
     max.table.size = 1000,
@@ -176,7 +176,7 @@ get.optimal.armor.combos <- function(
     legs.filter = legs.data.unupgraded$ARMOR,
     regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], 
     twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
-    roll = c("Fast", "Mid", "Fat", "None")[1],
+    movement = c("Light", "Mid", "Fat", "Poop")[1],
     unarmored.weight = 10,
     endurance.level = 10,
     havel.ring = FALSE,
@@ -364,15 +364,15 @@ get.optimal.armor.combos <- function(
         stop("Invalid argument 'favor.ring'")
     }
 
-    ## Check roll
-    if(!is.character(roll)){
-        stop("Invalid argument 'roll'")
-    } else if(length(roll) != 1){
-        stop("Invalid argument 'roll'")
-    } else if(is.na(roll)){
-        stop("Invalid argument 'roll'")
-    } else if(!(roll %in% c("Fast", "Mid", "Fat", "None"))){
-        stop("Invalid argument 'roll'")
+    ## Check movement
+    if(!is.character(movement)){
+        stop("Invalid argument 'movement'")
+    } else if(length(movement) != 1){
+        stop("Invalid argument 'movement'")
+    } else if(is.na(movement)){
+        stop("Invalid argument 'movement'")
+    } else if(!(movement %in% c("Light", "Mid", "Fat", "Poop"))){
+        stop("Invalid argument 'movement'")
     }
     
     ## Check minima
@@ -429,7 +429,7 @@ get.optimal.armor.combos <- function(
                     legs.filter = legs.filter,
                     regular.level = regular.level, 
                     twinkling.level = twinkling.level,
-                    roll = roll,
+                    movement = movement,
                     unarmored.weight = unarmored.weight,
                     endurance.level = endurance.level,
                     havel.ring = havel.ring,
@@ -591,7 +591,7 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
 
     args <- prepared$args
     max.table.size <- args$max.table.size
-    roll <- args$roll
+    movement <- args$movement
     unarmored.weight <- gear.weight
     endurance.level <- args$endurance.level
     havel.ring <- args$havel.ring
@@ -608,13 +608,13 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
 
     ## Calc equip load values
     base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(favor.ring, 1.2, 1)
-    roll.mult <- c(0.25, 0.5, 1.0, 999.0)[match(roll, c("Fast", "Mid", "Fat", "None"))]
-    load.threshold <- base.load*roll.mult
-    ## With no roll constraint there's no load limit for the Mask of the Father's bonus to raise. In
+    movement.mult <- c(0.25, 0.5, 1.0, 999.0)[match(movement, c("Light", "Mid", "Fat", "Poop"))]
+    load.threshold <- base.load*movement.mult
+    ## With "Poop" movement there's no load limit for the Mask of the Father's bonus to raise. In
     ## a normal search both thresholds are effectively infinite either way; this matters only when
-    ## get.armor.tradeoffs lowers the limit, where a 5% bonus on the x999 "None" threshold would wrongly
+    ## get.armor.tradeoffs lowers the limit, where a 5% bonus on the x999 "Poop" threshold would wrongly
     ## exempt the Mask from every armor-weight limit.
-    load.threshold.father.mask <- if(roll == "None") load.threshold else load.threshold*1.05
+    load.threshold.father.mask <- if(movement == "Poop") load.threshold else load.threshold*1.05
     ## Mask of the Father's own weight, for "with the Mask on, how much is left for the other slots"
     ## below. Taken from the unfiltered table (weight doesn't change with upgrade level), so it's
     ## defined even when the Mask is filtered out - the pre-filters then just use a looser bound.
@@ -795,7 +795,7 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
     data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
-    rm(list = c("base.load", "roll.mult", "load.threshold", "load.threshold.father.mask", "father.mask.weight"))
+    rm(list = c("base.load", "movement.mult", "load.threshold", "load.threshold.father.mask", "father.mask.weight"))
     rm(list = c("scored.metrics", "metric.cols", "prepared"))
     rm(list = c("level.head.scores", "level.chest.scores", "level.hands.scores", "level.legs.scores"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))

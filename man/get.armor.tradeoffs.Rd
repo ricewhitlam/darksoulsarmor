@@ -30,8 +30,8 @@ larger than \code{max.armor.weight}. Defaults to \code{0}.}
 
 \item{max.armor.weight}{A length 1 non-negative \code{numeric}, or \code{NULL}: the largest armor-weight
 limit. \code{NULL} (the default) uses the armor weight the other settings currently allow - the
-roll type's share of the equip load, less \code{unarmored.weight} - or, with
-\code{roll = "None"}, the heaviest possible armor (with no load limit, the Mask of the Father's
+movement type's share of the equip load, less \code{unarmored.weight} - or, with
+\code{movement = "Poop"}, the heaviest possible armor (with no load limit, the Mask of the Father's
 equip load bonus doesn't apply).}
 
 \item{...}{Any other arguments of \code{\link{get.optimal.armor.combos}} (except \code{max.table.size}),
@@ -56,6 +56,6 @@ the Mask of the Father's equip load bonus applies at every limit, and a combinat
 can weigh slightly more than the limit itself.
 }
 \examples{
-poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, roll = "Mid", unarmored.weight = 12)
+poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", unarmored.weight = 12)
 
 }

@@ -22,7 +22,7 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
             legs.filter = sample(legs.data.unupgraded$ARMOR, sample(2:8, 1)),
             regular.level = paste0("+", sample(0:10, 1)),
             twinkling.level = paste0("+", sample(0:5, 1)),
-            roll = sample(c("Fast", "Mid", "Fat", "None"), 1),
+            movement = sample(c("Light", "Mid", "Fat", "Poop"), 1),
             endurance.level = sample(10:50, 1),
             unarmored.weight = round(runif(1, 0, 10), 1),
             havel.ring = runif(1) < 0.3,
@@ -55,8 +55,8 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
         grid[, MASK := h$ARMOR[H] == "Mask of the Father"]
         grid <- grid[POISE + 40*args$wolf.ring >= args$minima[["POISE"]] - 1e-10 & BLEED_RES >= args$minima[["BLEED_RES"]] - 1e-10]
 
-        threshold <- (args$endurance.level + 40)*ifelse(args$havel.ring, 1.5, 1)*c(Fast = 0.25, Mid = 0.5, Fat = 1, None = 999)[[args$roll]]
-        mask.bonus <- if(args$roll == "None") 0 else 0.05*threshold
+        threshold <- (args$endurance.level + 40)*ifelse(args$havel.ring, 1.5, 1)*c(Light = 0.25, Mid = 0.5, Fat = 1, Poop = 999)[[args$movement]]
+        mask.bonus <- if(args$movement == "Poop") 0 else 0.05*threshold
         expected <- sapply(actual$ARMOR_WEIGHT_LIMIT, function(limit){
             fits <- grid[WEIGHT <= limit + ifelse(MASK, mask.bonus, 0) + 1e-9]
             if(nrow(fits) == 0) NA_real_ else max(fits$VALUE)
@@ -82,8 +82,8 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
 })
 
 test_that("the SCORE curve's top point is get.optimal.armor.combos' best result", {
-    curve <- get.armor.tradeoffs(endurance.level = 40, roll = "Mid", unarmored.weight = 12)$data
-    best <- get.optimal.armor.combos(max.table.size = 1, endurance.level = 40, roll = "Mid", unarmored.weight = 12)$data
+    curve <- get.armor.tradeoffs(endurance.level = 40, movement = "Mid", unarmored.weight = 12)$data
+    best <- get.optimal.armor.combos(max.table.size = 1, endurance.level = 40, movement = "Mid", unarmored.weight = 12)$data
     top <- curve[.N]
     expect_equal(top$ARMOR_WEIGHT_LIMIT, 28)
     expect_equal(top$BEST_VALUE, best$SCORE_RAW)
@@ -100,14 +100,14 @@ test_that("get.armor.tradeoffs validates its own arguments", {
     expect_error(get.armor.tradeoffs(weight.step = -1), "weight.step")
     expect_error(get.armor.tradeoffs(max.armor.weight = -5), "max.armor.weight")
     expect_error(get.armor.tradeoffs(max.table.size = 10), "max.table.size")
-    expect_error(get.armor.tradeoffs(roll = "Sprint"), "roll")
+    expect_error(get.armor.tradeoffs(movement = "Sprint"), "movement")
     ## An explicit max.armor.weight and an arbitrary step
     curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.25, max.armor.weight = 3)$data
     expect_equal(curve$ARMOR_WEIGHT_LIMIT, seq(0, 3, by = 0.25))
 })
 
 test_that("a curve over part of the weight range matches the full curve there", {
-    settings <- list(metric = "POISE", endurance.level = 40, roll = "Mid", unarmored.weight = 12, wolf.ring = TRUE)
+    settings <- list(metric = "POISE", endurance.level = 40, movement = "Mid", unarmored.weight = 12, wolf.ring = TRUE)
     full <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.1, max.armor.weight = 12)))$data
     part <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.5, min.armor.weight = 3.2, max.armor.weight = 12)))$data
     ## Both ends plus the multiples of the step between them

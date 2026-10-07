@@ -86,8 +86,8 @@ bslib::page_sidebar(
                 ),
                 shiny::helpText(
                     "For every armor weight, the most of the chosen stat any armor set can reach, using the settings of the last refresh.",
-                    "Vertical lines mark where your roll type changes (the selected roll type's line is solid). Hover over a point for its set",
-                    "and how it rolls; click a point or a table row for its links."
+                    "Vertical lines mark where your movement type changes (the selected movement type's line is solid). Hover over a point for its set",
+                    "and its movement type; click a point or a table row for its links."
                 ),
                 plotly::plotlyOutput(outputId = "tradeoff_plot"),
                 DT::dataTableOutput(outputId = "tradeoff_table")

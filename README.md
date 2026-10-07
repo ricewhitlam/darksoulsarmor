@@ -30,7 +30,7 @@ result <- get.optimal.armor.combos(
     max.table.size = 5,
     endurance.level = 40,
     unarmored.weight = 12,
-    roll = "Mid",
+    movement = "Mid",
     minima = c(0, 0, 0, 0, 0, 0, 0, 30, 0, 0, 0, 0)  # require at least 30 poise
 )
 result$data[, .(SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS, ARMOR_POISE, PCT_LOAD)]

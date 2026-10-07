@@ -12,7 +12,12 @@ test_that("get.optimal.armor.combos rejects invalid argument shapes", {
     expect_error(get.optimal.armor.combos(legs.filter = "Not An Armor Piece"), "legs.filter")
     expect_error(get.optimal.armor.combos(regular.level = "+11"), "regular.level")
     expect_error(get.optimal.armor.combos(twinkling.level = "+6"), "twinkling.level")
-    expect_error(get.optimal.armor.combos(roll = "Sprint"), "roll")
+    expect_error(get.optimal.armor.combos(movement = "Sprint"), "movement")
+    ## The names before movement types were renamed (roll Fast/Mid/Fat/None) are gone
+    expect_error(get.optimal.armor.combos(movement = "Fast"), "movement")
+    expect_error(get.optimal.armor.combos(movement = "None"), "movement")
+    expect_error(get.optimal.armor.combos(roll = "Mid"), "unused argument")
+    expect_error(get.armor.tradeoffs(roll = "Mid"), "unused argument")
     expect_error(get.optimal.armor.combos(unarmored.weight = "ten"), "unarmored.weight")
     expect_error(get.optimal.armor.combos(endurance.level = NA), "endurance.level")
     expect_error(get.optimal.armor.combos(havel.ring = "yes"), "havel.ring")

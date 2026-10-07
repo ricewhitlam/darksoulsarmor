@@ -108,7 +108,7 @@ test_that("get.optimal.armor.combos ranks combos in the direction its weights im
             chest.filter = chest.data.unupgraded$ARMOR[1],
             hands.filter = hands.data.unupgraded$ARMOR[1],
             legs.filter = legs.data.unupgraded$ARMOR[1],
-            roll = "Fat",
+            movement = "Fat",
             weights = c(1, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         )$data
 
@@ -119,7 +119,7 @@ test_that("get.optimal.armor.combos ranks combos in the direction its weights im
             chest.filter = chest.data.unupgraded$ARMOR[1],
             hands.filter = hands.data.unupgraded$ARMOR[1],
             legs.filter = legs.data.unupgraded$ARMOR[1],
-            roll = "Fat",
+            movement = "Fat",
             weights = c(0, 0, 0, 0, 1, 0, 0, 0, 0, 0)
         )$data
 

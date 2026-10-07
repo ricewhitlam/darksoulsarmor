@@ -410,7 +410,7 @@ server <- function(input, output, session){
 
     constraint.values <- 
         shiny::reactiveValues(
-            roll = "Fast",
+            movement = "Light",
             unarmored.weight = 10, 
             endurance.level = 10
         )
@@ -422,10 +422,10 @@ server <- function(input, output, session){
                 footer = shiny::actionButton(inputId = "dismiss_constraint_modal", label = "Done"), 
                 shiny::fluidRow(
                     shiny::radioButtons(
-                        inputId = "roll",
-                        label = "Roll Type",
-                        choices = c("Fast", "Mid", "Fat", "None"),
-                        selected = constraint.values$roll,
+                        inputId = "movement",
+                        label = "Movement",
+                        choices = c("Light", "Mid", "Fat", "Poop"),
+                        selected = constraint.values$movement,
                         inline = TRUE,
                         width = NULL,
                         choiceNames = NULL,
@@ -460,7 +460,7 @@ server <- function(input, output, session){
 
     shiny::observeEvent(input$dismiss_constraint_modal, {
 
-        if(shiny::isTruthy(input$roll)){constraint.values$roll <- input$roll}
+        if(shiny::isTruthy(input$movement)){constraint.values$movement <- input$movement}
         if(shiny::isTruthy(input$unarmored.weight)){constraint.values$unarmored.weight <- round(input$unarmored.weight, 1)}
         if(shiny::isTruthy(input$endurance.level)){constraint.values$endurance.level <- round(input$endurance.level, 0)}
 
@@ -646,7 +646,7 @@ server <- function(input, output, session){
                         legs.filter = legs.data.unupgraded$ARMOR,
                         regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], 
                         twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
-                        roll = c("Fast", "Mid", "Fat", "None")[1],
+                        movement = c("Light", "Mid", "Fat", "Poop")[1],
                         unarmored.weight = 10,
                         endurance.level = 10,
                         havel.ring = FALSE,
@@ -775,7 +775,7 @@ server <- function(input, output, session){
             legs.filter = filter.values$legs.filter,
             regular.level = upgrade.values$regular.level,
             twinkling.level = upgrade.values$twinkling.level,
-            roll = constraint.values$roll,
+            movement = constraint.values$movement,
             unarmored.weight = constraint.values$unarmored.weight,
             endurance.level = constraint.values$endurance.level,
             havel.ring = ring.values$havel.ring,
@@ -845,26 +845,26 @@ server <- function(input, output, session){
 
     ## Trade-offs tab: the most of one stat any armor set can reach at each armor weight (see
     ## get.armor.tradeoffs), for the last refresh's settings, over every armor weight from 0 to
-    ## the heaviest possible armor. The curve is computed in one segment per roll class - up to the
-    ## Fast line under the Fast roll's load limit, from there to the Mid line under Mid's, and so on,
-    ## then overloaded past the Fat line - so within each segment the Mask of the Father's equip load
-    ## bonus is credited exactly as it is for that roll type.
+    ## the heaviest possible armor. The curve is computed in one segment per movement class - up to the
+    ## Light line under Light movement's load limit, from there to the Mid line under Mid's, and so on,
+    ## then Poop past the Fat line - so within each segment the Mask of the Father's equip load
+    ## bonus is credited exactly as it is for that movement type.
     tradeoff.metric.labels <- c(
         SCORE = "Score", POISE = "Poise",
         PHYS_DEF = "Physical Defense", STRIKE_DEF = "Strike Defense", SLASH_DEF = "Slash Defense", THRUST_DEF = "Thrust Defense",
         MAG_DEF = "Magic Defense", FIRE_DEF = "Fire Defense", LITNG_DEF = "Lightning Defense",
         BLEED_RES = "Bleed Resistance", POIS_RES = "Poison Resistance", CURSE_RES = "Curse Resistance"
     )
-    roll.shares <- c(Fast = 0.25, Mid = 0.5, Fat = 1)
+    movement.shares <- c(Light = 0.25, Mid = 0.5, Fat = 1)
     tradeoffdata <- shiny::reactiveVal(NULL)
 
-    ## The roll class a set of the given armor weight gets: its total load against the equip load,
+    ## The movement class a set of the given armor weight gets: its total load against the equip load,
     ## raised 5% when it includes the Mask of the Father (mask). Also whether only that bonus keeps it
     ## in that class.
-    roll.class <- function(armor.weight, mask, gear.weight, equip.load){
+    movement.class <- function(armor.weight, mask, gear.weight, equip.load){
         classify <- function(capacity){
             share <- (armor.weight+gear.weight)/capacity
-            ifelse(share <= 0.25+1e-9, "Fast", ifelse(share <= 0.5+1e-9, "Mid", ifelse(share <= 1+1e-9, "Fat", "Overloaded")))
+            ifelse(share <= 0.25+1e-9, "Light", ifelse(share <= 0.5+1e-9, "Mid", ifelse(share <= 1+1e-9, "Fat", "Poop")))
         }
         with.bonus <- classify(ifelse(mask, 1.05*equip.load, equip.load))
         list(class = with.bonus, by.mask.bonus = mask & with.bonus != classify(equip.load))
@@ -873,10 +873,10 @@ server <- function(input, output, session){
     ## How many times the curve has been computed - lets the tests tell a recompute from a reuse
     tradeoff.computations <- shiny::reactiveVal(0)
 
-    ## What a curve depends on: a refresh's settings except the table size and the roll type (the
-    ## curve covers every roll class), and the Maximize choice
+    ## What a curve depends on: a refresh's settings except the table size and the movement type (the
+    ## curve covers every movement class), and the Maximize choice
     tradeoff.key <- function(snapshot, metric){
-        list(settings = snapshot[setdiff(names(snapshot), c("max.table.size", "roll"))], metric = metric)
+        list(settings = snapshot[setdiff(names(snapshot), c("max.table.size", "movement"))], metric = metric)
     }
 
     ## The curve of `metric`, every 0.1 armor weight (the precision weights are shown at), for a
@@ -895,39 +895,39 @@ server <- function(input, output, session){
         equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
         gear.weight <- settings$unarmored.weight
         heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
-        ## Armor weight at which each roll class ends: Fast/Mid, Mid/Fat, Fat/overloaded
-        lines <- roll.shares*equip.load-gear.weight
+        ## Armor weight at which each movement class ends: Light/Mid, Mid/Fat, Fat/Poop
+        lines <- movement.shares*equip.load-gear.weight
         step <- 0.1
 
-        ## One segment per roll class, each from the previous line (exclusive) to its own
+        ## One segment per movement class, each from the previous line (exclusive) to its own
         ## (inclusive), clipped to [0, heaviest armor]; past the Fat line, no load limit
-        segment.rolls <- c(names(roll.shares), "None")
+        segment.movements <- c(names(movement.shares), "Poop")
         segment.ends <- c(lines, Inf)
         segments <- list()
         covered.to <- -Inf
-        for(s in seq_along(segment.rolls)){
+        for(s in seq_along(segment.movements)){
             lower <- max(0, covered.to)
             upper <- min(segment.ends[s], heaviest.armor)
             if(upper >= lower){
                 segment.settings <- settings
-                segment.settings$roll <- segment.rolls[s]
+                segment.settings$movement <- segment.movements[s]
                 curve <- do.call(get.armor.tradeoffs, c(list(metric = metric, weight.step = step, min.armor.weight = lower, max.armor.weight = upper), segment.settings))$data
                 ## A limit on the previous line belongs to the faster class
                 curve <- curve[ARMOR_WEIGHT_LIMIT > covered.to+1e-9]
                 if(nrow(curve) > 0){
-                    segments[[length(segments)+1]] <- curve[, ROLL_LIMIT := segment.rolls[s]]
+                    segments[[length(segments)+1]] <- curve[, MOVEMENT_LIMIT := segment.movements[s]]
                 }
             }
             covered.to <- max(covered.to, upper)
         }
         curve <- data.table::rbindlist(segments)
 
-        classes <- roll.class(curve$ARMOR_WEIGHT, !is.na(curve$HEAD) & curve$HEAD == "Mask of the Father", gear.weight, equip.load)
-        curve[, ROLL := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
+        classes <- movement.class(curve$ARMOR_WEIGHT, !is.na(curve$HEAD) & curve$HEAD == "Mask of the Father", gear.weight, equip.load)
+        curve[, MOVEMENT := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
 
         tradeoff.computations(tradeoff.computations()+1)
         list(
-            metric = metric, data = curve, lines = lines, selected.roll = settings$roll,
+            metric = metric, data = curve, lines = lines, selected.movement = settings$movement,
             gear.weight = gear.weight, equip.load = equip.load, stat.minimum = stat.minimum,
             key = tradeoff.key(snapshot, metric)
         )
@@ -937,15 +937,15 @@ server <- function(input, output, session){
     ## the Results table - never unsaved or newer sidebar settings - so both tabs always describe
     ## the same character. It's computed while its tab is open, whenever something it depends on has
     ## changed: a refresh with different settings, or another Maximize choice. Neither the
-    ## table size nor the roll type changes the curve (it covers every roll class), so a refresh that
-    ## changes only those keeps it and just moves the emphasized roll line.
+    ## table size nor the movement type changes the curve (it covers every movement class), so a refresh that
+    ## changes only those keeps it and just moves the emphasized movement line.
     shiny::observeEvent(list(input$main_tabs, armordata(), input$tradeoff_metric), {
         shiny::req(identical(input$main_tabs, "Trade-offs"), been.refreshed(), input$tradeoff_metric)
         snapshot <- armordata()$args
         current <- tradeoffdata()
         if(!is.null(current) && identical(current$key, tradeoff.key(snapshot, input$tradeoff_metric))){
-            if(!identical(current$selected.roll, snapshot$roll)){
-                current$selected.roll <- snapshot$roll
+            if(!identical(current$selected.movement, snapshot$movement)){
+                current$selected.movement <- snapshot$movement
                 tradeoffdata(current)
             }
             return(invisible(NULL))
@@ -996,23 +996,23 @@ server <- function(input, output, session){
                 is.na(d$BEST_VALUE),
                 sprintf("Armor weight up to %.1f<br>No armor set fits the other settings", d$ARMOR_WEIGHT_LIMIT),
                 sprintf(
-                    "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - rolls %s<br>Score %.3f (%s)",
+                    "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - Movement: %s<br>Score %.3f (%s)",
                     d$ARMOR_WEIGHT_LIMIT, metric.label, format(round(d$BEST_VALUE, 3)),
-                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, d$ROLL, d$SCORE_RAW, d$SCORE_QUALITY
+                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, d$MOVEMENT, d$SCORE_RAW, d$SCORE_QUALITY
                 )
             )
         d$point <- seq_len(nrow(d))
 
-        ## Roll breakpoints that fall within the chart, the selected roll type's emphasized
+        ## Movement breakpoints that fall within the chart, the selected movement type's emphasized
         shapes <- list()
         annotations <- list()
-        line.labels <- c(Fast = "Fast | Mid", Mid = "Mid | Fat", Fat = "Fat | Overloaded")
-        for(roll in names(result$lines)){
-            x <- result$lines[[roll]]
+        line.labels <- c(Light = "Light | Mid", Mid = "Mid | Fat", Fat = "Fat | Poop")
+        for(movement in names(result$lines)){
+            x <- result$lines[[movement]]
             if(x >= 0 && x <= max(d$ARMOR_WEIGHT_LIMIT)){
-                selected <- roll == result$selected.roll
+                selected <- movement == result$selected.movement
                 shapes[[length(shapes)+1]] <- list(type = "line", x0 = x, x1 = x, y0 = 0, y1 = 1, yref = "paper", line = list(dash = if(selected) "solid" else "dash", width = if(selected) 2 else 1, color = if(selected) "black" else "gray"))
-                annotations[[length(annotations)+1]] <- list(x = x, y = 1, yref = "paper", text = if(selected) paste0("<b>", line.labels[[roll]], "</b>") else line.labels[[roll]], showarrow = FALSE, xanchor = "center", yanchor = "bottom")
+                annotations[[length(annotations)+1]] <- list(x = x, y = 1, yref = "paper", text = if(selected) paste0("<b>", line.labels[[movement]], "</b>") else line.labels[[movement]], showarrow = FALSE, xanchor = "center", yanchor = "bottom")
             }
         }
         ## Poise breakpoints players aim for (see the User Guide)
@@ -1052,15 +1052,15 @@ server <- function(input, output, session){
         }
     })
 
-    ## The table under the chart: limit, best value (named for the chosen stat), roll class, the
+    ## The table under the chart: limit, best value (named for the chosen stat), movement class, the
     ## set's scores, then its pieces - with the score itself as the value when it's the chosen stat
     ## (its quality beside it), rather than shown twice. Each set's real armor weight is in the
     ## chart's hover.
     tradeoff.table <- function(result){
         if(result$metric == "SCORE"){
-            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE_RAW, SCORE_QUALITY, ROLL, HEAD, CHEST, HANDS, LEGS)])
+            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE_RAW, SCORE_QUALITY, MOVEMENT, HEAD, CHEST, HANDS, LEGS)])
         }
-        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ROLL, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)]
+        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, MOVEMENT, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)]
         data.table::setnames(table, "BEST_VALUE", result$metric)
         return(table)
     }
@@ -1101,7 +1101,7 @@ server <- function(input, output, session){
                 "Head", "Chest", "Hands", "Legs",
                 "Armor Level (Regular)", "Armor Level (Twinkling)",
                 "Havel's Ring", "Ring of Favor", "Wolf Ring",
-                "Roll Type", "Weight without Armor", "Endurance Level",
+                "Movement", "Weight without Armor", "Endurance Level",
                 paste("Minimum", minima.metrics),
                 paste("Score Weight", weight.metrics)
             ),
@@ -1110,7 +1110,7 @@ server <- function(input, output, session){
                 listed(args$head.filter), listed(args$chest.filter), listed(args$hands.filter), listed(args$legs.filter),
                 args$regular.level, args$twinkling.level,
                 yes.no(args$havel.ring), yes.no(args$favor.ring), yes.no(args$wolf.ring),
-                args$roll, as.character(args$unarmored.weight), as.character(args$endurance.level),
+                args$movement, as.character(args$unarmored.weight), as.character(args$endurance.level),
                 as.character(args$minima),
                 paste0(as.character(round(100*args$weights, 6)), "%")
             )

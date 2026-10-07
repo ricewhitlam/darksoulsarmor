@@ -15,7 +15,7 @@ get.optimal.armor.combos(
   legs.filter = legs.data.unupgraded$ARMOR,
   regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1],
   twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
-  roll = c("Fast", "Mid", "Fat", "None")[1],
+  movement = c("Light", "Mid", "Fat", "Poop")[1],
   unarmored.weight = 10,
   endurance.level = 10,
   havel.ring = FALSE,
@@ -69,9 +69,9 @@ For the other options, metrics are approximated based on the game's default upgr
 These approximations should be very accurate but will differ from true values slightly.
 Defaults to \code{"+0"}.}
 
-\item{roll}{A length 1 \code{character} indicating desired roll speed.
-Options are \code{"Fast"} (weight at or below 25\% of max equip load), \code{"Mid"} (weight at or below 50\% of max equip load), \code{"Fat"} (weight at or below 100\% of max equip load), and \code{"None"} (no equip-load constraint applied).
-Defaults to \code{"Fast"}.}
+\item{movement}{A length 1 \code{character}: the heaviest movement type to allow, by the share of max equip load carried.
+Options are \code{"Light"} (weight at or below 25\% of max equip load: light roll), \code{"Mid"} (at or below 50\%: mid roll), \code{"Fat"} (at or below 100\%: fat roll), and \code{"Poop"} (no equip-load limit - over 100\%, the character can't roll and walks slowly).
+Defaults to \code{"Light"}.}
 
 \item{unarmored.weight}{A length 1 \code{numeric} indicating the unarmored weight of the character i.e. weight of weapons.
 Defaults to \code{10}.
@@ -122,9 +122,9 @@ every 40 such combinations scores at least as well, or \code{"Bottom 1 in 40"} w
 The table can be tailored to satisfy various constraints.
 }
 \examples{
-optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, roll = "Fast")
+optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, movement = "Light")
 
 ## At least 30 poise, scored only on physical and magic defense (physical counting double)
-poise.combos <- get.optimal.armor.combos(endurance.level = 40, roll = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
+poise.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
 
 }

@@ -17,13 +17,13 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     minima <- c(0, 0, 0, 0, 0, 0, 0, 5, 3, 2, 1, 0)
     unarmored.weight <- 10
     endurance.level <- 40
-    roll <- "Fat"
+    movement <- "Fat"
 
     actual <-
         get.optimal.armor.combos(
             max.table.size = 5000,
             head.filter = head.sel, chest.filter = chest.sel, hands.filter = hands.sel, legs.filter = legs.sel,
-            roll = roll,
+            movement = movement,
             unarmored.weight = unarmored.weight,
             endurance.level = endurance.level,
             minima = minima
@@ -61,7 +61,7 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     }
 
     base.load <- endurance.level + 40
-    load.threshold <- base.load * 1.0 ## roll = "Fat"
+    load.threshold <- base.load * 1.0 ## movement = "Fat"
 
     eps <- 1e-8
     ok <-
@@ -118,14 +118,14 @@ test_that("score.quality matches a brute-force count over every combination", {
 ## SCORE_QUALITY regardless of filters, so the best combination at +10/+5 with no load limit -
 ## which no other combination ties or beats - is exactly "Top 1 in 11,930,328".
 test_that("SCORE_QUALITY ranks the best combination at a level against every combination there", {
-    result <- get.optimal.armor.combos(max.table.size = 20, roll = "None", regular.level = "+10", twinkling.level = "+5")$data
+    result <- get.optimal.armor.combos(max.table.size = 20, movement = "Poop", regular.level = "+10", twinkling.level = "+5")$data
     expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_QUALITY"))
     expect_equal(result$SCORE_QUALITY[1], "Top 1 in 11,930,328")
     expect_true(all(grepl("^Top 1 in ", result$SCORE_QUALITY)))
 })
 
 test_that("SCORE_QUALITY reads 'Bottom 1 in N' when even the best feasible combination is in the bottom half", {
-    ## The default constraints (endurance.level = 10, roll = "Fast") leave only 2.5 units of
+    ## The default constraints (endurance.level = 10, movement = "Light") leave only 2.5 units of
     ## equip load for armor, so even the best feasible combination is a below-median one.
     result <- get.optimal.armor.combos(max.table.size = 20)$data
     expect_true(all(grepl("^Bottom 1 in ", result$SCORE_QUALITY)))
@@ -137,7 +137,7 @@ test_that("SCORE_QUALITY reads 'Bottom 1 in N' when even the best feasible combi
 ## chop off a whole 0.1 (49.2 -> 49.1) instead of recovering the exact value; endurance.level=1
 ## with favor.ring=TRUE is one of the affected cases (true base.load = 41*1.2 = 49.2).
 test_that("EQUIP_LOAD recovers the exact capacity despite floating-point noise", {
-    result <- get.optimal.armor.combos(max.table.size = 50, endurance.level = 1, favor.ring = TRUE, roll = "Fast")
+    result <- get.optimal.armor.combos(max.table.size = 50, endurance.level = 1, favor.ring = TRUE, movement = "Light")
     non.motf <- result$data[HEAD != "Mask of the Father"]
     expect_true(nrow(non.motf) > 0)
     expect_equal(unique(non.motf$EQUIP_LOAD), 49.2)
@@ -153,7 +153,7 @@ test_that("a max.table.size far above the possible combinations returns exactly 
         max.table.size = 1e8,
         head.filter = head.data.unupgraded$ARMOR[1:2], chest.filter = chest.data.unupgraded$ARMOR[1:2],
         hands.filter = hands.data.unupgraded$ARMOR[1:2], legs.filter = legs.data.unupgraded$ARMOR[1:2],
-        roll = "None"
+        movement = "Poop"
     )$data
     expect_equal(nrow(result), 16)
     expect_equal(nrow(unique(result[, .(HEAD, CHEST, HANDS, LEGS)])), 16)
@@ -189,7 +189,7 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
             legs.filter = sample(legs.data.unupgraded$ARMOR, sample(1:12, 1)),
             regular.level = paste0("+", sample(0:10, 1)),
             twinkling.level = paste0("+", sample(0:5, 1)),
-            roll = sample(c("Fast", "Mid", "Fat"), 1),
+            movement = sample(c("Light", "Mid", "Fat"), 1),
             endurance.level = sample(5:60, 1),
             unarmored.weight = round(runif(1, 0, 20), 1),
             havel.ring = runif(1) < 0.3,
@@ -236,7 +236,7 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
         grid[, SCORE_KEY := sign(SCORE)*floor(abs(SCORE)*1e9 + 0.5)]
 
         base.load <- (args$endurance.level + 40)*ifelse(args$havel.ring, 1.5, 1)*ifelse(args$favor.ring, 1.2, 1)
-        load.threshold <- base.load*c(Fast = 0.25, Mid = 0.5, Fat = 1)[[args$roll]]
+        load.threshold <- base.load*c(Light = 0.25, Mid = 0.5, Fat = 1)[[args$movement]]
         eps <- 1e-10
         mn <- args$minima
         expected <- grid[
@@ -308,12 +308,12 @@ test_that("empty results and the app's initial table match a normal result's col
 
 test_that("named minima/weights match their positional equivalents in any order", {
     positional <- get.optimal.armor.combos(
-        max.table.size = 50, endurance.level = 40, roll = "Mid",
+        max.table.size = 50, endurance.level = 40, movement = "Mid",
         minima = c(0, 0, 0, 0, 20, 0, 0, 30, 0, 0, 0, 200),
         weights = c(2, 0, 0, 0, 1, 0, 0, 0.5, 0, 0)
     )
     named <- get.optimal.armor.combos(
-        max.table.size = 50, endurance.level = 40, roll = "Mid",
+        max.table.size = 50, endurance.level = 40, movement = "Mid",
         minima = c(DURABILITY = 200, POISE = 30, MAG_DEF = 20),
         weights = c(BLEED_RES = 0.5, MAG_DEF = 1, PHYS_DEF = 2)
     )
