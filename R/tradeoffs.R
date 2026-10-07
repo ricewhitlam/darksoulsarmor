@@ -11,11 +11,11 @@
 #' armor weight and that stat: e.g. how much more Poise each extra unit of armor weight can buy, or
 #' the lightest armor that reaches a Poise breakpoint.
 #'
-#' The weight limit is varied the way the game varies it, by the weight carried besides armor. So
-#' the Mask of the Father's equip load bonus applies at every limit (except with
-#' \code{movement = "Poop"}, which has no load limit), and a combination wearing it can weigh
-#' slightly more than the limit itself. Among combinations tied on the stat, the best-scoring one is
-#' returned.
+#' A limit applies to the armor's listed weight (its pieces' weights added up). Every combination
+#' must also allow the movement type, checked as the game checks it - with the weapons, rings and
+#' the Mask of the Father's equip load bonus, in 32-bit floating point - so near a movement type's
+#' line, a combination within the limit can still be ruled out. Among combinations tied on the
+#' stat, the best-scoring one is returned.
 #'
 #' @param
 #' metric A length 1 \code{character}: the stat to maximize. \code{"SCORE"} (the score built from
@@ -37,10 +37,9 @@
 #'
 #' @param
 #' max.armor.weight A length 1 non-negative \code{numeric}, or \code{NULL}: the largest armor-weight
-#' limit. \code{NULL} (the default) uses the armor weight the other settings currently allow - the
-#' movement type's share of the equip load, less \code{unarmored.weight} - or, with
-#' \code{movement = "Poop"}, the heaviest possible armor (with no load limit, the Mask of the Father's
-#' equip load bonus doesn't apply).
+#' limit. \code{NULL} (the default) uses the most armor weight the other settings allow - the
+#' movement type's line, with the Mask of the Father's bonus, less what the \code{weapons} weigh,
+#' rounded down to 0.1 - or, with \code{movement = "Poop"}, the heaviest possible armor.
 #'
 #' @param
 #' ... Any other arguments of \code{\link{get.optimal.armor.combos}} (except \code{max.table.size}),
@@ -55,7 +54,7 @@
 #' \code{\link{get.optimal.armor.combos}}.
 #'
 #' @examples
-#' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", unarmored.weight = 12)
+#' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))
 #'
 get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.weight = 0, max.armor.weight = NULL, ...){
 
@@ -110,12 +109,14 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.wei
     search.args$max.table.size <- 1
     args <- do.call(get.optimal.armor.combos, search.args)$args
 
-    ## The weight limit is varied through the weight carried besides armor: at a given armor-weight
-    ## limit, that's the movement type's share of the equip load less the limit
-    load.threshold <- (args$endurance.level+40)*ifelse(args$havel.ring, 1.5, 1)*ifelse(args$favor.ring, 1.2, 1)*c(0.25, 0.5, 1.0, 999.0)[match(args$movement, c("Light", "Mid", "Fat", "Poop"))]
+    ## By default, up to the most armor weight the movement type could allow: its line (the Mask of
+    ## the Father's, which is higher) less what the weapons weigh, on the 0.1 grid armor weights are
+    ## listed on - or, with no limit, the heaviest armor there is
     if(is.null(max.armor.weight)){
         heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
-        max.armor.weight <- max(0, min(load.threshold-args$unarmored.weight, heaviest.armor))
+        line.father.mask <- movement.line(equip.load(args$endurance.level, args$havel.ring, args$favor.ring, father.mask = TRUE), args$movement)
+        allowance <- line.father.mask-weapons.weight(args$weapons)
+        max.armor.weight <- max(0, min(floor(10*allowance+1e-6)/10, heaviest.armor))
     }
     if(min.armor.weight > max.armor.weight){
         stop(sprintf("Invalid argument 'min.armor.weight': larger than max.armor.weight (%s)", format(max.armor.weight)))
@@ -129,10 +130,9 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.wei
     out <- list(args = c(list(metric = metric, weight.step = weight.step, min.armor.weight = min.armor.weight, max.armor.weight = max.armor.weight), args), data = data.table::data.table())
 
     ## From the largest limit down. The best combination at a limit stays the best at every lower
-    ## limit it still fits under (lowering the limit only removes combinations), so it's reused down
-    ## to its own weight - or, wearing the Mask of the Father, to its weight less the Mask's 5% load
-    ## bonus - and only limits below that need a new search. Once nothing fits, nothing fits lower.
-    father.mask.bonus <- if(args$movement == "Poop") 0 else 0.05*load.threshold
+    ## limit it still fits under (lowering the limit only removes combinations, and the movement
+    ## type's check doesn't depend on the limit), so it's reused down to its own listed weight, and
+    ## only limits below that need a new search. Once nothing fits, nothing fits lower.
     ## Everything about the search that doesn't depend on the weight limit is done once, and only
     ## the weight-dependent part runs at each limit
     prepared <- prepare.armor.search(args, rank.metric = metric)
@@ -142,11 +142,15 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.wei
     reuse.down.to <- Inf
     for(limit in limits){
         if(limit < reuse.down.to-1e-9){
-            best <- run.armor.search(prepared, gear.weight = load.threshold-limit, curve.point = TRUE)$data
+            best <- run.armor.search(prepared, armor.cap = limit, curve.point = TRUE)$data
             if(nrow(best) == 0){
                 break
             }
-            reuse.down.to <- best$ARMOR_WEIGHT-ifelse(best$HEAD == "Mask of the Father", father.mask.bonus, 0)
+            reuse.down.to <-
+                head.data.unupgraded$WEIGHT[match(best$HEAD, head.data.unupgraded$ARMOR)]+
+                chest.data.unupgraded$WEIGHT[match(best$CHEST, chest.data.unupgraded$ARMOR)]+
+                hands.data.unupgraded$WEIGHT[match(best$HANDS, hands.data.unupgraded$ARMOR)]+
+                legs.data.unupgraded$WEIGHT[match(best$LEGS, legs.data.unupgraded$ARMOR)]
         }
         rows[[length(rows)+1]] <- data.table::data.table(ARMOR_WEIGHT_LIMIT = limit, best[, .(SCORE_RAW, SCORE_QUALITY, ARMOR_WEIGHT, TOTAL_POISE, HEAD, CHEST, HANDS, LEGS)])
     }

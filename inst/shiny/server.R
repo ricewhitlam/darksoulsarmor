@@ -421,9 +421,26 @@ server <- function(input, output, session){
     constraint.values <- 
         shiny::reactiveValues(
             movement = "Light",
-            unarmored.weight = 10, 
+            weapons = c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"),
             endurance.level = 10
         )
+
+    ## One dropdown per weapon slot, in the game's slot order
+    weapon.input <- function(slot, label){
+        shinyWidgets::pickerInput(
+            inputId = paste0("weapon.", slot),
+            label = label,
+            choices = c("None", weapon.data$WEAPON),
+            selected = constraint.values$weapons[[slot]],
+            multiple = FALSE,
+            options = list(`live-search` = TRUE, size = 10),
+            choicesOpt = NULL,
+            width = NULL,
+            inline = FALSE,
+            stateInput = TRUE,
+            autocomplete = FALSE
+        )
+    }
     
     shiny::observeEvent(input$constraints, { 
         shiny::showModal( 
@@ -441,17 +458,10 @@ server <- function(input, output, session){
                         choiceNames = NULL,
                         choiceValues = NULL
                     ),
-                    shinyWidgets::autonumericInput(
-                        inputId = "unarmored.weight",
-                        label = "Weight without Armor",
-                        value = constraint.values$unarmored.weight,
-                        align = "right",
-                        decimalCharacter = ".",
-                        digitGroupSeparator = ",",
-                        decimalPlaces = 1,
-                        maximumValue = 999,
-                        minimumValue = 0
-                    ),
+                    weapon.input("left.1", "Left Hand Weapon 1"),
+                    weapon.input("right.1", "Right Hand Weapon 1"),
+                    weapon.input("left.2", "Left Hand Weapon 2"),
+                    weapon.input("right.2", "Right Hand Weapon 2"),
                     shinyWidgets::autonumericInput(
                         inputId = "endurance.level",
                         label = "Endurance Level",
@@ -471,7 +481,9 @@ server <- function(input, output, session){
     shiny::observeEvent(input$dismiss_constraint_modal, {
 
         if(shiny::isTruthy(input$movement)){constraint.values$movement <- input$movement}
-        if(shiny::isTruthy(input$unarmored.weight)){constraint.values$unarmored.weight <- round(input$unarmored.weight, 1)}
+        if(shiny::isTruthy(input$weapon.left.1) && shiny::isTruthy(input$weapon.right.1) && shiny::isTruthy(input$weapon.left.2) && shiny::isTruthy(input$weapon.right.2)){
+            constraint.values$weapons <- c(left.1 = input$weapon.left.1, right.1 = input$weapon.right.1, left.2 = input$weapon.left.2, right.2 = input$weapon.right.2)
+        }
         if(shiny::isTruthy(input$endurance.level)){constraint.values$endurance.level <- round(input$endurance.level, 0)}
 
         if(been.refreshed()){
@@ -491,7 +503,14 @@ server <- function(input, output, session){
     ## parallel hand-maintained ordering that caused the minima-indexing bug fixed earlier in
     ## this package's history. metric.input.id() reproduces the existing widget ids exactly
     ## (e.g. "PHYS_DEF" -> "minphysdef"/"physdefweight") so this is a pure refactor.
+    ## The game's equip-load rule (R/equip-load.R) gives each Trade-offs point its movement type.
     METRICS <- darksoulsarmor:::METRICS
+    MOVEMENT.SHARES <- darksoulsarmor:::MOVEMENT.SHARES
+    weapons.weight <- darksoulsarmor:::weapons.weight
+    equip.load <- darksoulsarmor:::equip.load
+    movement.line <- darksoulsarmor:::movement.line
+    total.weight <- darksoulsarmor:::total.weight
+    movement.type <- darksoulsarmor:::movement.type
 
     metric.input.id <- function(stat, kind){
         base <- tolower(gsub("_", "", stat))
@@ -657,7 +676,7 @@ server <- function(input, output, session){
                         regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], 
                         twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
                         movement = c("Light", "Mid", "Fat", "Poop")[1],
-                        unarmored.weight = 10,
+                        weapons = c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"),
                         endurance.level = 10,
                         havel.ring = FALSE,
                         favor.ring = FALSE,
@@ -792,7 +811,7 @@ server <- function(input, output, session){
             regular.level = upgrade.values$regular.level,
             twinkling.level = upgrade.values$twinkling.level,
             movement = constraint.values$movement,
-            unarmored.weight = constraint.values$unarmored.weight,
+            weapons = constraint.values$weapons,
             endurance.level = constraint.values$endurance.level,
             havel.ring = ring.values$havel.ring,
             favor.ring = ring.values$favor.ring,
@@ -862,28 +881,25 @@ server <- function(input, output, session){
     ## Trade-offs tab: the most of one stat any armor set can reach at each armor weight (see
     ## get.armor.tradeoffs), for the last refresh's settings, over every armor weight from 0 to
     ## the heaviest possible armor. The curve is computed in one segment per movement class - up to the
-    ## Light line under Light movement's load limit, from there to the Mid line under Mid's, and so on,
-    ## then Poop past the Fat line - so within each segment the Mask of the Father's equip load
-    ## bonus is credited exactly as it is for that movement type.
+    ## Light line as Light movement, from there to the Mid line as Mid, and so on, then Poop past the
+    ## Fat line - so every set in a segment moves at least as lightly as that segment's type, by the
+    ## game's own check (which credits the Mask of the Father's equip load bonus).
     tradeoff.metric.labels <- c(
         SCORE = "Score", POISE = "Poise",
         PHYS_DEF = "Physical Defense", STRIKE_DEF = "Strike Defense", SLASH_DEF = "Slash Defense", THRUST_DEF = "Thrust Defense",
         MAG_DEF = "Magic Defense", FIRE_DEF = "Fire Defense", LITNG_DEF = "Lightning Defense",
         BLEED_RES = "Bleed Resistance", POIS_RES = "Poison Resistance", CURSE_RES = "Curse Resistance"
     )
-    movement.shares <- c(Light = 0.25, Mid = 0.5, Fat = 1)
     tradeoffdata <- shiny::reactiveVal(NULL)
 
-    ## The movement class a set of the given armor weight gets: its total load against the equip load,
-    ## raised 5% when it includes the Mask of the Father (mask). Also whether only that bonus keeps it
-    ## in that class.
-    movement.class <- function(armor.weight, mask, gear.weight, equip.load){
-        classify <- function(capacity){
-            share <- (armor.weight+gear.weight)/capacity
-            ifelse(share <= 0.25+1e-9, "Light", ifelse(share <= 0.5+1e-9, "Mid", ifelse(share <= 1+1e-9, "Fat", "Poop")))
-        }
-        with.bonus <- classify(ifelse(mask, 1.05*equip.load, equip.load))
-        list(class = with.bonus, by.mask.bonus = mask & with.bonus != classify(equip.load))
+    ## The movement type each set (by its pieces' names) gets with the given weapons and equip loads,
+    ## by the game's check, and whether only the Mask of the Father's bonus keeps it that light
+    movement.class <- function(head, chest, hands, legs, carried, load, load.father.mask){
+        weight.of <- function(table, pieces){ table$WEIGHT[match(pieces, table$ARMOR)] }
+        total <- total.weight(carried, weight.of(head.data.unupgraded, head), weight.of(chest.data.unupgraded, chest), weight.of(hands.data.unupgraded, hands), weight.of(legs.data.unupgraded, legs))
+        mask <- !is.na(head) & head == "Mask of the Father"
+        with.bonus <- movement.type(total, ifelse(mask, load.father.mask, load))
+        list(class = with.bonus, by.mask.bonus = mask & with.bonus != movement.type(total, load))
     }
 
     ## How many times the curve has been computed - lets the tests tell a recompute from a reuse
@@ -908,17 +924,20 @@ server <- function(input, output, session){
             stat.minimum <- settings$minima[minima.index.of(metric)]
             settings$minima[minima.index.of(metric)] <- 0
         }
-        equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
-        gear.weight <- settings$unarmored.weight
+        carried <- weapons.weight(settings$weapons)
+        load <- equip.load(settings$endurance.level, settings$havel.ring, settings$favor.ring, father.mask = FALSE)
+        load.father.mask <- equip.load(settings$endurance.level, settings$havel.ring, settings$favor.ring, father.mask = TRUE)
         heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
-        ## Armor weight at which each movement class ends: Light/Mid, Mid/Fat, Fat/Poop
-        lines <- movement.shares*equip.load-gear.weight
+        ## Armor weight at which each movement class ends (Light/Mid, Mid/Fat, Fat/Poop): its line less
+        ## what the weapons weigh. The chart draws these; the segments end on the 0.1 grid armor
+        ## weights are listed on, and the game's own check decides the sets right at a line.
+        lines <- sapply(names(MOVEMENT.SHARES), function(movement){ movement.line(load, movement)-carried })
         step <- 0.1
 
         ## One segment per movement class, each from the previous line (exclusive) to its own
         ## (inclusive), clipped to [0, heaviest armor]; past the Fat line, no load limit
-        segment.movements <- c(names(movement.shares), "Poop")
-        segment.ends <- c(lines, Inf)
+        segment.movements <- c(names(MOVEMENT.SHARES), "Poop")
+        segment.ends <- c(floor(10*lines+1e-6)/10, Inf)
         segments <- list()
         covered.to <- -Inf
         for(s in seq_along(segment.movements)){
@@ -938,13 +957,13 @@ server <- function(input, output, session){
         }
         curve <- data.table::rbindlist(segments)
 
-        classes <- movement.class(curve$ARMOR_WEIGHT, !is.na(curve$HEAD) & curve$HEAD == "Mask of the Father", gear.weight, equip.load)
+        classes <- movement.class(curve$HEAD, curve$CHEST, curve$HANDS, curve$LEGS, carried, load, load.father.mask)
         curve[, MOVEMENT := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
 
         tradeoff.computations(tradeoff.computations()+1)
         list(
             metric = metric, data = curve, lines = lines, selected.movement = settings$movement,
-            gear.weight = gear.weight, equip.load = equip.load, stat.minimum = stat.minimum,
+            carried = carried, equip.load = load, stat.minimum = stat.minimum,
             key = tradeoff.key(snapshot, metric)
         )
     }
@@ -1121,7 +1140,7 @@ server <- function(input, output, session){
                 "Head", "Chest", "Hands", "Legs",
                 "Armor Level (Regular)", "Armor Level (Twinkling)",
                 "Havel's Ring", "Ring of Favor", "Wolf Ring",
-                "Movement", "Weight without Armor", "Endurance Level",
+                "Movement", "Left Hand Weapon 1", "Right Hand Weapon 1", "Left Hand Weapon 2", "Right Hand Weapon 2", "Endurance Level",
                 paste("Minimum", minima.metrics),
                 paste("Score Weight", weight.metrics)
             ),
@@ -1130,7 +1149,7 @@ server <- function(input, output, session){
                 listed(args$head.filter), listed(args$chest.filter), listed(args$hands.filter), listed(args$legs.filter),
                 args$regular.level, args$twinkling.level,
                 yes.no(args$havel.ring), yes.no(args$favor.ring), yes.no(args$wolf.ring),
-                args$movement, as.character(args$unarmored.weight), as.character(args$endurance.level),
+                args$movement, unname(args$weapons), as.character(args$endurance.level),
                 as.character(args$minima),
                 paste0(as.character(round(100*args$weights, 6)), "%")
             )

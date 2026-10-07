@@ -25,18 +25,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // optimal_armor_combinations
-DataFrame optimal_armor_combinations(const int starting_loop_size, const int max_output_size, const double base_weight, const double load, const double load_father_mask, const double load_threshold, const double load_threshold_father_mask, const int father_mask_index, const bool wolf, const NumericVector& minima, const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df);
-RcppExport SEXP _darksoulsarmor_optimal_armor_combinations(SEXP starting_loop_sizeSEXP, SEXP max_output_sizeSEXP, SEXP base_weightSEXP, SEXP loadSEXP, SEXP load_father_maskSEXP, SEXP load_thresholdSEXP, SEXP load_threshold_father_maskSEXP, SEXP father_mask_indexSEXP, SEXP wolfSEXP, SEXP minimaSEXP, SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP) {
+DataFrame optimal_armor_combinations(const int starting_loop_size, const int max_output_size, const double carried_weight, const double load, const double load_father_mask, const double line, const double line_father_mask, const double armor_cap, const int father_mask_index, const bool wolf, const NumericVector& minima, const DataFrame& head_df, const DataFrame& chest_df, const DataFrame& hands_df, const DataFrame& legs_df);
+RcppExport SEXP _darksoulsarmor_optimal_armor_combinations(SEXP starting_loop_sizeSEXP, SEXP max_output_sizeSEXP, SEXP carried_weightSEXP, SEXP loadSEXP, SEXP load_father_maskSEXP, SEXP lineSEXP, SEXP line_father_maskSEXP, SEXP armor_capSEXP, SEXP father_mask_indexSEXP, SEXP wolfSEXP, SEXP minimaSEXP, SEXP head_dfSEXP, SEXP chest_dfSEXP, SEXP hands_dfSEXP, SEXP legs_dfSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const int >::type starting_loop_size(starting_loop_sizeSEXP);
     Rcpp::traits::input_parameter< const int >::type max_output_size(max_output_sizeSEXP);
-    Rcpp::traits::input_parameter< const double >::type base_weight(base_weightSEXP);
+    Rcpp::traits::input_parameter< const double >::type carried_weight(carried_weightSEXP);
     Rcpp::traits::input_parameter< const double >::type load(loadSEXP);
     Rcpp::traits::input_parameter< const double >::type load_father_mask(load_father_maskSEXP);
-    Rcpp::traits::input_parameter< const double >::type load_threshold(load_thresholdSEXP);
-    Rcpp::traits::input_parameter< const double >::type load_threshold_father_mask(load_threshold_father_maskSEXP);
+    Rcpp::traits::input_parameter< const double >::type line(lineSEXP);
+    Rcpp::traits::input_parameter< const double >::type line_father_mask(line_father_maskSEXP);
+    Rcpp::traits::input_parameter< const double >::type armor_cap(armor_capSEXP);
     Rcpp::traits::input_parameter< const int >::type father_mask_index(father_mask_indexSEXP);
     Rcpp::traits::input_parameter< const bool >::type wolf(wolfSEXP);
     Rcpp::traits::input_parameter< const NumericVector& >::type minima(minimaSEXP);
@@ -44,14 +45,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const DataFrame& >::type chest_df(chest_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type hands_df(hands_dfSEXP);
     Rcpp::traits::input_parameter< const DataFrame& >::type legs_df(legs_dfSEXP);
-    rcpp_result_gen = Rcpp::wrap(optimal_armor_combinations(starting_loop_size, max_output_size, base_weight, load, load_father_mask, load_threshold, load_threshold_father_mask, father_mask_index, wolf, minima, head_df, chest_df, hands_df, legs_df));
+    rcpp_result_gen = Rcpp::wrap(optimal_armor_combinations(starting_loop_size, max_output_size, carried_weight, load, load_father_mask, line, line_father_mask, armor_cap, father_mask_index, wolf, minima, head_df, chest_df, hands_df, legs_df));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_darksoulsarmor_all_armor_combinations", (DL_FUNC) &_darksoulsarmor_all_armor_combinations, 4},
-    {"_darksoulsarmor_optimal_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimal_armor_combinations, 14},
+    {"_darksoulsarmor_optimal_armor_combinations", (DL_FUNC) &_darksoulsarmor_optimal_armor_combinations, 15},
     {NULL, NULL, 0}
 };
 

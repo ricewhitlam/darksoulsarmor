@@ -16,7 +16,7 @@ get.optimal.armor.combos(
   regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1],
   twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
   movement = c("Light", "Mid", "Fat", "Poop")[1],
-  unarmored.weight = 10,
+  weapons = c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"),
   endurance.level = 10,
   havel.ring = FALSE,
   favor.ring = FALSE,
@@ -69,9 +69,16 @@ Defaults to \code{"+0"}.}
 Options are \code{"Light"} (weight at or below 25\% of max equip load: light roll), \code{"Mid"} (at or below 50\%: mid roll), \code{"Fat"} (at or below 100\%: fat roll), and \code{"Poop"} (no equip-load limit - over 100\%, the character can't roll and walks slowly).
 Defaults to \code{"Light"}.}
 
-\item{unarmored.weight}{A length 1 \code{numeric} indicating the unarmored weight of the character i.e. weight of weapons.
-Defaults to \code{10}.
-Passed values are clamped between 0 and 999 and rounded to the nearest decimal point.}
+\item{weapons}{A \code{character} vector of the weapons equipped in the four weapon slots, by name (see
+\code{\link{weapon.data}}), or \code{"None"} for an empty slot. Either named by slot, in any
+order, leaving out empty slots - \code{left.1}, \code{right.1}, \code{left.2} and \code{right.2}
+for each hand's first and second slot, e.g. \code{c(left.1 = "Grass Crest Shield", right.1 = "Longsword")}
+- or an unnamed length 4 vector in exactly that order. Rings and ammunition weigh nothing, so
+these are everything the character carries besides armor. The game adds the four slots' weights
+in that order, one at a time in 32-bit floating point, then the armor's, which makes the total
+depend on which slot holds which weapon (with two or more talismans), so they're taken per slot
+rather than as a single weight. Only their weight is used.
+Defaults to every slot empty, as does an empty vector (\code{character(0)}).}
 
 \item{endurance.level}{A length 1 \code{numeric} indicating the level of the character in the Endurance stat. 
 This stat increases maximum equip load. Defaults to \code{10}. 
@@ -122,7 +129,7 @@ which the game shows as 5.1.
 The table can be tailored to satisfy various constraints.
 }
 \examples{
-optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, movement = "Light")
+optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, weapons = c(left.1 = "Grass Crest Shield", right.1 = "Longsword"), favor.ring = TRUE, movement = "Light")
 
 ## At least 30 poise, scored only on physical and magic defense (physical counting double)
 poise.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))

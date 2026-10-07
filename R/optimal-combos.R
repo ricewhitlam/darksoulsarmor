@@ -115,9 +115,16 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' Defaults to \code{"Light"}.
 #' 
 #' @param 
-#' unarmored.weight A length 1 \code{numeric} indicating the unarmored weight of the character i.e. weight of weapons.
-#' Defaults to \code{10}.
-#' Passed values are clamped between 0 and 999 and rounded to the nearest decimal point.
+#' weapons A \code{character} vector of the weapons equipped in the four weapon slots, by name (see
+#' \code{\link{weapon.data}}), or \code{"None"} for an empty slot. Either named by slot, in any
+#' order, leaving out empty slots - \code{left.1}, \code{right.1}, \code{left.2} and \code{right.2}
+#' for each hand's first and second slot, e.g. \code{c(left.1 = "Grass Crest Shield", right.1 = "Longsword")}
+#' - or an unnamed length 4 vector in exactly that order. Rings and ammunition weigh nothing, so
+#' these are everything the character carries besides armor. The game adds the four slots' weights
+#' in that order, one at a time in 32-bit floating point, then the armor's, which makes the total
+#' depend on which slot holds which weapon (with two or more talismans), so they're taken per slot
+#' rather than as a single weight. Only their weight is used.
+#' Defaults to every slot empty, as does an empty vector (\code{character(0)}).
 #' 
 #' @param 
 #' endurance.level A length 1 \code{numeric} indicating the level of the character in the Endurance stat. 
@@ -160,7 +167,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
 #'
 #' @examples
-#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, unarmored.weight = 12, favor.ring = TRUE, movement = "Light")
+#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, weapons = c(left.1 = "Grass Crest Shield", right.1 = "Longsword"), favor.ring = TRUE, movement = "Light")
 #'
 #' ## At least 30 poise, scored only on physical and magic defense (physical counting double)
 #' poise.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
@@ -177,7 +184,7 @@ get.optimal.armor.combos <- function(
     regular.level = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10")[1], 
     twinkling.level = c("+0", "+1", "+2", "+3", "+4", "+5")[1],
     movement = c("Light", "Mid", "Fat", "Poop")[1],
-    unarmored.weight = 10,
+    weapons = c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"),
     endurance.level = 10,
     havel.ring = FALSE,
     favor.ring = FALSE,
@@ -326,16 +333,39 @@ get.optimal.armor.combos <- function(
         endurance.level <- round(median(c(0, endurance.level, 99)), 0)
     }
 
-    ## Check unarmored.weight
-    if(!is.numeric(unarmored.weight)){
-        stop("Invalid argument 'unarmored.weight'")
-    } else if(length(unarmored.weight) != 1){
-        stop("Invalid argument 'unarmored.weight'")
-    } else if(is.na(unarmored.weight) || is.nan(unarmored.weight)){
-        stop("Invalid argument 'unarmored.weight'")
-    } else{
-        unarmored.weight <- round(median(c(0, unarmored.weight, 999)), 1)
+    ## Check weapons: one weapon name (or "None") per weapon slot, named by slot (in any order, empty
+    ## slots left out) or unnamed in the game's slot order. Validated to all four slots, by name.
+    if(!is.character(weapons) || anyNA(weapons)){
+        stop("Invalid argument 'weapons'")
     }
+    if(length(weapons) == 0){
+        ## No weapons named: every slot empty
+        weapons <- c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None")
+    } else if(is.null(names(weapons))){
+        if(length(weapons) != 4){
+            stop(sprintf("Invalid argument 'weapons': name the slots, or give all four in the order %s", paste(WEAPON.SLOTS, collapse = ", ")))
+        }
+        names(weapons) <- WEAPON.SLOTS
+    } else{
+        if(any(names(weapons) == "")){
+            stop("Invalid argument 'weapons': name every entry or none")
+        }
+        if(anyDuplicated(names(weapons)) > 0){
+            stop(sprintf("Invalid argument 'weapons': duplicated slots: %s", paste(unique(names(weapons)[duplicated(names(weapons))]), collapse = ", ")))
+        }
+        unknown.slots <- setdiff(names(weapons), WEAPON.SLOTS)
+        if(length(unknown.slots) > 0){
+            stop(sprintf("Invalid argument 'weapons': unknown slots: %s. Valid slots are: %s", paste(unknown.slots, collapse = ", "), paste(WEAPON.SLOTS, collapse = ", ")))
+        }
+        all.slots <- c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None")
+        all.slots[names(weapons)] <- weapons
+        weapons <- all.slots
+    }
+    unknown.weapons <- setdiff(weapons, c("None", weapon.data$WEAPON))
+    if(length(unknown.weapons) > 0){
+        stop(sprintf("Invalid argument 'weapons': unknown weapons: %s. weapon.data$WEAPON lists every weapon", paste(unknown.weapons, collapse = ", ")))
+    }
+    weapons <- weapons[WEAPON.SLOTS]
 
     ## Check wolf.ring
     if(!is.logical(wolf.ring)){
@@ -430,7 +460,7 @@ get.optimal.armor.combos <- function(
                     regular.level = regular.level, 
                     twinkling.level = twinkling.level,
                     movement = movement,
-                    unarmored.weight = unarmored.weight,
+                    weapons = weapons,
                     endurance.level = endurance.level,
                     havel.ring = havel.ring,
                     favor.ring = favor.ring,
@@ -447,14 +477,14 @@ get.optimal.armor.combos <- function(
 
 ## The search itself, given arguments get.optimal.armor.combos has already validated (its `args`).
 ## Ranks combinations by score, or - for get.armor.tradeoffs - by a single summed stat
-## (rank.metric: POISE or one defense/resistance), and takes the gear weight separately so the
-## trade-off curves can vary it past the 0-999 range user input is clamped to. Whatever it ranks by,
-## the output reports each combination's real SCORE_RAW and SCORE_QUALITY - except for one point of
-## a trade-off curve (curve.point = TRUE), which leaves SCORE_QUALITY and garbage collection to the
-## curve as a whole. Split in two so a curve can prepare once and run once per weight limit: see
+## (rank.metric: POISE or one defense/resistance), optionally under a limit on the armor's listed
+## weight (armor.cap, which get.armor.tradeoffs sets at each point of its curves). Whatever it ranks
+## by, the output reports each combination's real SCORE_RAW and SCORE_QUALITY - except for one point
+## of a trade-off curve (curve.point = TRUE), which leaves SCORE_QUALITY and garbage collection to
+## the curve as a whole. Split in two so a curve can prepare once and run once per weight limit: see
 ## prepare.armor.search and run.armor.search below.
-find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$unarmored.weight, curve.point = FALSE){
-    return(run.armor.search(prepare.armor.search(args, rank.metric), gear.weight, curve.point))
+find.armor.combos <- function(args, rank.metric = "SCORE", armor.cap = Inf, curve.point = FALSE){
+    return(run.armor.search(prepare.armor.search(args, rank.metric), armor.cap, curve.point))
 }
 
 ## Everything about a search that doesn't depend on the gear weight: each slot's pieces at the
@@ -585,14 +615,14 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
 
 }
 
-## The part of a search that depends on the gear weight: the per-piece weight limits, then the
-## C++ search over the prepared tables (see prepare.armor.search), and the output's scores.
-run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
+## The part of a search that depends on weight: the per-piece weight limits, then the C++ search over
+## the prepared tables (see prepare.armor.search), and the output's scores. armor.cap limits the
+## armor's listed weight (the sum of its pieces' WEIGHT) - get.armor.tradeoffs' armor-weight limits.
+run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
 
     args <- prepared$args
     max.table.size <- args$max.table.size
     movement <- args$movement
-    unarmored.weight <- gear.weight
     endurance.level <- args$endurance.level
     havel.ring <- args$havel.ring
     favor.ring <- args$favor.ring
@@ -606,15 +636,19 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
     level.legs.scores <- prepared$level.scores[[4]]
     out <- list(args = args, data = data.table::data.table())
 
-    ## Calc equip load values
-    base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(favor.ring, 1.2, 1)
-    movement.mult <- c(0.25, 0.5, 1.0, 999.0)[match(movement, c("Light", "Mid", "Fat", "Poop"))]
-    load.threshold <- base.load*movement.mult
-    ## With "Poop" movement there's no load limit for the Mask of the Father's bonus to raise. In
-    ## a normal search both thresholds are effectively infinite either way; this matters only when
-    ## get.armor.tradeoffs lowers the limit, where a 5% bonus on the x999 "Poop" threshold would wrongly
-    ## exempt the Mask from every armor-weight limit.
-    load.threshold.father.mask <- if(movement == "Poop") load.threshold else load.threshold*1.05
+    ## The game's equip-load rule (R/equip-load.R): what the weapons weigh, and the equip load and the
+    ## movement type's line, without and with the Mask of the Father (Poop's line is Inf)
+    carried <- weapons.weight(args$weapons)
+    load <- equip.load(endurance.level, havel.ring, favor.ring, father.mask = FALSE)
+    load.father.mask <- equip.load(endurance.level, havel.ring, favor.ring, father.mask = TRUE)
+    line <- movement.line(load, movement)
+    line.father.mask <- movement.line(load.father.mask, movement)
+    ## Room left for armor, for the pre-filters and the starting shell below. Those work on the listed
+    ## weights, so they get a margin far larger than any 32-bit rounding: they may let through a set
+    ## that doesn't fit, which the search's exact check (in the C++) then rejects, but never exclude
+    ## one that does
+    room <- min(line-carried, armor.cap)+1e-3
+    room.father.mask <- min(line.father.mask-carried, armor.cap)+1e-3
     ## Mask of the Father's own weight, for "with the Mask on, how much is left for the other slots"
     ## below. Taken from the unfiltered table (weight doesn't change with upgrade level), so it's
     ## defined even when the Mask is filtered out - the pre-filters then just use a looser bound.
@@ -622,10 +656,10 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
 
     ## Pieces too heavy to fit even with every other slot empty (subsetting keeps the prepared order,
     ## and copies, so the prepared tables are untouched for the next run)
-    working.head.data <- prepared$head[WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", -unarmored.weight+load.threshold.father.mask+1e-10, -unarmored.weight+load.threshold+1e-10)]
-    working.chest.data <- prepared$chest[WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10)]
-    working.hands.data <- prepared$hands[WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10)]
-    working.legs.data <- prepared$legs[WEIGHT <= (-unarmored.weight+max(load.threshold, load.threshold.father.mask-father.mask.weight)+1e-10)]
+    working.head.data <- prepared$head[WEIGHT <= data.table::fifelse(ARMOR == "Mask of the Father", room.father.mask, room)]
+    working.chest.data <- prepared$chest[WEIGHT <= max(room, room.father.mask-father.mask.weight)]
+    working.hands.data <- prepared$hands[WEIGHT <= max(room, room.father.mask-father.mask.weight)]
+    working.legs.data <- prepared$legs[WEIGHT <= max(room, room.father.mask-father.mask.weight)]
 
     ## If any tables empty, return empty data
     n.head <- nrow(working.head.data)
@@ -680,11 +714,11 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
         cummin(c(working.hands.data$WEIGHT, rep(0, n.max-n.hands)))+
         cummin(c(working.legs.data$WEIGHT, rep(0, n.max-n.legs)))
     if(father.mask.index == NO_FATHER_MASK_INDEX){
-        weight.check <- ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10))
+        weight.check <- ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= room)
     } else{
         weight.check <-
-            ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= (-unarmored.weight+load.threshold+1e-10)) |
-            c(rep(FALSE, father.mask.index-1), ((weight.check[father.mask.index:n.max]+father.mask.weight) <= (-unarmored.weight+load.threshold.father.mask+1e-10)))
+            ((weight.check+cummin(c(working.head.data$WEIGHT, rep(0, n.max-n.head)))) <= room) |
+            c(rep(FALSE, father.mask.index-1), ((weight.check[father.mask.index:n.max]+father.mask.weight) <= room.father.mask))
     }
     minima.check <- 
         pmin(
@@ -753,20 +787,12 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
             optimal_armor_combinations(
                 init.size,
                 max.table.size,
-                unarmored.weight,
-                ## round(., 4) before flooring to 1 decimal: base.load's true value always lands
-                ## on a 0.1 grid given the current ring multipliers (1.05x for Mask of the Father
-                ## needs at most 3 true decimal digits), but is computed in floating point, which
-                ## can put it a hair below its true value (e.g. true 49.2 stored as
-                ## 49.199999999999996) - floor()ing that directly chops off a whole 0.1 rather
-                ## than the intended zero. Rounding to 4 decimals first absorbs that noise (~1e-13,
-                ## many orders of magnitude below both the 0.00005 a round-to-4-decimals is
-                ## sensitive to and the true 3-decimal precision floor() needs to preserve)
-                ## without masking a genuine sub-0.1 remainder, which still floors down correctly.
-                0.1*floor(10*round(base.load, 4)),
-                0.1*floor(10*round(1.05*base.load, 4)),
-                load.threshold,
-                load.threshold.father.mask,
+                carried,
+                load,
+                load.father.mask,
+                line,
+                line.father.mask,
+                armor.cap,
                 father.mask.index-1,
                 wolf.ring,
                 minima,
@@ -795,7 +821,7 @@ run.armor.search <- function(prepared, gear.weight, curve.point = FALSE){
     data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
-    rm(list = c("base.load", "movement.mult", "load.threshold", "load.threshold.father.mask", "father.mask.weight"))
+    rm(list = c("carried", "load", "load.father.mask", "line", "line.father.mask", "room", "room.father.mask", "father.mask.weight"))
     rm(list = c("scored.metrics", "metric.cols", "prepared"))
     rm(list = c("level.head.scores", "level.chest.scores", "level.hands.scores", "level.legs.scores"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))

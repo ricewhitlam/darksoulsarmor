@@ -109,11 +109,12 @@ DataFrame optimal_armor_combinations(
     const int starting_loop_size,
     const int max_output_size,
 
-    const double base_weight,
+    const double carried_weight,
     const double load,
     const double load_father_mask,
-    const double load_threshold,
-    const double load_threshold_father_mask,
+    const double line,
+    const double line_father_mask,
+    const double armor_cap,
     const int father_mask_index,
     const bool wolf,
 
@@ -148,10 +149,20 @@ DataFrame optimal_armor_combinations(
 
     int curr_count = 0;
 
-    double curr_load_threshold;
-    // Tolerance for the boundary comparisons below (e.g. curr_WEIGHT > threshold+epsilon rather
-    // than just > threshold), so a combo that lands exactly on a limit isn't excluded by
-    // floating-point rounding from the R-side arithmetic that produced these values.
+    // The game's equip-load check (see R/equip-load.R): the weapons' weight, then head, chest, hands
+    // and legs, added one at a time in 32-bit floating point, at or below the movement type's 32-bit
+    // line (the Mask of the Father's own line when it's worn). carried_weight, line and
+    // line_father_mask arrive as 32-bit values (an infinite line for no limit), so the casts below
+    // are exact, and every addition below is a 32-bit one. The running total is built up slot by
+    // slot as the loops below fix each piece.
+    const float carried_f = static_cast<float>(carried_weight);
+    const float line_f = static_cast<float>(line);
+    const float line_father_mask_f = static_cast<float>(line_father_mask);
+    float curr_line_f;
+    float curr_head_total_f; float curr_chest_total_f; float curr_hands_total_f; float curr_total_f;
+    // Tolerance for the boundary comparisons below on listed (decimal) values, e.g. the armor cap
+    // and the minima, so a combo that lands exactly on a limit isn't excluded by floating-point
+    // rounding from the R-side arithmetic that produced these values.
     double epsilon = 1.0e-10;
 
     double extra_poise = 0.0;
@@ -266,11 +277,11 @@ DataFrame optimal_armor_combinations(
             // father_mask_index is head's row index for "Mask of the Father" (the sentinel value
             // R passes when it isn't in the filtered head table at all - see NO_FATHER_MASK_INDEX
             // in get.optimal.armor.combos), the one piece with its own equip-load bonus (x1.05)
-            // rather than the shared load_threshold every other combo uses.
+            // rather than the shared line every other combo uses.
             if(i == father_mask_index){
-                curr_load_threshold = load_threshold_father_mask;
+                curr_line_f = line_father_mask_f;
             } else{
-                curr_load_threshold = load_threshold;
+                curr_line_f = line_f;
             }
 
             curr_head_SCORE = head.SCORE[i];
@@ -292,6 +303,7 @@ DataFrame optimal_armor_combinations(
             curr_head_CURSE_RES = head.CURSE_RES[i];
             curr_head_DURABILITY = head.DURABILITY[i];
             curr_head_WEIGHT = head.WEIGHT[i];
+            curr_head_total_f = carried_f+static_cast<float>(curr_head_WEIGHT);
 
             for(int j = 0; j < curr_J; ++j){
 
@@ -318,6 +330,7 @@ DataFrame optimal_armor_combinations(
                 curr_chest_CURSE_RES = chest.CURSE_RES[j];
                 curr_chest_DURABILITY = chest.DURABILITY[j];
                 curr_chest_WEIGHT = chest.WEIGHT[j];
+                curr_chest_total_f = curr_head_total_f+static_cast<float>(curr_chest_WEIGHT);
 
                 for(int k = 0; k < curr_K; ++k){
 
@@ -344,6 +357,7 @@ DataFrame optimal_armor_combinations(
                     curr_hands_CURSE_RES = hands.CURSE_RES[k];
                     curr_hands_DURABILITY = hands.DURABILITY[k];
                     curr_hands_WEIGHT = hands.WEIGHT[k];
+                    curr_hands_total_f = curr_chest_total_f+static_cast<float>(curr_hands_WEIGHT);
 
                     for(int l = 0; l < curr_L; ++l){
 
@@ -363,8 +377,13 @@ DataFrame optimal_armor_combinations(
                         // [2] SLASH_DEF, [3] THRUST_DEF, [4] MAG_DEF, [5] FIRE_DEF, [6] LITNG_DEF,
                         // [7] POISE, [8] BLEED_RES, [9] POIS_RES, [10] CURSE_RES, [11] DURABILITY.
                         curr_legs_WEIGHT = legs.WEIGHT[l];
+                        curr_total_f = curr_hands_total_f+static_cast<float>(curr_legs_WEIGHT);
+                        if(curr_total_f > curr_line_f){
+                            continue;
+                        }
+                        // The armor's listed weight, for the armor cap and the tie-break
                         curr_WEIGHT = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
-                        if(curr_WEIGHT > (-base_weight+curr_load_threshold+epsilon)){
+                        if(curr_WEIGHT > (armor_cap+epsilon)){
                             continue;
                         }
                         curr_legs_POISE = legs.POISE[l];
@@ -486,7 +505,7 @@ DataFrame optimal_armor_combinations(
 
     int out_h; int out_c; int out_g; int out_l;
     double out_head_POISE; double out_chest_POISE; double out_hands_POISE; double out_legs_POISE; double out_POISE;
-    double out_WEIGHT; double out_load; int out_poise_count;
+    float out_armor_f; float out_total_f; double out_load; int out_poise_count;
 
     for(int n = (out_size-1); n > -1; --n){
         // Worst remaining combo to the back, then out - filling the output from its last row up
@@ -530,9 +549,17 @@ DataFrame optimal_armor_combinations(
                 break;
         }
 
-        out_WEIGHT = head.WEIGHT[out_h]+chest.WEIGHT[out_c]+hands.WEIGHT[out_g]+legs.WEIGHT[out_l];
+        // Exact 32-bit weights, added in the game's order: the armor alone, and everything carried
+        out_armor_f = static_cast<float>(head.WEIGHT[out_h]);
+        out_armor_f = out_armor_f+static_cast<float>(chest.WEIGHT[out_c]);
+        out_armor_f = out_armor_f+static_cast<float>(hands.WEIGHT[out_g]);
+        out_armor_f = out_armor_f+static_cast<float>(legs.WEIGHT[out_l]);
+        out_total_f = carried_f+static_cast<float>(head.WEIGHT[out_h]);
+        out_total_f = out_total_f+static_cast<float>(chest.WEIGHT[out_c]);
+        out_total_f = out_total_f+static_cast<float>(hands.WEIGHT[out_g]);
+        out_total_f = out_total_f+static_cast<float>(legs.WEIGHT[out_l]);
         out_load = (out_h == father_mask_index) ? load_father_mask : load;
-        ARMOR_WEIGHT[n] = out_WEIGHT; TOTAL_WEIGHT[n] = out_WEIGHT+base_weight; EQUIP_LOAD[n] = out_load; PCT_LOAD[n] = (out_WEIGHT+base_weight)/out_load;
+        ARMOR_WEIGHT[n] = out_armor_f; TOTAL_WEIGHT[n] = out_total_f; EQUIP_LOAD[n] = out_load; PCT_LOAD[n] = out_total_f/out_load;
         armor_combos.pop_back();
     }
 

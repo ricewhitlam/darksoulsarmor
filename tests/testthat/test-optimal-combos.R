@@ -15,7 +15,7 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     legs.sel <- sample(legs.data.unupgraded$ARMOR, 5)
 
     minima <- c(0, 0, 0, 0, 0, 0, 0, 5, 3, 2, 1, 0)
-    unarmored.weight <- 10
+    weapons <- c(right.1 = "Zweihander")  ## weight 10
     endurance.level <- 40
     movement <- "Fat"
 
@@ -24,7 +24,7 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
             max.table.size = 5000,
             head.filter = head.sel, chest.filter = chest.sel, hands.filter = hands.sel, legs.filter = legs.sel,
             movement = movement,
-            unarmored.weight = unarmored.weight,
+            weapons = weapons,
             endurance.level = endurance.level,
             minima = minima
         )$data
@@ -60,12 +60,15 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
         grid[, SCORE := SCORE + score.scalars[i] * (get(metric.cols[i]) - means[i])]
     }
 
-    base.load <- endurance.level + 40
-    load.threshold <- base.load * 1.0 ## movement = "Fat"
+    ## The game's equip-load check, written out: the Zweihander, then head, chest, hands and legs,
+    ## added in 32-bit, against the Fat line (100% of 40 + 40, no rings)
+    f32 <- darksoulsarmor:::float32
+    total <- f32(10)
+    for(w in list(h$WEIGHT[grid$H], c$WEIGHT[grid$C], g$WEIGHT[grid$G], l$WEIGHT[grid$L])){ total <- f32(total + f32(w)) }
 
     eps <- 1e-8
     ok <-
-        (grid$WEIGHT <= (-unarmored.weight + load.threshold + eps)) &
+        (total <= f32(endurance.level + 40)) &
         (grid$PHYS_DEF   >= minima[1]  - eps) & (grid$STRIKE_DEF >= minima[2]  - eps) &
         (grid$SLASH_DEF  >= minima[3]  - eps) & (grid$THRUST_DEF >= minima[4]  - eps) &
         (grid$MAG_DEF    >= minima[5]  - eps) & (grid$FIRE_DEF   >= minima[6]  - eps) &
@@ -125,23 +128,28 @@ test_that("SCORE_QUALITY ranks the best combination at a level against every com
 })
 
 test_that("SCORE_QUALITY reads 'Bottom 1 in N' when even the best feasible combination is in the bottom half", {
-    ## The default constraints (endurance.level = 10, movement = "Light") leave only 2.5 units of
-    ## equip load for armor, so even the best feasible combination is a below-median one.
-    result <- get.optimal.armor.combos(max.table.size = 20)$data
+    ## The default endurance.level = 10 and movement = "Light", carrying a Zweihander (10), leave
+    ## only 2.5 units of equip load for armor, so even the best feasible combination is a
+    ## below-median one.
+    result <- get.optimal.armor.combos(max.table.size = 20, weapons = c(right.1 = "Zweihander"))$data
     expect_true(all(grepl("^Bottom 1 in ", result$SCORE_QUALITY)))
 })
 
-## EQUIP_LOAD is derived from (endurance.level+40)*ring multipliers, always exactly a multiple of
-## 0.1 in true decimal arithmetic, but computed in floating point - which can land a hair below
-## the true value (e.g. true 49.2 stored as 49.199999999999996). floor()ing that directly used to
-## chop off a whole 0.1 (49.2 -> 49.1) instead of recovering the exact value; endurance.level=1
-## with favor.ring=TRUE is one of the affected cases (true base.load = 41*1.2 = 49.2).
-test_that("EQUIP_LOAD recovers the exact capacity despite floating-point noise", {
-    result <- get.optimal.armor.combos(max.table.size = 50, endurance.level = 1, favor.ring = TRUE, movement = "Light")
-    non.motf <- result$data[HEAD != "Mask of the Father"]
+## EQUIP_LOAD is the game's exact 32-bit equip load: (40 + Endurance) times the rings' rates
+## multiplied together, e.g. 41 x 1.2 = 49.2000008 (shown in-game as 49.2), and the Mask of the
+## Father's own load with its x1.05 combined in. TOTAL_WEIGHT is the game's 32-bit total, so a Light
+## set's PCT_LOAD is at most exactly 25%.
+test_that("EQUIP_LOAD and TOTAL_WEIGHT are the game's exact 32-bit values", {
+    f32 <- darksoulsarmor:::float32
+    result <- get.optimal.armor.combos(max.table.size = 200, endurance.level = 1, favor.ring = TRUE, movement = "Light")$data
+    non.motf <- result[HEAD != "Mask of the Father"]
     expect_true(nrow(non.motf) > 0)
-    expect_equal(unique(non.motf$EQUIP_LOAD), 49.2)
-    expect_true(all(non.motf$PCT_LOAD <= 0.25))
+    expect_equal(unique(non.motf$EQUIP_LOAD), f32(41*f32(1.2)), tolerance = 0)
+    motf <- result[HEAD == "Mask of the Father"]
+    expect_true(nrow(motf) > 0)
+    expect_equal(unique(motf$EQUIP_LOAD), f32(41*f32(f32(1.2)*f32(1.05))), tolerance = 0)
+    expect_true(all(result$PCT_LOAD <= 0.25))
+    expect_true(all(f32(result$TOTAL_WEIGHT) == result$TOTAL_WEIGHT))
 })
 
 ## optimal_armor_combinations reserves heap storage up front, capped at the number of combinations
@@ -191,7 +199,11 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
             twinkling.level = paste0("+", sample(0:5, 1)),
             movement = sample(c("Light", "Mid", "Fat"), 1),
             endurance.level = sample(5:60, 1),
-            unarmored.weight = round(runif(1, 0, 20), 1),
+            ## 0-4 weapons in random slots, talismans (not exact in 32-bit) often among them
+            weapons = {
+                slots <- sample(c("left.1", "right.1", "left.2", "right.2"), sample(0:4, 1))
+                stats::setNames(sample(c(weapon.data$WEAPON, rep("Talisman", 20)), length(slots)), slots)
+            },
             havel.ring = runif(1) < 0.3,
             favor.ring = runif(1) < 0.3,
             wolf.ring = runif(1) < 0.4,
@@ -235,12 +247,25 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
         ## The C++ search's score comparison key: llround(score*1e9)
         grid[, SCORE_KEY := sign(SCORE)*floor(abs(SCORE)*1e9 + 0.5)]
 
-        base.load <- (args$endurance.level + 40)*ifelse(args$havel.ring, 1.5, 1)*ifelse(args$favor.ring, 1.2, 1)
-        load.threshold <- base.load*c(Light = 0.25, Mid = 0.5, Fat = 1)[[args$movement]]
+        ## The game's equip-load check, written out (see R/equip-load.R): rates multiplied together,
+        ## then the 32-bit load and line; the weapons in slot order, then head, chest, hands, legs,
+        ## each added in 32-bit; at or below the line
+        f32 <- darksoulsarmor:::float32
+        rate <- f32(f32(ifelse(args$havel.ring, f32(1.5), 1))*ifelse(args$favor.ring, f32(1.2), 1))
+        load <- f32((args$endurance.level + 40)*rate)
+        load.father.mask <- f32((args$endurance.level + 40)*f32(rate*f32(1.05)))
+        share <- c(Light = 0.25, Mid = 0.5, Fat = 1)[[args$movement]]
+        carried <- 0
+        for(slot in c("left.1", "right.1", "left.2", "right.2")){
+            if(slot %in% names(args$weapons)){ carried <- f32(carried + f32(weapon.data[WEAPON == args$weapons[[slot]], WEIGHT])) }
+        }
+        grid[, TOTAL := f32(f32(f32(f32(carried + f32(h$WEIGHT[H])) + f32(c$WEIGHT[C])) + f32(g$WEIGHT[G])) + f32(l$WEIGHT[L]))]
+        grid[, ARMOR32 := f32(f32(f32(f32(h$WEIGHT[H]) + f32(c$WEIGHT[C])) + f32(g$WEIGHT[G])) + f32(l$WEIGHT[L]))]
+        grid[, LOAD := ifelse(FATHER_MASK, load.father.mask, load)]
         eps <- 1e-10
         mn <- args$minima
         expected <- grid[
-            WEIGHT <= -args$unarmored.weight + ifelse(FATHER_MASK, 1.05*load.threshold, load.threshold) + eps &
+            TOTAL <= f32(LOAD*share) &
             PHYS_DEF >= mn[1] - eps & STRIKE_DEF >= mn[2] - eps & SLASH_DEF >= mn[3] - eps & THRUST_DEF >= mn[4] - eps &
             MAG_DEF >= mn[5] - eps & FIRE_DEF >= mn[6] - eps & LITNG_DEF >= mn[7] - eps & POISE + 40*args$wolf.ring >= mn[8] - eps &
             BLEED_RES >= mn[9] - eps & POIS_RES >= mn[10] - eps & CURSE_RES >= mn[11] - eps & DURABILITY >= mn[12] - eps
@@ -267,10 +292,10 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
             expect_identical(actual$SCORE_RAW, matched$SCORE, info = paste("trial", trial))
             expect_equal(actual$TOTAL_POISE, matched$POISE + 40*args$wolf.ring, info = paste("trial", trial))
             expect_equal(actual$DURABILITY, matched$DURABILITY, info = paste("trial", trial))
-            expect_equal(actual$ARMOR_WEIGHT, matched$WEIGHT, info = paste("trial", trial))
-            equip.load <- ifelse(matched$FATHER_MASK, 0.1*floor(10*round(1.05*base.load, 4)), 0.1*floor(10*round(base.load, 4)))
-            expect_equal(actual$EQUIP_LOAD, equip.load, info = paste("trial", trial))
-            expect_equal(actual$PCT_LOAD, (matched$WEIGHT + args$unarmored.weight)/equip.load, info = paste("trial", trial))
+            expect_identical(actual$ARMOR_WEIGHT, matched$ARMOR32, info = paste("trial", trial))
+            expect_identical(actual$TOTAL_WEIGHT, matched$TOTAL, info = paste("trial", trial))
+            expect_identical(actual$EQUIP_LOAD, matched$LOAD, info = paste("trial", trial))
+            expect_equal(actual$PCT_LOAD, matched$TOTAL/matched$LOAD, info = paste("trial", trial))
         }
 
     }

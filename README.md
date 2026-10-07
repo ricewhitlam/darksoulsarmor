@@ -31,7 +31,7 @@ library(darksoulsarmor)
 result <- get.optimal.armor.combos(
     max.table.size = 5,
     endurance.level = 40,
-    unarmored.weight = 12,
+    weapons = c(right.1 = "Great Club"),  # weight 12
     movement = "Mid",
     minima = c(POISE = 30)  # require at least 30 poise
 )
@@ -59,19 +59,19 @@ See `?get.optimal.armor.combos` for the full set of settings (which areas/classe
 `get.armor.tradeoffs()` finds the best value of one stat at each armor-weight limit, with the same settings as `get.optimal.armor.combos()`. For example, the lightest armor that reaches each PVE poise breakpoint with Mid movement:
 
 ```r
-curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.1, endurance.level = 40, unarmored.weight = 12, movement = "Mid")
+curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.1, endurance.level = 40, weapons = c(right.1 = "Great Club"), movement = "Mid")
 first <- sapply(c(21, 31, 46), function(poise) which(curve$data$BEST_VALUE >= poise)[1])
 curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
-#>    ARMOR_WEIGHT_LIMIT BEST_VALUE               HEAD       CHEST
-#>                 <num>      <num>             <char>      <char>
-#> 1:                7.8         21         Giant Helm    No Chest
-#> 2:               12.1         33 Mask of the Father    No Chest
-#> 3:               18.3         46 Mask of the Father Stone Armor
-#>                HANDS                      LEGS
-#>               <char>                    <char>
-#> 1:          No Hands Hollow Soldier Waistcloth
-#> 2: Havel's Gauntlets Hollow Warrior Waistcloth
-#> 3:          No Hands Hollow Soldier Waistcloth
+#>    ARMOR_WEIGHT_LIMIT BEST_VALUE         HEAD    CHEST            HANDS
+#>                 <num>      <num>       <char>   <char>           <char>
+#> 1:                7.8         21   Giant Helm No Chest         No Hands
+#> 2:               12.5         31 Havel's Helm No Chest Knight Gauntlets
+#> 3:               18.7         46 Havel's Helm No Chest  Giant Gauntlets
+#>                         LEGS
+#>                       <char>
+#> 1: Hollow Soldier Waistcloth
+#> 2: Hollow Soldier Waistcloth
+#> 3: Hollow Soldier Waistcloth
 ```
 
 `weight.step` sets the spacing of the limits (default 1), and `min.armor.weight`/`max.armor.weight` set the range; by default it runs from 0 to what the movement type allows. Among combinations tied on the stat, the best-scoring one is returned.

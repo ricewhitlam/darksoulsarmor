@@ -29,10 +29,9 @@ points but no detail. Defaults to \code{1}.}
 larger than \code{max.armor.weight}. Defaults to \code{0}.}
 
 \item{max.armor.weight}{A length 1 non-negative \code{numeric}, or \code{NULL}: the largest armor-weight
-limit. \code{NULL} (the default) uses the armor weight the other settings currently allow - the
-movement type's share of the equip load, less \code{unarmored.weight} - or, with
-\code{movement = "Poop"}, the heaviest possible armor (with no load limit, the Mask of the Father's
-equip load bonus doesn't apply).}
+limit. \code{NULL} (the default) uses the most armor weight the other settings allow - the
+movement type's line, with the Mask of the Father's bonus, less what the \code{weapons} weigh,
+rounded down to 0.1 - or, with \code{movement = "Poop"}, the heaviest possible armor.}
 
 \item{...}{Any other arguments of \code{\link{get.optimal.armor.combos}} (except \code{max.table.size}),
 with the same meaning and defaults.}
@@ -52,13 +51,13 @@ setting (filters, upgrade levels, rings, minima, ...) as given. This traces the 
 armor weight and that stat: e.g. how much more Poise each extra unit of armor weight can buy, or
 the lightest armor that reaches a Poise breakpoint.
 
-The weight limit is varied the way the game varies it, by the weight carried besides armor. So
-the Mask of the Father's equip load bonus applies at every limit (except with
-\code{movement = "Poop"}, which has no load limit), and a combination wearing it can weigh
-slightly more than the limit itself. Among combinations tied on the stat, the best-scoring one is
-returned.
+A limit applies to the armor's listed weight (its pieces' weights added up). Every combination
+must also allow the movement type, checked as the game checks it - with the weapons, rings and
+the Mask of the Father's equip load bonus, in 32-bit floating point - so near a movement type's
+line, a combination within the limit can still be ruled out. Among combinations tied on the
+stat, the best-scoring one is returned.
 }
 \examples{
-poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", unarmored.weight = 12)
+poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))
 
 }

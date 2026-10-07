@@ -122,14 +122,14 @@ test_that("each slot has exactly one always-available, all-zero 'No <slot>' row"
     }
 })
 
-## The weapons table: one row per weapon (weight is all the package uses), weights as the game has
+## The weapon.data table: one row per weapon (weight is all the package uses), weights as the game has
 ## them - including the items used in the in-game equip-load checks
-test_that("the weapons table lists unique weapons with valid weights", {
-    expect_false(anyDuplicated(weapons$WEAPON) > 0)
-    expect_false(anyNA(weapons))
-    expect_true(all(weapons$WEIGHT >= 0))
-    expect_true(all(abs(weapons$WEIGHT*10 - round(weapons$WEIGHT*10)) < 1e-9))
-    weight.of <- function(name){ weapons[WEAPON == name, WEIGHT] }
+test_that("the weapon.data table lists unique weapons with valid weights", {
+    expect_false(anyDuplicated(weapon.data$WEAPON) > 0)
+    expect_false(anyNA(weapon.data))
+    expect_true(all(weapon.data$WEIGHT >= 0))
+    expect_true(all(abs(weapon.data$WEIGHT*10 - round(weapon.data$WEIGHT*10)) < 1e-9))
+    weight.of <- function(name){ weapon.data[WEAPON == name, WEIGHT] }
     expect_equal(weight.of("Longsword"), 3)
     expect_equal(weight.of("Claymore"), 6)
     expect_equal(weight.of("Talisman"), 0.3)

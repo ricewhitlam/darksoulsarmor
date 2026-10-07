@@ -5,7 +5,7 @@
 utils::globalVariables(c(
     "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "SCORE_RAW", "SCORE_QUALITY",
     "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
-    "areas", "classes", "weapons", "WEAPON", "means", "stddevs", "corrs",
+    "areas", "classes", "weapon.data", "WEAPON", "means", "stddevs", "corrs",
     "head.data.unupgraded", "chest.data.unupgraded", "hands.data.unupgraded", "legs.data.unupgraded",
     "METRICS", "metric", "weight.index", "minima.index",
     "HEAD", "CHEST", "HANDS", "LEGS", "ARMOR_WEIGHT", "TOTAL_POISE", "ARMOR_WEIGHT_LIMIT", "BEST_VALUE", "."
@@ -52,7 +52,7 @@ NULL
 
 #' Table of every weapon, shield, bow and catalyst that can fill a weapon slot
 #'
-#' @name weapons
+#' @name weapon.data
 #' @format
 #' \describe{
 #'   \item{WEAPON}{Name of the weapon.}

@@ -1,6 +1,6 @@
 ## get.armor.tradeoffs: the best achievable value of a stat at each armor-weight limit. Checked
 ## against brute force over small random piece subsets, for every metric, with the Mask of the
-## Father (whose load bonus lets it exceed the limit slightly), rings, minima, and upgrade levels in
+## Father (with its own equip load bonus), weapons, rings, minima, and upgrade levels in
 ## play - which also exercises the search's ranking by a single stat, and the curve's reuse of one
 ## limit's best combination at lower limits.
 test_that("get.armor.tradeoffs matches brute force for every metric", {
@@ -24,7 +24,7 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
             twinkling.level = paste0("+", sample(0:5, 1)),
             movement = sample(c("Light", "Mid", "Fat", "Poop"), 1),
             endurance.level = sample(10:50, 1),
-            unarmored.weight = round(runif(1, 0, 10), 1),
+            weapons = { slots <- sample(c("left.1", "right.1", "left.2", "right.2"), sample(0:3, 1)); stats::setNames(sample(c(weapon.data$WEAPON, rep("Talisman", 10)), length(slots)), slots) },
             havel.ring = runif(1) < 0.3,
             wolf.ring = runif(1) < 0.4,
             minima = c(POISE = sample(c(0, 0, 10), 1), BLEED_RES = sample(c(0, 0, 5), 1)),
@@ -55,37 +55,58 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
         grid[, MASK := h$ARMOR[H] == "Mask of the Father"]
         grid <- grid[POISE + 40*args$wolf.ring >= args$minima[["POISE"]] - 1e-10 & BLEED_RES >= args$minima[["BLEED_RES"]] - 1e-10]
 
-        threshold <- (args$endurance.level + 40)*ifelse(args$havel.ring, 1.5, 1)*c(Light = 0.25, Mid = 0.5, Fat = 1, Poop = 999)[[args$movement]]
-        mask.bonus <- if(args$movement == "Poop") 0 else 0.05*threshold
+        ## The game's movement check, written out (see R/equip-load.R): the weapons in slot order,
+        ## then head, chest, hands, legs, each added in 32-bit, at or below the 32-bit line - the Mask
+        ## of the Father's own when it's worn
+        f32 <- darksoulsarmor:::float32
+        rate <- if(args$havel.ring) f32(1.5) else 1
+        load <- f32((args$endurance.level + 40)*rate)
+        load.father.mask <- f32((args$endurance.level + 40)*f32(rate*f32(1.05)))
+        share <- c(Light = 0.25, Mid = 0.5, Fat = 1, Poop = Inf)[[args$movement]]
+        carried <- 0
+        for(s in c("left.1", "right.1", "left.2", "right.2")){
+            if(s %in% names(args$weapons)){ carried <- f32(carried + f32(weapon.data[WEAPON == args$weapons[[s]], WEIGHT])) }
+        }
+        total <- f32(f32(f32(f32(carried + f32(h$WEIGHT[grid$H])) + f32(c$WEIGHT[grid$C])) + f32(g$WEIGHT[grid$G])) + f32(l$WEIGHT[grid$L]))
+        line <- if(is.infinite(share)) Inf else f32(load*share)
+        line.father.mask <- if(is.infinite(share)) Inf else f32(load.father.mask*share)
+        grid <- grid[total <= ifelse(MASK, line.father.mask, line)]
+
+        ## A limit is on the armor's listed weight
         expected <- sapply(actual$ARMOR_WEIGHT_LIMIT, function(limit){
-            fits <- grid[WEIGHT <= limit + ifelse(MASK, mask.bonus, 0) + 1e-9]
+            fits <- grid[WEIGHT <= limit + 1e-9]
             if(nrow(fits) == 0) NA_real_ else max(fits$VALUE)
         })
         ## Among the combinations tied on the best value, the best-scoring one is chosen
         expected.score <- sapply(actual$ARMOR_WEIGHT_LIMIT, function(limit){
-            fits <- grid[WEIGHT <= limit + ifelse(MASK, mask.bonus, 0) + 1e-9]
+            fits <- grid[WEIGHT <= limit + 1e-9]
             if(nrow(fits) == 0) NA_real_ else max(fits[VALUE >= max(VALUE) - 1e-6, SCORE])
         })
         info <- paste("trial", trial, metric)
         expect_equal(actual$BEST_VALUE, expected, tolerance = 1e-9, info = info)
         expect_equal(actual$SCORE_RAW, expected.score, tolerance = 1e-6, info = info)
 
-        ## Limits run from 0 to the current allowance in the requested steps
-        allowance <- min(threshold - args$unarmored.weight, max(head.data.unupgraded$WEIGHT) + max(chest.data.unupgraded$WEIGHT) + max(hands.data.unupgraded$WEIGHT) + max(legs.data.unupgraded$WEIGHT))
+        ## Limits run from 0 to the most armor weight the movement type could allow (its line, with
+        ## the Mask of the Father's bonus, less the weapons, on the 0.1 grid) in the requested steps
+        heaviest <- max(head.data.unupgraded$WEIGHT) + max(chest.data.unupgraded$WEIGHT) + max(hands.data.unupgraded$WEIGHT) + max(legs.data.unupgraded$WEIGHT)
+        allowance <- min(floor(10*(line.father.mask - carried) + 1e-6)/10, heaviest)
         expect_equal(range(actual$ARMOR_WEIGHT_LIMIT), c(0, max(0, allowance)), info = info)
         expect_true(all(diff(actual$ARMOR_WEIGHT_LIMIT) <= step + 1e-9), info = info)
 
-        ## Each reported combination really fits under its limit and achieves the value
+        ## Each reported combination's listed weight is within its limit
         ok <- !is.na(actual$BEST_VALUE)
-        expect_true(all(actual$ARMOR_WEIGHT[ok] <= actual$ARMOR_WEIGHT_LIMIT[ok] + ifelse(actual$HEAD[ok] == "Mask of the Father", mask.bonus, 0) + 1e-9), info = info)
+        listed <- head.data.unupgraded$WEIGHT[match(actual$HEAD, head.data.unupgraded$ARMOR)] + chest.data.unupgraded$WEIGHT[match(actual$CHEST, chest.data.unupgraded$ARMOR)] +
+            hands.data.unupgraded$WEIGHT[match(actual$HANDS, hands.data.unupgraded$ARMOR)] + legs.data.unupgraded$WEIGHT[match(actual$LEGS, legs.data.unupgraded$ARMOR)]
+        expect_true(all(listed[ok] <= actual$ARMOR_WEIGHT_LIMIT[ok] + 1e-9), info = info)
     }
 })
 
 test_that("the SCORE curve's top point is get.optimal.armor.combos' best result", {
-    curve <- get.armor.tradeoffs(endurance.level = 40, movement = "Mid", unarmored.weight = 12)$data
-    best <- get.optimal.armor.combos(max.table.size = 1, endurance.level = 40, movement = "Mid", unarmored.weight = 12)$data
+    curve <- get.armor.tradeoffs(endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))$data
+    best <- get.optimal.armor.combos(max.table.size = 1, endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))$data
     top <- curve[.N]
-    expect_equal(top$ARMOR_WEIGHT_LIMIT, 28)
+    ## The Mask of the Father's line (42) less the Great Club (12)
+    expect_equal(top$ARMOR_WEIGHT_LIMIT, 30)
     expect_equal(top$BEST_VALUE, best$SCORE_RAW)
     expect_equal(c(top$HEAD, top$CHEST, top$HANDS, top$LEGS), c(best$HEAD, best$CHEST, best$HANDS, best$LEGS))
     expect_equal(top$SCORE_QUALITY, best$SCORE_QUALITY)
@@ -107,7 +128,7 @@ test_that("get.armor.tradeoffs validates its own arguments", {
 })
 
 test_that("a curve over part of the weight range matches the full curve there", {
-    settings <- list(metric = "POISE", endurance.level = 40, movement = "Mid", unarmored.weight = 12, wolf.ring = TRUE)
+    settings <- list(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), wolf.ring = TRUE)
     full <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.1, max.armor.weight = 12)))$data
     part <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.5, min.armor.weight = 3.2, max.armor.weight = 12)))$data
     ## Both ends plus the multiples of the step between them

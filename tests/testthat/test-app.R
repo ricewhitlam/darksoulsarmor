@@ -83,6 +83,16 @@ filter.inputs <- function(filter.values){
         hands.filter = filter.values$hands.filter, legs.filter = filter.values$legs.filter
     )
 }
+## The Load Inputs modal's widgets: movement, a dropdown per weapon slot, and Endurance
+constraint.inputs <- function(movement, weapons, endurance.level){
+    list(
+        movement = movement,
+        weapon.left.1 = weapons[["left.1"]], weapon.right.1 = weapons[["right.1"]],
+        weapon.left.2 = weapons[["left.2"]], weapon.right.2 = weapons[["right.2"]],
+        endurance.level = endurance.level
+    )
+}
+no.weapons <- c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None")
 minima.inputs <- function(minimum.values, minima.ids){ setNames(as.list(minimum.values$minima), minima.ids) }
 weight.inputs <- function(weight.values, weight.ids){ setNames(as.list(weight.values$weights), weight.ids) }
 
@@ -94,7 +104,7 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         submit.modal(session, "filters", "dismiss_filter_modal", filter.inputs(filter.values), 1)
         submit.modal(session, "upgrades", "dismiss_upgrade_modal", list(regular.level = upgrade.values$regular.level, twinkling.level = upgrade.values$twinkling.level), 1)
         submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = ring.values$havel.ring, favor.ring = ring.values$favor.ring, wolf.ring = ring.values$wolf.ring), 1)
-        submit.modal(session, "constraints", "dismiss_constraint_modal", list(movement = constraint.values$movement, unarmored.weight = constraint.values$unarmored.weight, endurance.level = constraint.values$endurance.level), 1)
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs(constraint.values$movement, constraint.values$weapons, constraint.values$endurance.level), 1)
         submit.modal(session, "minima", "dismiss_minimum_modal", minima.inputs(minimum.values, minima.ids), 1)
         submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
 
@@ -128,7 +138,7 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
         submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = TRUE, favor.ring = ring.values$favor.ring, wolf.ring = ring.values$wolf.ring), click)
         check.edit("havel.ring", TRUE)
 
-        submit.modal(session, "constraints", "dismiss_constraint_modal", list(movement = "Mid", unarmored.weight = constraint.values$unarmored.weight, endurance.level = constraint.values$endurance.level), click)
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", constraint.values$weapons, constraint.values$endurance.level), click)
         check.edit("movement", "Mid")
 
         values <- minima.inputs(minimum.values, minima.ids)
@@ -275,7 +285,7 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
         session$setInputs(go = 1)
         ## An unsaved edit afterwards isn't part of the download
-        submit.modal(session, "constraints", "dismiss_constraint_modal", list(movement = "Mid", unarmored.weight = 10, endurance.level = 10), 1)
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", no.weapons, 10), 1)
 
         ## The Trade-offs tab was never opened, so the download computes the curve (and keeps it)
         expect_null(tradeoffdata())
@@ -304,7 +314,7 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         expect_equal(setting("Score Weight CURSE_RES"), "4%")
         expect_equal(setting("Head"), paste(armordata()$args$head.filter, collapse = "; "))
         ## Only the settings of the search itself: the rest is in the data
-        expect_equal(nrow(settings), 16 + 12 + 10)
+        expect_equal(nrow(settings), 19 + 12 + 10)
 
         ## A curve the tab already holds is reused, and the score's table has its own columns
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
@@ -369,13 +379,13 @@ test_that("a warning during refresh doesn't abort it, and is shown as a notifica
 
 ## The Trade-offs tab charts every armor weight, computed in one segment per movement class (each under
 ## that movement type's load limit, so the Mask of the Father's bonus is credited as it would be), with
-## lines where the movement class changes. With endurance 40, no load rings and 12 gear weight, the
+## lines where the movement class changes. With endurance 40, no load rings and a Great Club (12), the
 ## equip load is 80: Light ends at 25% - 12 = 8 armor weight, Mid at 28, Fat at 68 - past the
 ## heaviest possible armor (52.5), so there's no Poop segment.
 test_that("the Trade-offs tab stitches per-movement-class curves over every armor weight", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         session$setInputs(constraints = 1)
-        session$setInputs(movement = "Mid", unarmored.weight = 12, endurance.level = 40)
+        do.call(session$setInputs, constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40))
         session$setInputs(dismiss_constraint_modal = 1)
         session$setInputs(rings = 1)
         session$setInputs(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE)
@@ -393,7 +403,7 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
         expect_true(all(c(8, 28) %in% round(result$data$ARMOR_WEIGHT_LIMIT, 9)))
 
         ## Each segment is exactly get.armor.tradeoffs under that segment's movement type
-        settings <- list(metric = "POISE", endurance.level = 40, unarmored.weight = 12, wolf.ring = TRUE)
+        settings <- list(metric = "POISE", endurance.level = 40, weapons = c(right.1 = "Great Club"), wolf.ring = TRUE)
         segment <- function(movement, from, to){ do.call(get.armor.tradeoffs, c(settings, list(movement = movement, weight.step = 0.1, min.armor.weight = from, max.armor.weight = to)))$data }
         expected <- rbind(segment("Light", 0, 8), segment("Mid", 8, 28)[ARMOR_WEIGHT_LIMIT > 8], segment("Fat", 28, 52.5)[ARMOR_WEIGHT_LIMIT > 28])
         cols <- names(expected)
@@ -402,19 +412,14 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
         expect_no_error(output$tradeoff_table)
         ## Points are hovered and clicked by weight alone
         expect_match(output$tradeoff_plot, '"hovermode":"x"', fixed = TRUE)
-        ## Sets kept Mid only by the Mask of the Father's bonus: named in full in the table, abbreviated
-        ## in the hover
-        expect_true("Mid (Mask of the Father bonus)" %in% result$data$MOVEMENT)
-        expect_match(output$tradeoff_plot, "Movement: Mid (MotF bonus)", fixed = TRUE)
-        expect_false(grepl("Mask of the Father bonus", output$tradeoff_plot, fixed = TRUE))
 
         ## The table: limit, best value named for the stat, movement, scores, pieces
         table <- tradeoff.table(result)
         expect_identical(names(table), c("ARMOR_WEIGHT_LIMIT", "POISE", "MOVEMENT", "SCORE_RAW", "SCORE_QUALITY", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_equal(table$POISE, result$data$BEST_VALUE)
 
-        ## Every point's movement class is from its own weight plus the gear weight
-        expected.class <- movement.class(expected$ARMOR_WEIGHT, expected$HEAD == "Mask of the Father", 12, 80)
+        ## Every point's movement class is the game's check on its own set, with the Great Club
+        expected.class <- movement.class(expected$HEAD, expected$CHEST, expected$HANDS, expected$LEGS, 12, 80, 84)
         expect_equal(sub(" [(].*", "", result$data$MOVEMENT), expected.class$class)
 
         ## A table row with a head piece, and a clicked chart point, open their links
@@ -486,7 +491,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
         ## A refresh changing only the movement type and the table size keeps the curve
         curve <- tradeoffdata()$data
         expect_equal(tradeoffdata()$selected.movement, "Light")
-        submit.modal(session, "constraints", "dismiss_constraint_modal", list(movement = "Fat", unarmored.weight = constraint.values$unarmored.weight, endurance.level = constraint.values$endurance.level), 1)
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Fat", constraint.values$weapons, constraint.values$endurance.level), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 50)), 1)
         session$setInputs(go = 3)
         expect_equal(output$errormessage, "")
@@ -508,14 +513,16 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
 })
 
 ## A minimum on the charted stat would only cut the curve off below it, so the chart ignores it and
-## draws it as a reference line instead; every other minimum still applies. With the defaults the
-## Light segment runs from 0 to 2.5 armor weight.
+## draws it as a reference line instead; every other minimum still applies. With a Zweihander (10)
+## at the default 10 Endurance, the Light segment runs from 0 to 2.5 armor weight.
 test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         values <- minima.inputs(minimum.values, minima.ids)
         values[[metric.input.id("POISE", "minima")]] <- 30
         values[[metric.input.id("BLEED_RES", "minima")]] <- 20
         submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "None", right.1 = "Zweihander", left.2 = "None", right.2 = "None"), 10), 1)
+        zweihander <- c(right.1 = "Zweihander")
         session$setInputs(go = 1)
         expect_equal(armordata()$args$minima[minima.index.of("POISE")], 30)
 
@@ -524,7 +531,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 30)
         expect_equal(result$lines[["Light"]], 2.5)
-        light <- get.armor.tradeoffs(metric = "POISE", minima = c(BLEED_RES = 20), weight.step = 0.1, max.armor.weight = 2.5)$data
+        light <- get.armor.tradeoffs(metric = "POISE", minima = c(BLEED_RES = 20), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(light)), names(light), with = FALSE], light)
         expect_true(any(result$data$BEST_VALUE < 30, na.rm = TRUE))
         expect_true(grepl("Your minimum: 30", output$tradeoff_plot, fixed = TRUE))
@@ -533,7 +540,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         session$setInputs(tradeoff_metric = "BLEED_RES")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 20)
-        light <- get.armor.tradeoffs(metric = "BLEED_RES", minima = c(POISE = 30), weight.step = 0.1, max.armor.weight = 2.5)$data
+        light <- get.armor.tradeoffs(metric = "BLEED_RES", minima = c(POISE = 30), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(light)), names(light), with = FALSE], light)
         expect_true(grepl("Your minimum: 20", output$tradeoff_plot, fixed = TRUE))
 
@@ -541,17 +548,48 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         session$setInputs(tradeoff_metric = "SCORE")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 0)
-        light <- get.armor.tradeoffs(metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), weight.step = 0.1, max.armor.weight = 2.5)$data
+        light <- get.armor.tradeoffs(metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(light)), names(light), with = FALSE], light)
         expect_false(grepl("Your minimum", output$tradeoff_plot, fixed = TRUE))
     })
 })
 
-test_that("movement classes account for the Mask of the Father's bonus", {
+## With only the Mask of the Father allowed for the head, every set wears it, so just past the Light
+## line (8 armor weight here, with a Great Club at 40 Endurance) the best sets are still Light thanks
+## to its bonus (its Light line is 9). The class says so in full in the table, abbreviated in the
+## hover.
+test_that("Trade-offs points kept light by the Mask of the Father say so", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        ## Equip load 80, gear 12: without the Mask, Light ends at 8 armor weight; with it, at 9
-        r <- movement.class(c(8, 8.5, 8.5, 9.0, 28, 30, 70), c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE), 12, 80)
-        expect_equal(r$class, c("Light", "Mid", "Light", "Light", "Mid", "Fat", "Poop"))
-        expect_equal(r$by.mask.bonus, c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE))
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40), 1)
+        submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(head.filter = "Mask of the Father")), 1)
+        session$setInputs(go = 1)
+        session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
+        result <- tradeoffdata()
+        expect_true("Light (Mask of the Father bonus)" %in% result$data$MOVEMENT)
+        expect_match(output$tradeoff_plot, "Movement: Light (MotF bonus)", fixed = TRUE)
+        expect_false(grepl("Mask of the Father bonus", output$tradeoff_plot, fixed = TRUE))
+    })
+})
+
+## The Trade-offs tab's movement classes are the game's check on each set. At 60 Endurance with the
+## Ring of Favor (load 120, 126 with the Mask), the in-game T1 set - Mask of the Father, 31.5 in all -
+## rolls Light only thanks to the Mask (the Light line is 30 without it, 31.5 with it); the same
+## weight with Brigand Hood (also 1.2) instead is Mid, as is the Giant set (42.1), and with a
+## Dragon Tooth (18) on top, the Giant set is Fat. A point with no set has no class.
+test_that("movement classes are the game's check, and note the Mask of the Father's bonus", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        load <- equip.load(60, FALSE, TRUE, father.mask = FALSE)
+        load.father.mask <- equip.load(60, FALSE, TRUE, father.mask = TRUE)
+        r <- movement.class(
+            head = c("Mask of the Father", "Brigand Hood", "Giant Helm", NA),
+            chest = c("Armor of Artorias", "Armor of Artorias", "Giant Armor", NA),
+            hands = c("Havel's Gauntlets", "Havel's Gauntlets", "Giant Gauntlets", NA),
+            legs = c("Steel Leggings", "Steel Leggings", "Giant Leggings", NA),
+            carried = 0, load = load, load.father.mask = load.father.mask
+        )
+        expect_equal(r$class, c("Light", "Mid", "Mid", NA))
+        expect_equal(r$by.mask.bonus, c(TRUE, FALSE, FALSE, FALSE))
+        heavy <- movement.class("Giant Helm", "Giant Armor", "Giant Gauntlets", "Giant Leggings", carried = 18, load = load, load.father.mask = load.father.mask)
+        expect_equal(heavy$class, "Fat")
     })
 })
