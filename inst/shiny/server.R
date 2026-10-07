@@ -54,10 +54,10 @@ server <- function(input, output, session){
                     Load Inputs: <br>  
                     'Movement' is used to specify the heaviest movement type the character may have: Light (armor and other equipment at or below 25% of equip load, for a light roll),
                     Mid (at or below 50%, mid roll), Fat (at or below 100%, fat roll), or Poop (no limit: over 100%, the character can't roll and walks slowly). <br>
+                    'Endurance Level' is used to specify the character's current level in the Endurance stat - Endurance affects equip load. <br>
                     'Left Hand Weapon 1' through 'Right Hand Weapon 2' are the weapons, shields, catalysts, talismans and bows in the four weapon slots. Only their weight is used, and rings and ammunition weigh nothing,
                     so together with your armor they are everything you carry. They're chosen per slot because the game adds up equipment weight one item at a time, in slot order, with limited precision.
-                    A set weighing exactly 25.0% on paper can still give a mid roll, and with two or more talismans equipped, which slot holds what can make the difference. The app checks movement exactly as the game does. <br>
-                    'Endurance Level' is used to specify the character's current level in the Endurance stat - Endurance affects equip load. <br> <br>  
+                    A set weighing exactly 25.0% on paper can still give a mid roll, and with two or more talismans equipped, which slot holds what can make the difference. The app checks movement exactly as the game does. <br> <br>
 
                     Minimum Inputs: <br>  
                     Here, minima may be specified for a set of relevant metrics. Only combinations which achieve or exceed the specified minima will be considered. <br> <br>
@@ -460,10 +460,6 @@ server <- function(input, output, session){
                         choiceNames = NULL,
                         choiceValues = NULL
                     ),
-                    weapon.input("left.1", "Left Hand Weapon 1"),
-                    weapon.input("right.1", "Right Hand Weapon 1"),
-                    weapon.input("left.2", "Left Hand Weapon 2"),
-                    weapon.input("right.2", "Right Hand Weapon 2"),
                     shinyWidgets::autonumericInput(
                         inputId = "endurance.level",
                         label = "Endurance Level",
@@ -474,7 +470,11 @@ server <- function(input, output, session){
                         decimalPlaces = 0,
                         maximumValue = 99,
                         minimumValue = 0
-                    )
+                    ),
+                    weapon.input("left.1", "Left Hand Weapon 1"),
+                    weapon.input("right.1", "Right Hand Weapon 1"),
+                    weapon.input("left.2", "Left Hand Weapon 2"),
+                    weapon.input("right.2", "Right Hand Weapon 2")
                 )
             ) 
         ) 
