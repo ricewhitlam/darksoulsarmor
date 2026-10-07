@@ -1023,7 +1023,9 @@ server <- function(input, output, session){
             ) |>
             plotly::layout(
                 xaxis = list(title = "Armor weight limit"), yaxis = list(title = paste("Best", metric.label)),
-                shapes = shapes, annotations = annotations
+                shapes = shapes, annotations = annotations,
+                ## Hover (and click) by weight alone, so the pointer needn't be on the marker
+                hovermode = "x"
             )
         plotly::event_register(p, "plotly_click")
     })

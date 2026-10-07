@@ -292,8 +292,9 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         cols <- names(expected)
         expect_equal(result$data[, ..cols], expected)
         expect_equal(result$data$ROLL_LIMIT, rep(c("Fast", "Mid", "Fat"), c(9, 20, 25)))
-        expect_no_error(output$tradeoff_plot)
         expect_no_error(output$tradeoff_table)
+        ## Points are hovered and clicked by weight alone
+        expect_match(output$tradeoff_plot, '"hovermode":"x"', fixed = TRUE)
 
         ## The table: limit, best value named for the stat, roll, scores, pieces
         table <- tradeoff.table(result)
