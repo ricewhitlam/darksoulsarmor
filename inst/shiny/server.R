@@ -33,7 +33,7 @@ server <- function(input, output, session){
                     'Efficient Armor Only' filters the current selections in 'Head', 'Chest', 'Hands', and 'Legs' down to only those entries which do not penalize Stamina recovery. <br>
                     'Quiet Armor Only' filters the current selections in 'Chest' down to only those entries which are quiet. This helps with stealth, 
                     since enemies detect the player via sound, as explained here: ", 
-                    tags$a("How Enemies Detect You in Dark Souls: Part 1 - Sound", href = "https://www.youtube.com/watch?v=mdL75pAvt8I", target = "_blank"), " <br> <br>
+                    shiny::tags$a("How Enemies Detect You in Dark Souls: Part 1 - Sound", href = "https://www.youtube.com/watch?v=mdL75pAvt8I", target = "_blank"), " <br> <br>
 
                     Upgrade Inputs: <br>  
                     'Armor Level (Regular)' is used to specify the upgrade level of armor pieces ascended via regular titanite. Options are +0 thru +10. <br>  
@@ -46,7 +46,7 @@ server <- function(input, output, session){
                     The app will allow all three to be selected, but this is obviously not possible in game. <br>  
                     Havel's Ring and the Ring of Favor both boost equip load which is helpful when trying to achieve a faster roll speed. 
                     The Wolf Ring gives 40 poise and is immensely helpful in hitting key poise breakpoints. These are 21/46/61 for PVE and 31/61 for PVP, as explained here: ", 
-                    tags$a("Dark Souls Dissected #13 - Poise Mechanics (and glitches!)", href = "https://www.youtube.com/watch?v=pwffSOSzcAM", target = "_blank"), " . <br> <br>
+                    shiny::tags$a("Dark Souls Dissected #13 - Poise Mechanics (and glitches!)", href = "https://www.youtube.com/watch?v=pwffSOSzcAM", target = "_blank"), " . <br> <br>
 
                     Load Inputs: <br>  
                     'Roll Type' is used to specify the player's desired roll speed. <br>  
@@ -65,23 +65,23 @@ server <- function(input, output, session){
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
-                    tags$a("Stamina", href = "http://darksouls.wikidot.com/stamina#toc3 ", target = "_blank"), " <br> <br>
+                    shiny::tags$a("Stamina", href = "http://darksouls.wikidot.com/stamina#toc3 ", target = "_blank"), " <br> <br>
                     Durability is aggregated by taking the minimum i.e. the total durability for a set is the lowest durability across each component of the set. <br> <br> 
                     The impact to equip load of Mask of the Father (x1.05) is accounted for, but the impact to magic defense of Crown of Dusk (x0.7) is not. <br> <br>
                     Clicking on a row in the table will produce a set of links to the Dark Souls Wikidot site for the relevant armor pieces. <br> <br>",
                     "If maximizing Physical Defenses, Elemental Defenses, or Resistances, the following non-armor items are useful: <br>",
-                    tags$a("Ring of Steel Protection", href = "http://darksouls.wikidot.com/ring-of-steel-protection", target = "_blank"), " (+50 to all Physical Defenses) <br>",
-                    tags$a("Spell Stoneplate Ring", href = "http://darksouls.wikidot.com/spell-stoneplate-ring", target = "_blank"), " (+50 Magic Defense) <br>",
-                    tags$a("Flame Stoneplate Ring", href = "http://darksouls.wikidot.com/flame-stoneplate-ring", target = "_blank"), " (+50 Fire Defense) <br>",
-                    tags$a("Thunder Stoneplate Ring", href = "http://darksouls.wikidot.com/thunder-stoneplate-ring", target = "_blank"), " (+50 Lightning Defense) <br>",
-                    tags$a("Speckled Stoneplate Ring", href = "http://darksouls.wikidot.com/speckled-stoneplate-ring", target = "_blank"), " (+25 to all Elemental Defenses)  <br>",
-                    tags$a("Poisonbite Ring", href = "http://darksouls.wikidot.com/poisonbite-ring", target = "_blank"), " (x4 Unarmored Poison Resistance) <br>",
-                    tags$a("Bloodbite Ring", href = "http://darksouls.wikidot.com/bloodbite-ring", target = "_blank"), " (x4 Unarmored Bleed Resistance) <br>",
-                    tags$a("Cursebite Ring", href = "http://darksouls.wikidot.com/cursebite-ring", target = "_blank"), " (x4 Unarmored Curse Resistance) <br>",
-                    tags$a("Gargoyle's Halberd", href = "http://darksouls.wikidot.com/gargoyle-halberd/", target = "_blank"), " (x1.25 Unarm Pois/Bleed Res) <br>",
-                    tags$a("Gargoyle Tail Axe", href = "http://darksouls.wikidot.com/gargoyle-tail-axe", target = "_blank"), " (x2 Unarm Pois/Bleed Res) <br>",
-                    tags$a("Bloodshield", href = "http://darksouls.wikidot.com/bloodshield", target = "_blank"), " (x1.5 Unarm Pois/Bleed/Curse Res) <br>",
-                    tags$a("Humanity", href = "http://darksouls.wikidot.com/humanity", target = "_blank"), " (Boosts all Defenses and Curse Res, see Wiki) <br> <br>",
+                    shiny::tags$a("Ring of Steel Protection", href = "http://darksouls.wikidot.com/ring-of-steel-protection", target = "_blank"), " (+50 to all Physical Defenses) <br>",
+                    shiny::tags$a("Spell Stoneplate Ring", href = "http://darksouls.wikidot.com/spell-stoneplate-ring", target = "_blank"), " (+50 Magic Defense) <br>",
+                    shiny::tags$a("Flame Stoneplate Ring", href = "http://darksouls.wikidot.com/flame-stoneplate-ring", target = "_blank"), " (+50 Fire Defense) <br>",
+                    shiny::tags$a("Thunder Stoneplate Ring", href = "http://darksouls.wikidot.com/thunder-stoneplate-ring", target = "_blank"), " (+50 Lightning Defense) <br>",
+                    shiny::tags$a("Speckled Stoneplate Ring", href = "http://darksouls.wikidot.com/speckled-stoneplate-ring", target = "_blank"), " (+25 to all Elemental Defenses)  <br>",
+                    shiny::tags$a("Poisonbite Ring", href = "http://darksouls.wikidot.com/poisonbite-ring", target = "_blank"), " (x4 Unarmored Poison Resistance) <br>",
+                    shiny::tags$a("Bloodbite Ring", href = "http://darksouls.wikidot.com/bloodbite-ring", target = "_blank"), " (x4 Unarmored Bleed Resistance) <br>",
+                    shiny::tags$a("Cursebite Ring", href = "http://darksouls.wikidot.com/cursebite-ring", target = "_blank"), " (x4 Unarmored Curse Resistance) <br>",
+                    shiny::tags$a("Gargoyle's Halberd", href = "http://darksouls.wikidot.com/gargoyle-halberd/", target = "_blank"), " (x1.25 Unarm Pois/Bleed Res) <br>",
+                    shiny::tags$a("Gargoyle Tail Axe", href = "http://darksouls.wikidot.com/gargoyle-tail-axe", target = "_blank"), " (x2 Unarm Pois/Bleed Res) <br>",
+                    shiny::tags$a("Bloodshield", href = "http://darksouls.wikidot.com/bloodshield", target = "_blank"), " (x1.5 Unarm Pois/Bleed/Curse Res) <br>",
+                    shiny::tags$a("Humanity", href = "http://darksouls.wikidot.com/humanity", target = "_blank"), " (Boosts all Defenses and Curse Res, see Wiki) <br> <br>",
                     "
                     The improvements to magic defense of the Spell Stoneplate Ring and Speckled Stoneplate Ring apply after the reduction of Crown of Dusk. <br> <br>
                     In general, Toxic Resistance is the same as Poison Resistance, with the exception of the Poisonbite Ring: it does not improve Toxic Resistance. <br> <br>
@@ -91,7 +91,7 @@ server <- function(input, output, session){
                     Do not be surprised if it contradicts the information here. <br> <br>
 
                     This app is also available as an R package - here is the link to the codebase on GitHub: ",
-                    tags$a("https://github.com/ricewhitlam/darksoulsarmor", href = "https://github.com/ricewhitlam/darksoulsarmor", target = "_blank"),
+                    shiny::tags$a("https://github.com/ricewhitlam/darksoulsarmor", href = "https://github.com/ricewhitlam/darksoulsarmor", target = "_blank"),
                     ". To install the R package, run the following command in the R terminal: devtools::install_github(", '"', "https://github.com/ricewhitlam/darksoulsarmor", '"', ")
 
                 "))
@@ -246,10 +246,10 @@ server <- function(input, output, session){
                         stateInput = TRUE,
                         autocomplete = FALSE
                     ),
-                    shiny::column(6, p(),
-                        shiny::actionButton(inputId = "poise_only", label = "Poise Armor Only"), p(), 
-                        shiny::actionButton(inputId = "stam_only", label = "Efficient Armor Only"), p(), 
-                        shiny::actionButton(inputId = "quiet_only", label = "Quiet Armor Only"), p()
+                    shiny::column(6, shiny::p(),
+                        shiny::actionButton(inputId = "poise_only", label = "Poise Armor Only"), shiny::p(), 
+                        shiny::actionButton(inputId = "stam_only", label = "Efficient Armor Only"), shiny::p(), 
+                        shiny::actionButton(inputId = "quiet_only", label = "Quiet Armor Only"), shiny::p()
                     )
                 )
             ) 
@@ -741,10 +741,10 @@ server <- function(input, output, session){
                 easyClose = TRUE,
                 footer = NULL,
                 shiny::fluidRow(
-                    shiny::column(12, uiOutput("tabhead")),
-                    shiny::column(12, uiOutput("tabchest")),
-                    shiny::column(12, uiOutput("tabhands")),
-                    shiny::column(12, uiOutput("tablegs"))
+                    shiny::column(12, shiny::uiOutput("tabhead")),
+                    shiny::column(12, shiny::uiOutput("tabchest")),
+                    shiny::column(12, shiny::uiOutput("tabhands")),
+                    shiny::column(12, shiny::uiOutput("tablegs"))
                 )
             )
         )

@@ -24,8 +24,17 @@
 armor.application <- function(...){
     appDir <- system.file("shiny", package = "darksoulsarmor")
     if(appDir == ""){
-        stop("Could not find shiny. Try re-installing `darksoulsarmor`.", call. = FALSE)   
+        stop("Could not find shiny. Try re-installing `darksoulsarmor`.", call. = FALSE)
     }
     shiny::runApp(appDir = appDir, ...)
+}
+
+## The app's packages are listed in DESCRIPTION's Imports (so installing darksoulsarmor installs
+## them) but deliberately not imported in NAMESPACE, so library(darksoulsarmor) doesn't load the
+## whole Shiny stack for users who only call the search functions - they load when the app runs.
+## Their only uses are in inst/shiny, which R CMD check doesn't scan, so this never-called function
+## names one export of each to mark the Imports as used.
+app.imports <- function(){
+    list(shiny::runApp, shinyWidgets::pickerInput, bslib::page_sidebar, DT::datatable, shinybusy::show_modal_spinner)
 }
 

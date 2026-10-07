@@ -12,16 +12,16 @@ bslib::page_sidebar(
                 
                 shiny::actionButton(inputId = "guide", label = "User Guide"),
                 
-                hr(),
+                shiny::hr(),
 
                 shiny::actionButton(inputId = "filters", label = "Filter Inputs"),
                 shiny::actionButton(inputId = "upgrades", label = "Upgrade Inputs"),
                 shiny::actionButton(inputId = "rings", label = "Ring Inputs"),
                 shiny::actionButton(inputId = "constraints", label = "Load Inputs"),
-                actionButton(inputId = "minima", label = "Minimum Inputs"),
+                shiny::actionButton(inputId = "minima", label = "Minimum Inputs"),
                 shiny::actionButton(inputId = "weights", label = "Score Inputs"),
                 
-                hr(),
+                shiny::hr(),
 
                 shiny::actionButton(inputId = "go", label = "Refresh Armor Data"),
                 shiny::downloadButton("download","Download Armor Data"),
