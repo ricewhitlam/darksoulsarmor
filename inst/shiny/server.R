@@ -1005,14 +1005,15 @@ server <- function(input, output, session){
         }
     })
 
-    ## The table under the chart: limit, best value (named for the chosen stat), roll class, pieces,
-    ## then the set's scores - with the score itself as the value when it's the chosen stat, rather
-    ## than shown twice. Each set's real armor weight is in the chart's hover.
+    ## The table under the chart: limit, best value (named for the chosen stat), roll class, the
+    ## set's scores, then its pieces - with the score itself as the value when it's the chosen stat
+    ## (its quality beside it), rather than shown twice. Each set's real armor weight is in the
+    ## chart's hover.
     tradeoff.table <- function(result){
         if(result$metric == "SCORE"){
-            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE_RAW, ROLL, HEAD, CHEST, HANDS, LEGS, SCORE_QUALITY)])
+            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE_RAW, SCORE_QUALITY, ROLL, HEAD, CHEST, HANDS, LEGS)])
         }
-        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ROLL, HEAD, CHEST, HANDS, LEGS, SCORE_RAW, SCORE_QUALITY)]
+        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ROLL, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)]
         data.table::setnames(table, "BEST_VALUE", result$metric)
         return(table)
     }
