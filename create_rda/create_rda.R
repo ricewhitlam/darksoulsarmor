@@ -146,65 +146,6 @@ test.meansd <- function(weights = runif(10)){
 test.meansd()
 
 
-## Below chunk is in testing
-# ## Get weight mean, sd, covariances with metrics -> linear model where weight predicts score
-# ## This gives a way to identify which combos have high scores relative to their weight
-# weight.index <- 17
-# mean.weight <- N_inv*dsa_get_metric_mean(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, weight.index)
-# stddev.weight <- sqrt(N_inv*dsa_get_metric_var(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, weight.index, mean.weight))
-# covars.weight <- 
-#     foreach(i = seq_along(metric.indices), .combine = c, .packages = "dsa.rda") %dopar% {
-#         N_inv*dsa_get_metrics_covar(sel.head.data, sel.chest.data, sel.hands.data, sel.legs.data, weight.index, metric.indices[i], mean.weight, means[i])
-#     }
-
-
-# ## Function to check weight model
-# test.weightlm <- function(weights = runif(10)){
-#     weights <- weights/sum(weights)
-#     score.means <- means
-#     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
-#     lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
-#     lm.alpha <- -lm.beta*mean.weight
-#     lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
-#     working.head.data <- copy(total.head.data)
-#     working.chest.data <- copy(total.chest.data)
-#     working.hands.data <- copy(total.hands.data)
-#     working.legs.data <- copy(total.legs.data)
-#     working.head.data[, SCORE := 0]
-#     working.chest.data[, SCORE := 0]
-#     working.hands.data[, SCORE := 0]
-#     working.legs.data[, SCORE := 0]
-#     score.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
-#     for(i in seq_along(score.cols)){
-#         working.head.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-#         working.chest.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-#         working.hands.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-#         working.legs.data[, SCORE := SCORE+score.scalars[i]*(get(score.cols[i])-0.25*score.means[i])]
-#     }
-#     head.sample <- sample(seq_len(nrow(working.head.data)), 10000, replace = TRUE)
-#     chest.sample <- sample(seq_len(nrow(working.chest.data)), 10000, replace = TRUE)
-#     hands.sample <- sample(seq_len(nrow(working.hands.data)), 10000, replace = TRUE)
-#     legs.sample <- sample(seq_len(nrow(working.legs.data)), 10000, replace = TRUE)
-#     out <- working.head.data[head.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
-#     out <- out+working.chest.data[chest.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
-#     out <- out+working.hands.data[hands.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
-#     out <- out+working.legs.data[legs.sample][, c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_FORMULA", "LINK", "POISE", "DURABILITY") := NULL]
-#     out[, FITTED_SCORE := lm.alpha+lm.beta*WEIGHT]
-#     print(weights)
-#     print(lm.beta)
-#     print(lm.alpha)
-#     print(lm.rsqd)
-#     return(out)
-# }
-
-# d <- test.weightlm()
-# d[, plot(WEIGHT, SCORE)]
-# d[, lines(WEIGHT, FITTED_SCORE)]
-# d[, summary(lm(SCORE ~ WEIGHT))]
-# d[, plot(WEIGHT, SCORE-FITTED_SCORE)]
-# d[, qqnorm(SCORE-FITTED_SCORE)]
-
-
 ## Create other data files
 armor_00 <- fread("create_rda/armor_00.csv")
 armor_00 <- merge(armor_00, armor_metainfo, by = "ARMOR")

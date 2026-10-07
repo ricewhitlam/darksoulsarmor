@@ -653,8 +653,6 @@ server <- function(input, output, session){
                     data.table::data.table(
                         SCORE_RAW = numeric(0),
                         SCORE_QUALITY = character(0),
-                        # SCORE_RESID_RAW = numeric(0),
-                        # SCORE_RESID_PCT = numeric(0),
                         HEAD = factor(0),
                         CHEST = factor(0),
                         HANDS = factor(0),
@@ -700,8 +698,6 @@ server <- function(input, output, session){
                 )
             ) |> 
             DT::formatPercentage("PCT_LOAD", 2) |>
-            # DT::formatPercentage(c("SCORE_RESID_PCT"), 2) |>
-            # DT::formatCurrency("SCORE_RESID_RAW", currency = "", interval = 3, mark = ",", digits = 3) |>
             DT::formatCurrency(c(
               "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF",
                 "MAG_DEF", "FIRE_DEF", "LITNG_DEF",

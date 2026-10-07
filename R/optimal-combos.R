@@ -451,9 +451,6 @@ get.optimal.armor.combos <- function(
     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
     scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
     metric.cols <- scored.metrics$metric
-    # lm.beta <- sum(score.scalars*covars.weight)/stddev.weight^2
-    # lm.alpha <- -lm.beta*mean.weight
-    # lm.rsqd <- sign(lm.beta)*(lm.beta*stddev.weight)^2
 
     working.head.data[, SCORE := 0]
     working.chest.data[, SCORE := 0]
@@ -529,7 +526,6 @@ get.optimal.armor.combos <- function(
     if(n.head == 0 || n.chest == 0 || n.hands == 0 || n.legs == 0){
         out$data[, "SCORE_RAW" := numeric(0)]
         out$data[, "SCORE_QUALITY" := character(0)]
-        # out$data[, c("SCORE_RESID_RAW", "SCORE_RESID_PCT") := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
             c(
@@ -628,7 +624,6 @@ get.optimal.armor.combos <- function(
     if(is.na(init.size)){
         out$data[, "SCORE_RAW" := numeric(0)]
         out$data[, "SCORE_QUALITY" := character(0)]
-        # out$data[, c("SCORE_RESID_RAW", "SCORE_RESID_PCT") := numeric(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
             c(
@@ -682,10 +677,6 @@ get.optimal.armor.combos <- function(
                 working.chest.data,
                 working.hands.data,
                 working.legs.data
-                # ,
-                # lm.beta,
-                # lm.alpha,
-                # 1/sqrt(1-abs(lm.rsqd))
             )
         )
 
