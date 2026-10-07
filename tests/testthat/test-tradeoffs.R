@@ -36,11 +36,11 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
         ## Brute force over every combination of the selected pieces
         reg <- as.numeric(args$regular.level)
         twink <- as.numeric(args$twinkling.level)
-        slot <- function(u, f, sel){ darksoulsarmor:::get.interp.data(u, f, reg, twink)[ARMOR %in% sel] }
-        h <- slot(head.data.unupgraded, head.data.fullupgrade, args$head.filter)
-        c <- slot(chest.data.unupgraded, chest.data.fullupgrade, args$chest.filter)
-        g <- slot(hands.data.unupgraded, hands.data.fullupgrade, args$hands.filter)
-        l <- slot(legs.data.unupgraded, legs.data.fullupgrade, args$legs.filter)
+        slot <- function(u, sel){ darksoulsarmor:::get.interp.data(u, reg, twink)[ARMOR %in% sel] }
+        h <- slot(head.data.unupgraded, args$head.filter)
+        c <- slot(chest.data.unupgraded, args$chest.filter)
+        g <- slot(hands.data.unupgraded, args$hands.filter)
+        l <- slot(legs.data.unupgraded, args$legs.filter)
         grid <- data.table::CJ(H = seq_len(nrow(h)), C = seq_len(nrow(c)), G = seq_len(nrow(g)), L = seq_len(nrow(l)))
         for(col in c(scored.cols, "POISE", "WEIGHT")){
             data.table::set(grid, j = col, value = h[[col]][grid$H] + c[[col]][grid$C] + g[[col]][grid$G] + l[[col]][grid$L])

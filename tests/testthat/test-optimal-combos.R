@@ -206,10 +206,10 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
         ## Brute force: every combination of the selected pieces at the selected levels
         reg <- as.numeric(args$regular.level)
         twink <- as.numeric(args$twinkling.level)
-        h <- darksoulsarmor:::get.interp.data(head.data.unupgraded, head.data.fullupgrade, reg, twink)[ARMOR %in% args$head.filter]
-        c <- darksoulsarmor:::get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, reg, twink)[ARMOR %in% args$chest.filter]
-        g <- darksoulsarmor:::get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, reg, twink)[ARMOR %in% args$hands.filter]
-        l <- darksoulsarmor:::get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, reg, twink)[ARMOR %in% args$legs.filter]
+        h <- darksoulsarmor:::get.interp.data(head.data.unupgraded, reg, twink)[ARMOR %in% args$head.filter]
+        c <- darksoulsarmor:::get.interp.data(chest.data.unupgraded, reg, twink)[ARMOR %in% args$chest.filter]
+        g <- darksoulsarmor:::get.interp.data(hands.data.unupgraded, reg, twink)[ARMOR %in% args$hands.filter]
+        l <- darksoulsarmor:::get.interp.data(legs.data.unupgraded, reg, twink)[ARMOR %in% args$legs.filter]
 
         ## Each piece's score and each slot's order exactly as get.optimal.armor.combos computes
         ## them, so totals are bit-identical to SCORE_RAW and row positions match the C++ search's

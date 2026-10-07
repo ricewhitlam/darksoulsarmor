@@ -8,12 +8,14 @@ require("devtools")
 pkgload::load_all(".")
 
 
-## Load armor datasets
+## Load armor datasets. Strike, slash and thrust defense in armor_00.csv are the game's exact
+## 32-bit values (physical defense times the piece's per-type adjustment), written to 9 significant
+## digits; float32() snaps them back to exactly those values. Every other stat is a whole number or
+## a weight/modifier stored as entered, so it is already exact.
 armor_metainfo <- fread("create_rda/armor_metainfo.csv")
 armor_00 <- fread("create_rda/armor_00.csv")
+armor_00[, c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF") := lapply(.SD, float32), .SDcols = c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF")]
 armor_00 <- merge(armor_00, armor_metainfo[, .(ARMOR, TYPE, UPGRADE_TYPE)], by = "ARMOR")
-armor_10 <- fread("create_rda/armor_10.csv")
-armor_10 <- merge(armor_10, armor_metainfo[, .(ARMOR, TYPE, UPGRADE_TYPE)], by = "ARMOR")
 
 
 ## Create datasets inclusive of all upgrades
@@ -23,17 +25,17 @@ total.hands.data <- armor_00[TYPE == "Hands" & UPGRADE_TYPE == "None"][, c("TYPE
 total.legs.data <- armor_00[TYPE == "Legs" & UPGRADE_TYPE == "None"][, c("TYPE", "UPGRADE_TYPE") := NULL]
 
 for(reg in 0:10){
-    total.head.data <- rbind(total.head.data, get.interp.data(armor_00[TYPE == "Head" & UPGRADE_TYPE == "Regular"], armor_10[TYPE == "Head" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
-    total.chest.data <- rbind(total.chest.data, get.interp.data(armor_00[TYPE == "Chest" & UPGRADE_TYPE == "Regular"], armor_10[TYPE == "Chest" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
-    total.hands.data <- rbind(total.hands.data, get.interp.data(armor_00[TYPE == "Hands" & UPGRADE_TYPE == "Regular"], armor_10[TYPE == "Hands" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
-    total.legs.data <- rbind(total.legs.data, get.interp.data(armor_00[TYPE == "Legs" & UPGRADE_TYPE == "Regular"], armor_10[TYPE == "Legs" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
+    total.head.data <- rbind(total.head.data, get.interp.data(armor_00[TYPE == "Head" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
+    total.chest.data <- rbind(total.chest.data, get.interp.data(armor_00[TYPE == "Chest" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
+    total.hands.data <- rbind(total.hands.data, get.interp.data(armor_00[TYPE == "Hands" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
+    total.legs.data <- rbind(total.legs.data, get.interp.data(armor_00[TYPE == "Legs" & UPGRADE_TYPE == "Regular"], reg, 0)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", reg)])
 }
 
 for(twink in 0:5){
-    total.head.data <- rbind(total.head.data, get.interp.data(armor_00[TYPE == "Head" & UPGRADE_TYPE == "Twinkling"], armor_10[TYPE == "Head" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
-    total.chest.data <- rbind(total.chest.data, get.interp.data(armor_00[TYPE == "Chest" & UPGRADE_TYPE == "Twinkling"], armor_10[TYPE == "Chest" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
-    total.hands.data <- rbind(total.hands.data, get.interp.data(armor_00[TYPE == "Hands" & UPGRADE_TYPE == "Twinkling"], armor_10[TYPE == "Hands" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
-    total.legs.data <- rbind(total.legs.data, get.interp.data(armor_00[TYPE == "Legs" & UPGRADE_TYPE == "Twinkling"], armor_10[TYPE == "Legs" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
+    total.head.data <- rbind(total.head.data, get.interp.data(armor_00[TYPE == "Head" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
+    total.chest.data <- rbind(total.chest.data, get.interp.data(armor_00[TYPE == "Chest" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
+    total.hands.data <- rbind(total.hands.data, get.interp.data(armor_00[TYPE == "Hands" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
+    total.legs.data <- rbind(total.legs.data, get.interp.data(armor_00[TYPE == "Legs" & UPGRADE_TYPE == "Twinkling"], 0, twink)[, c("TYPE", "UPGRADE_TYPE") := NULL][, ARMOR := paste0(ARMOR, " +", twink)])
 }
 
 
@@ -97,17 +99,17 @@ corrs <- pooled.stats$corrs
 ## population is built with a single get.interp.data() call per slot (matching exactly how
 ## get.optimal.armor.combos/get.all.armor.combos build their own working data at one upgrade
 ## level - non-upgradeable pieces are included automatically, at their fixed base stats, since
-## get.interp.data() gives UPGRADE_TYPE == "None" pieces weight 0 rather than excluding them),
+## get.interp.data() keeps UPGRADE_TYPE == "None" pieces at their +0 values rather than excluding them),
 ## not the reg/twink-stacking loop used for total.*.data above. "overall" holds the same values
 ## as means/stddevs/corrs above, included here too for a single consistent access point.
 mean.stddev.corr.list <- list()
 for(reg in 0:10){
     for(twink in 0:5){
         level.key <- paste0(reg, "_", twink)
-        level.head.data <- get.interp.data(armor_00[TYPE == "Head"], armor_10[TYPE == "Head"], reg, twink)
-        level.chest.data <- get.interp.data(armor_00[TYPE == "Chest"], armor_10[TYPE == "Chest"], reg, twink)
-        level.hands.data <- get.interp.data(armor_00[TYPE == "Hands"], armor_10[TYPE == "Hands"], reg, twink)
-        level.legs.data <- get.interp.data(armor_00[TYPE == "Legs"], armor_10[TYPE == "Legs"], reg, twink)
+        level.head.data <- get.interp.data(armor_00[TYPE == "Head"], reg, twink)
+        level.chest.data <- get.interp.data(armor_00[TYPE == "Chest"], reg, twink)
+        level.hands.data <- get.interp.data(armor_00[TYPE == "Hands"], reg, twink)
+        level.legs.data <- get.interp.data(armor_00[TYPE == "Legs"], reg, twink)
         mean.stddev.corr.list[[level.key]] <- compute.mean.sd.corr(level.head.data, level.chest.data, level.hands.data, level.legs.data, metric.cols)
     }
 }
@@ -148,9 +150,8 @@ test.meansd()
 
 ## Create other data files
 armor_00 <- fread("create_rda/armor_00.csv")
+armor_00[, c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF") := lapply(.SD, float32), .SDcols = c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF")]
 armor_00 <- merge(armor_00, armor_metainfo, by = "ARMOR")
-armor_10 <- fread("create_rda/armor_10.csv")
-armor_10 <- merge(armor_10, armor_metainfo, by = "ARMOR")
 
 colorder <- 
     c(
@@ -170,14 +171,6 @@ setcolorder(hands.data.unupgraded, colorder)
 legs.data.unupgraded <- armor_00[TYPE == "Legs"][, c("INDEX", "TYPE", "SET") := NULL]
 setcolorder(legs.data.unupgraded, colorder)
 
-head.data.fullupgrade <- armor_10[TYPE == "Head"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(head.data.fullupgrade, colorder)
-chest.data.fullupgrade <- armor_10[TYPE == "Chest"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(chest.data.fullupgrade, colorder)
-hands.data.fullupgrade <- armor_10[TYPE == "Hands"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(hands.data.fullupgrade, colorder)
-legs.data.fullupgrade <- armor_10[TYPE == "Legs"][, c("INDEX", "TYPE", "SET") := NULL]
-setcolorder(legs.data.fullupgrade, colorder)
 
 areas <- 
     c(
@@ -201,10 +194,6 @@ use_data(
     chest.data.unupgraded,
     hands.data.unupgraded,
     legs.data.unupgraded,
-    head.data.fullupgrade,
-    chest.data.fullupgrade,
-    hands.data.fullupgrade,
-    legs.data.fullupgrade,
     areas,
     classes,
     overwrite = TRUE

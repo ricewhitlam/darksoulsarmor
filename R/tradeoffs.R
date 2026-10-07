@@ -186,14 +186,14 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.wei
 ## A single defense/resistance's total for the given combinations (NA pieces give NA), at the given
 ## upgrade levels
 metric.total <- function(metric, head, chest, hands, legs, regular.level, twinkling.level){
-    level.value <- function(unupgraded, fullupgrade){
-        d <- get.interp.data(unupgraded, fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    level.value <- function(unupgraded){
+        d <- get.interp.data(unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
         stats::setNames(d[[metric]], d$ARMOR)
     }
     unname(
-        level.value(head.data.unupgraded, head.data.fullupgrade)[head]+
-        level.value(chest.data.unupgraded, chest.data.fullupgrade)[chest]+
-        level.value(hands.data.unupgraded, hands.data.fullupgrade)[hands]+
-        level.value(legs.data.unupgraded, legs.data.fullupgrade)[legs]
+        level.value(head.data.unupgraded)[head]+
+        level.value(chest.data.unupgraded)[chest]+
+        level.value(hands.data.unupgraded)[hands]+
+        level.value(legs.data.unupgraded)[legs]
     )
 }

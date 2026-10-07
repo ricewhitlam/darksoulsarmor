@@ -8,17 +8,17 @@
 ## get.optimal.armor.combos actually ranks combos in the direction its weights imply.
 
 scored.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
-interp <- function(unupgraded, fullupgrade, reg, twink){ darksoulsarmor:::get.interp.data(unupgraded, fullupgrade, reg, twink) }
+interp <- function(unupgraded, reg, twink){ darksoulsarmor:::get.interp.data(unupgraded, reg, twink) }
 
 ## create_rda.R's pooled population for one slot: non-upgradeable pieces once, Regular pieces at
 ## each of +0-+10, Twinkling pieces at each of +0-+5
-pooled.slot <- function(unupgraded, fullupgrade){
+pooled.slot <- function(unupgraded){
     out <- unupgraded[UPGRADE_TYPE == "None"]
     for(reg in 0:10){
-        out <- rbind(out, interp(unupgraded[UPGRADE_TYPE == "Regular"], fullupgrade[UPGRADE_TYPE == "Regular"], reg, 0))
+        out <- rbind(out, interp(unupgraded[UPGRADE_TYPE == "Regular"], reg, 0))
     }
     for(twink in 0:5){
-        out <- rbind(out, interp(unupgraded[UPGRADE_TYPE == "Twinkling"], fullupgrade[UPGRADE_TYPE == "Twinkling"], 0, twink))
+        out <- rbind(out, interp(unupgraded[UPGRADE_TYPE == "Twinkling"], 0, twink))
     }
     out
 }
@@ -32,10 +32,10 @@ closed.form.stats <- function(head, chest, hands, legs){
     list(means = slot.means(head) + slot.means(chest) + slot.means(hands) + slot.means(legs), stddevs = stddevs, corrs = covar/outer(stddevs, stddevs))
 }
 
-pooled.head <- pooled.slot(head.data.unupgraded, head.data.fullupgrade)
-pooled.chest <- pooled.slot(chest.data.unupgraded, chest.data.fullupgrade)
-pooled.hands <- pooled.slot(hands.data.unupgraded, hands.data.fullupgrade)
-pooled.legs <- pooled.slot(legs.data.unupgraded, legs.data.fullupgrade)
+pooled.head <- pooled.slot(head.data.unupgraded)
+pooled.chest <- pooled.slot(chest.data.unupgraded)
+pooled.hands <- pooled.slot(hands.data.unupgraded)
+pooled.legs <- pooled.slot(legs.data.unupgraded)
 
 test_that("the shipped pooled statistics match the shipped armor data", {
     expected <- closed.form.stats(pooled.head, pooled.chest, pooled.hands, pooled.legs)
@@ -52,10 +52,10 @@ test_that("the shipped per-upgrade-level statistics match the shipped armor data
         for(twink in 0:5){
             key <- paste0(reg, "_", twink)
             expected <- closed.form.stats(
-                interp(head.data.unupgraded, head.data.fullupgrade, reg, twink),
-                interp(chest.data.unupgraded, chest.data.fullupgrade, reg, twink),
-                interp(hands.data.unupgraded, hands.data.fullupgrade, reg, twink),
-                interp(legs.data.unupgraded, legs.data.fullupgrade, reg, twink)
+                interp(head.data.unupgraded, reg, twink),
+                interp(chest.data.unupgraded, reg, twink),
+                interp(hands.data.unupgraded, reg, twink),
+                interp(legs.data.unupgraded, reg, twink)
             )
             expect_equal(level.list[[key]], expected, tolerance = 1e-10, info = key)
         }

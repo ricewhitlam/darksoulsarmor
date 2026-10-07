@@ -1,55 +1,49 @@
 
 
-## Dark Souls armor pieces have standard upgrade patterns based on armor type (Regular vs Twinkling) and on attribute type (Defense vs Resistance)
-## This app has the full data for both unupgraded and fully upgraded armor pieces as well as the upgrade patterns
-## Therefore, the unupgraded and fully upgraded values for an attribute can be combined via weighted average to determine the values for any upgrade level
+## Dark Souls computes an upgraded armor piece's stats from its +0 stats: each defense or resistance
+## at an upgrade level is its +0 value times that level's rate, in 32-bit floating point. The
+## rates below are the game's own (its ReinforceParamProtector table). Regular armor (upgraded
+## with titanite, +0 to +10) and twinkling armor (twinkling titanite, +0 to +5) each have one set
+## for defenses and another for resistances. Strike, slash and thrust defense follow the defense
+## rate: the game derives them from upgraded physical defense, and applying the rate to their exact
+## +0 values instead gives the same values to within the last bit of a 32-bit float.
+REGULAR.DEF.RATES <- c(1, 1.1, 1.2, 1.3, 1.43, 1.56, 1.69, 1.85, 2.01, 2.17, 2.42)
+REGULAR.RES.RATES <- c(1, 1, 1, 1, 1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.4)
+TWINKLING.DEF.RATES <- c(1, 1.08, 1.19, 1.29, 1.39, 1.55)
+TWINKLING.RES.RATES <- c(1, 1.05, 1.09, 1.14, 1.18, 1.27)
 
 
-## Function to interpolate to a dataset with specified regular upgrade level and twinkling upgrade level from the unpgraded and fully upgraded datasets
-get.interp.data <- function(data.unupgraded, data.fullupgrade, reg.lvl, twink.lvl){
+## Rounds each value to the nearest 32-bit float (ties to even): the precision the game stores and
+## computes armor stats in. writeBin() narrows each value to a C float and readBin() widens it back,
+## exactly.
+float32 <- function(x){
+    readBin(writeBin(as.numeric(x), raw(), size = 4), "double", size = 4, n = length(x))
+}
 
-    ## Check that the unupgraded and fully upgraded datasets are compatible
-    if(!all(data.unupgraded$ARMOR == data.fullupgrade$ARMOR)){
-        data.table::setorder(data.unupgraded, ARMOR)
-        data.table::setorder(data.fullupgrade, ARMOR)
-        if(!all(data.unupgraded$ARMOR == data.fullupgrade$ARMOR)){
-            stop("Armor sets are incompatible - check underlying data")
-        }
-    } else if(ncol(data.unupgraded) != ncol(data.fullupgrade)){
-        stop("Armor sets are incompatible - check underlying data")
-    } else if(!all(colnames(data.unupgraded) == colnames(data.fullupgrade))){
-        stop("Armor sets are incompatible - check underlying data")
-    }
 
-    ## Interpolation functions for upgrading
-    ## Given the upgrade level of an armor piece, get the appropriate weight for the fully upgraded value in the weighted average
-    get.reg.def.weight_10 <- approxfun(x = 0:10, y = c(0, 10/142, 20/142, 30/142, 43/142, 56/142, 69/142, 85/142, 101/142, 117/142, 1))
-    get.reg.res.weight_10 <- approxfun(x = 0:10, y = c(0, 0, 0, 0, 1/8, 2/8, 3/8, 4/8, 5/8, 6/8, 1))
-    get.twink.def.weight_05 <- approxfun(x = 0:5, y = c(0, 8/55, 19/55, 29/55, 39/55, 1))
-    get.twink.res.weight_05 <- approxfun(x = 0:5, y = c(0, 5/27, 9/27, 14/27, 18/27, 1))
+## A slot table (head.data.unupgraded etc.) at the given regular and twinkling upgrade levels.
+## Values are exact, i.e. what the game computes - not rounded for display. Pieces that can't be
+## upgraded (UPGRADE_TYPE == "None") keep their +0 values, as do POISE, DURABILITY, WEIGHT,
+## STAM_MOD and SOUND_MOD, which never change with upgrade level.
+get.interp.data <- function(data.unupgraded, reg.lvl, twink.lvl){
 
-    ## Define column names and attribute weights
     def.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF")
     res.cols <- c("BLEED_RES", "POIS_RES", "CURSE_RES")
 
-    ## Both tables are now row-aligned by ARMOR, so each metric's interpolated value is simply a
-    ## per-row weighted average of the unupgraded and fully upgraded values: a Regular piece
-    ## blends toward data.fullupgrade by its regular-upgrade weight, a Twinkling piece by its
-    ## twinkling weight, and a piece that cannot be upgraded (UPGRADE_TYPE == "None") stays at
-    ## weight 0, i.e. exactly its data.unupgraded value. POISE, DURABILITY, WEIGHT, STAM_MOD, and
-    ## SOUND_MOD never change with upgrade level, so they are left untouched at their
-    ## data.unupgraded values below.
+    ## Each piece's rates, by its upgrade type, as the game's 32-bit values
     is.reg <- data.unupgraded$UPGRADE_TYPE == "Regular"
     is.twink <- data.unupgraded$UPGRADE_TYPE == "Twinkling"
-    def.weight <- ifelse(is.reg, get.reg.def.weight_10(reg.lvl), ifelse(is.twink, get.twink.def.weight_05(twink.lvl), 0))
-    res.weight <- ifelse(is.reg, get.reg.res.weight_10(reg.lvl), ifelse(is.twink, get.twink.res.weight_05(twink.lvl), 0))
+    def.rate <- float32(ifelse(is.reg, REGULAR.DEF.RATES[reg.lvl+1], ifelse(is.twink, TWINKLING.DEF.RATES[twink.lvl+1], 1)))
+    res.rate <- float32(ifelse(is.reg, REGULAR.RES.RATES[reg.lvl+1], ifelse(is.twink, TWINKLING.RES.RATES[twink.lvl+1], 1)))
 
+    ## The product of two 32-bit values is exact in double precision, so rounding it once to 32 bits
+    ## is exactly the game's 32-bit multiplication
     data.final <- data.table::copy(data.unupgraded)
     for(col in def.cols){
-        data.table::set(data.final, j = col, value = round((1-def.weight)*data.unupgraded[[col]]+def.weight*data.fullupgrade[[col]], 1))
+        data.table::set(data.final, j = col, value = float32(data.unupgraded[[col]]*def.rate))
     }
     for(col in res.cols){
-        data.table::set(data.final, j = col, value = round((1-res.weight)*data.unupgraded[[col]]+res.weight*data.fullupgrade[[col]], 1))
+        data.table::set(data.final, j = col, value = float32(data.unupgraded[[col]]*res.rate))
     }
 
     ## Tidy data

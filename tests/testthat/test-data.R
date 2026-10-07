@@ -4,24 +4,26 @@
 ## guard every later edit to the data.
 
 slots <- list(
-    head = list(unupgraded = head.data.unupgraded, fullupgrade = head.data.fullupgrade, none = "No Head"),
-    chest = list(unupgraded = chest.data.unupgraded, fullupgrade = chest.data.fullupgrade, none = "No Chest"),
-    hands = list(unupgraded = hands.data.unupgraded, fullupgrade = hands.data.fullupgrade, none = "No Hands"),
-    legs = list(unupgraded = legs.data.unupgraded, fullupgrade = legs.data.fullupgrade, none = "No Legs")
+    head = list(unupgraded = head.data.unupgraded, none = "No Head"),
+    chest = list(unupgraded = chest.data.unupgraded, none = "No Chest"),
+    hands = list(unupgraded = hands.data.unupgraded, none = "No Hands"),
+    legs = list(unupgraded = legs.data.unupgraded, none = "No Legs")
 )
 def.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF")
 res.cols <- c("BLEED_RES", "POIS_RES", "CURSE_RES")
-meta.cols <- c("ARMOR", "UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "LINK")
+fixed.cols <- c("POISE", "DURABILITY", "WEIGHT", "STAM_MOD", "SOUND_MOD")
 
-test_that("each slot's +0 and max tables list the same unique pieces with the same metadata", {
+## Every stat as displayed, recorded by hand: each piece at +0 (from the wiki) and at max upgrade
+## (read in-game). Displays round to one decimal, so these are observations to check the exact
+## values against, not data the package uses.
+displayed.00 <- data.table::fread(test_path("fixtures", "displayed_00.csv"))
+displayed.10 <- data.table::fread(test_path("fixtures", "displayed_10.csv"))
+
+test_that("each slot lists unique pieces with no missing values", {
     for(slot in names(slots)){
         u <- slots[[slot]]$unupgraded
-        f <- slots[[slot]]$fullupgrade
         expect_false(anyDuplicated(u$ARMOR) > 0, info = slot)
-        expect_identical(u[, ..meta.cols], f[, ..meta.cols], info = slot)
-        expect_identical(names(u), names(f), info = slot)
         expect_false(anyNA(u), info = slot)
-        expect_false(anyNA(f), info = slot)
     }
 })
 
@@ -49,47 +51,60 @@ test_that("categorical columns only hold known values, and every area name match
     expect_true(all(areas %in% all.listed), info = paste(setdiff(areas, all.listed), collapse = ", "))
 })
 
-test_that("stats are consistent between +0 and max", {
+test_that("stats are valid at +0", {
     for(slot in names(slots)){
         u <- slots[[slot]]$unupgraded
-        f <- slots[[slot]]$fullupgrade
         ## STAM_MOD is legitimately negative for heavy armor
         for(col in c(def.cols, res.cols, "POISE", "DURABILITY", "WEIGHT")){
-            expect_true(all(u[[col]] >= 0) && all(f[[col]] >= 0), info = paste(slot, col))
+            expect_true(all(u[[col]] >= 0), info = paste(slot, col))
         }
-        ## The upgrade interpolation (get.interp.data) assumes these never change with upgrade level
-        for(col in c("POISE", "DURABILITY", "WEIGHT", "STAM_MOD", "SOUND_MOD")){
-            expect_equal(f[[col]], u[[col]], info = paste(slot, col))
-        }
-        none <- u$UPGRADE_TYPE == "None"
-        for(col in c(def.cols, res.cols)){
-            expect_equal(f[[col]][none], u[[col]][none], info = paste(slot, col))
-            expect_true(all(f[[col]][!none] >= u[[col]][!none]), info = paste(slot, col))
-        }
-        ## The developers' entered values are whole numbers at +0 - strike/slash/thrust aren't
+        ## The developers' entered values are whole numbers - strike/slash/thrust aren't (below)
         for(col in c("PHYS_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", res.cols)){
             expect_true(all(u[[col]] == round(u[[col]])), info = paste(slot, col))
         }
     }
 })
 
-## Every upgradeable piece's max value is its +0 value times the standard full-upgrade multiplier
-## (the last entry of each pattern in get.interp.data), up to rounding. The game itself rounds
-## exact .x5 ties inconsistently (e.g. 7 x 1.55 = 10.85 displays as 10.8, but 31 x 1.55 = 48.05
-## as 48.1), and strike/slash/thrust aren't whole numbers at +0, so their displayed +0 is itself
-## rounded - real values can sit a little over 0.15 from the pattern. The 1.0 tolerance is for
-## catching data-entry typos (a wrong digit), not rounding.
-test_that("every upgradeable piece's max value follows the standard upgrade multiplier", {
-    full.multiplier <- list(Regular = c(def = 2.42, res = 1.40), Twinkling = c(def = 1.55, res = 1.27))
+## The game stores strike, slash and thrust defense as a whole-number percentage of physical
+## defense (e.g. Black Sorcerer Hat: strike 103%) and computes them in 32-bit floating point, so
+## each must be exactly float32(physical x percentage). A typo in one of these 9-digit values
+## would break that.
+test_that("strike, slash and thrust are physical defense times a whole-number percentage, in 32-bit", {
+    float32 <- darksoulsarmor:::float32
     for(slot in names(slots)){
         u <- slots[[slot]]$unupgraded
-        f <- slots[[slot]]$fullupgrade
-        for(type in c("Regular", "Twinkling")){
-            rows <- u$UPGRADE_TYPE == type
+        for(col in c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF")){
+            expect_true(all(float32(u[[col]]) == u[[col]]), info = paste(slot, col))
+            pct <- ifelse(u$PHYS_DEF > 0, round(100*u[[col]]/u$PHYS_DEF), 100)
+            rebuilt <- float32(u$PHYS_DEF*float32(pct/100))
+            expect_true(all(rebuilt == u[[col]]), info = paste(slot, col, paste(u$ARMOR[rebuilt != u[[col]]], collapse = ", ")))
+        }
+    }
+})
+
+test_that("the displayed values cover exactly the package's pieces", {
+    pieces <- sort(unlist(lapply(slots, function(s){ s$unupgraded$ARMOR }), use.names = FALSE))
+    expect_identical(sort(displayed.00$ARMOR), pieces)
+    expect_identical(sort(displayed.10$ARMOR), pieces)
+})
+
+## At +0, and at max upgrade (+10 regular, +5 twinkling; pieces that can't be upgraded stay at +0),
+## every exact value - stored, or computed from it by get.interp.data - must display as the
+## recorded value: within half a display step, plus 32-bit noise. How the game rounds an exact tie
+## (e.g. 9.25) isn't consistent, so a tie may display either way. Stats that never change with
+## upgrade level must match exactly.
+test_that("the exact values are within half a display step of the displayed values, at +0 and max", {
+    for(slot in names(slots)){
+        u <- slots[[slot]]$unupgraded
+        at.max <- darksoulsarmor:::get.interp.data(u, 10, 5)
+        for(level in list(list(name = "+0", exact = u, shown = displayed.00), list(name = "max", exact = at.max, shown = displayed.10))){
+            shown <- level$shown[match(level$exact$ARMOR, ARMOR)]
             for(col in c(def.cols, res.cols)){
-                m <- full.multiplier[[type]][[if(col %in% def.cols) "def" else "res"]]
-                off <- abs(f[[col]][rows] - u[[col]][rows]*m) > 1.0
-                expect_false(any(off), info = paste(slot, type, col, paste(u$ARMOR[rows][off], collapse = ", ")))
+                far <- abs(level$exact[[col]] - shown[[col]]) > 0.05 + 1e-5
+                expect_false(any(far), info = paste(slot, level$name, col, paste(level$exact$ARMOR[far], collapse = ", ")))
+            }
+            for(col in fixed.cols){
+                expect_equal(level$exact[[col]], shown[[col]], info = paste(slot, level$name, col))
             }
         }
     }
@@ -97,14 +112,12 @@ test_that("every upgradeable piece's max value follows the standard upgrade mult
 
 test_that("each slot has exactly one always-available, all-zero 'No <slot>' row", {
     for(slot in names(slots)){
-        for(tbl in slots[[slot]][c("unupgraded", "fullupgrade")]){
-            none <- tbl[ARMOR == slots[[slot]]$none]
-            expect_equal(nrow(none), 1, info = slot)
-            expect_true(all(unlist(none[, c(def.cols, res.cols, "POISE", "WEIGHT", "STAM_MOD"), with = FALSE]) == 0), info = slot)
-            expect_equal(none$DURABILITY, 999, info = slot)
-            expect_equal(none$SOUND_MOD, 1, info = slot)
-            expect_equal(none$AREA_MATCH_TYPE, "ALWAYS", info = slot)
-            expect_equal(none$UPGRADE_TYPE, "None", info = slot)
-        }
+        none <- slots[[slot]]$unupgraded[ARMOR == slots[[slot]]$none]
+        expect_equal(nrow(none), 1, info = slot)
+        expect_true(all(unlist(none[, c(def.cols, res.cols, "POISE", "WEIGHT", "STAM_MOD"), with = FALSE]) == 0), info = slot)
+        expect_equal(none$DURABILITY, 999, info = slot)
+        expect_equal(none$SOUND_MOD, 1, info = slot)
+        expect_equal(none$AREA_MATCH_TYPE, "ALWAYS", info = slot)
+        expect_equal(none$UPGRADE_TYPE, "None", info = slot)
     }
 })

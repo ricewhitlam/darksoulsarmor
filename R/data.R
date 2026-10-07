@@ -6,8 +6,7 @@ utils::globalVariables(c(
     "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "SCORE_RAW", "SCORE_QUALITY",
     "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
     "areas", "classes", "means", "stddevs", "corrs",
-    "head.data.unupgraded", "head.data.fullupgrade", "chest.data.unupgraded", "chest.data.fullupgrade",
-    "hands.data.unupgraded", "hands.data.fullupgrade", "legs.data.unupgraded", "legs.data.fullupgrade",
+    "head.data.unupgraded", "chest.data.unupgraded", "hands.data.unupgraded", "legs.data.unupgraded",
     "METRICS", "metric", "weight.index", "minima.index",
     "HEAD", "CHEST", "HANDS", "LEGS", "ARMOR_WEIGHT", "TOTAL_POISE", "ARMOR_WEIGHT_LIMIT", "BEST_VALUE", "."
 ))
@@ -111,42 +110,6 @@ NULL
 #' Table of all unupgraded leg armor pieces
 #'
 #' @name legs.data.unupgraded
-#' @format
-#' See \code{\link{head.data.unupgraded}}
-#' @docType data
-#' @keywords data
-NULL
-
-#' Table of all fully upgraded head armor pieces
-#'
-#' @name head.data.fullupgrade
-#' @format
-#' See \code{\link{head.data.unupgraded}}
-#' @docType data
-#' @keywords data
-NULL
-
-#' Table of all fully upgraded chest armor pieces
-#'
-#' @name chest.data.fullupgrade
-#' @format
-#' See \code{\link{head.data.unupgraded}}
-#' @docType data
-#' @keywords data
-NULL
-
-#' Table of all fully upgraded hand armor pieces
-#'
-#' @name hands.data.fullupgrade
-#' @format
-#' See \code{\link{head.data.unupgraded}}
-#' @docType data
-#' @keywords data
-NULL
-
-#' Table of all fully upgraded leg armor pieces
-#'
-#' @name legs.data.fullupgrade
 #' @format
 #' See \code{\link{head.data.unupgraded}}
 #' @docType data

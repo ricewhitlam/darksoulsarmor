@@ -5,10 +5,10 @@
 ## directly on a few small tables against a brute-force sum.
 test_that("all_armor_combinations sums every combination's stats correctly", {
     set.seed(20261009)
-    h <- darksoulsarmor:::get.interp.data(head.data.unupgraded, head.data.fullupgrade, 7, 3)[sample(.N, 3)]
-    c <- darksoulsarmor:::get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, 7, 3)[sample(.N, 4)]
-    g <- darksoulsarmor:::get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, 7, 3)[sample(.N, 2)]
-    l <- darksoulsarmor:::get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, 7, 3)[sample(.N, 5)]
+    h <- darksoulsarmor:::get.interp.data(head.data.unupgraded, 7, 3)[sample(.N, 3)]
+    c <- darksoulsarmor:::get.interp.data(chest.data.unupgraded, 7, 3)[sample(.N, 4)]
+    g <- darksoulsarmor:::get.interp.data(hands.data.unupgraded, 7, 3)[sample(.N, 2)]
+    l <- darksoulsarmor:::get.interp.data(legs.data.unupgraded, 7, 3)[sample(.N, 5)]
 
     actual <- data.table::setDT(darksoulsarmor:::all_armor_combinations(h, c, g, l))
 

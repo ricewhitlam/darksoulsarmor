@@ -478,10 +478,10 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     weights <- args$weights
 
     ## Get data at specified upgrade levels
-    working.head.data <- get.interp.data(head.data.unupgraded, head.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.chest.data <- get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.hands.data <- get.interp.data(hands.data.unupgraded, hands.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
-    working.legs.data <- get.interp.data(legs.data.unupgraded, legs.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.head.data <- get.interp.data(head.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.chest.data <- get.interp.data(chest.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.hands.data <- get.interp.data(hands.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
+    working.legs.data <- get.interp.data(legs.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
 
     ## Calc scores for each dataset (sorted on further below, once filtered)
     score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))

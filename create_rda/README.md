@@ -9,7 +9,14 @@ correction, etc.).
 
 ## Contents
 
-- `armor_00.csv`, `armor_10.csv` - raw per-piece stats at +0 and, where applicable, max upgrade.
+- `armor_00.csv` - per-piece stats at +0; every other upgrade level is computed from these by
+  `get.interp.data()`, with the game's own upgrade rates. Strike, slash and thrust defense are
+  the game's exact 32-bit values: the game stores them as a per-piece percentage adjustment to
+  physical defense and computes them in 32-bit floating point, so e.g. Black Sorcerer Hat's
+  strike defense is 5 x 103% = 5.14999962, which the game displays as 5.1. They were computed
+  once from the game's own armor parameters (`EquipParamProtector`), and are written to 9
+  significant digits, enough to recover each 32-bit value exactly; `create_rda.R` snaps them back
+  to it.
 - `armor_metainfo.csv` - piece metadata: type (head/chest/hands/legs), upgrade path
   (`None`/`Regular`/`Twinkling`), and the `AREA_MATCH_TYPE`/`AREA_LIST` columns used for
   area-of-origin filtering.
