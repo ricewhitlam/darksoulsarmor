@@ -1011,7 +1011,7 @@ server <- function(input, output, session){
         DT::datatable(
             result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ARMOR_WEIGHT, ROLL, TOTAL_POISE, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)],
             selection = "single",
-            options = list(scrollX = TRUE, pageLength = 10)
+            options = list(scrollX = TRUE, paging = FALSE, scrollY = "400px", scrollCollapse = TRUE)
         ) |>
         DT::formatCurrency(c("ARMOR_WEIGHT_LIMIT", "ARMOR_WEIGHT"), currency = "", interval = 3, mark = ",", digits = 1) |>
         DT::formatCurrency(c("BEST_VALUE", "SCORE_RAW"), currency = "", interval = 3, mark = ",", digits = 3) |>
