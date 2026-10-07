@@ -844,14 +844,31 @@ server <- function(input, output, session){
 
 
     ## Trade-offs tab: the most of one stat any armor set can reach at each armor weight (see
-    ## get.armor.tradeoffs), for the sidebar's current settings, in 1.0-unit steps
+    ## get.armor.tradeoffs), for the sidebar's current settings, over every armor weight from 0 to
+    ## the heaviest possible armor. The curve is computed in one segment per roll class - up to the
+    ## Fast line under the Fast roll's load limit, from there to the Mid line under Mid's, and so on,
+    ## then overloaded past the Fat line - so within each segment the Mask of the Father's equip load
+    ## bonus is credited exactly as it is for that roll type.
     tradeoff.metric.labels <- c(
         SCORE = "Score", POISE = "Poise",
         PHYS_DEF = "Physical Defense", STRIKE_DEF = "Strike Defense", SLASH_DEF = "Slash Defense", THRUST_DEF = "Thrust Defense",
         MAG_DEF = "Magic Defense", FIRE_DEF = "Fire Defense", LITNG_DEF = "Lightning Defense",
         BLEED_RES = "Bleed Resistance", POIS_RES = "Poison Resistance", CURSE_RES = "Curse Resistance"
     )
+    roll.shares <- c(Fast = 0.25, Mid = 0.5, Fat = 1)
     tradeoffdata <- shiny::reactiveVal(NULL)
+
+    ## The roll class a set of the given armor weight gets: its total load against the equip load,
+    ## raised 5% when it includes the Mask of the Father (mask). Also whether only that bonus keeps it
+    ## in that class.
+    roll.class <- function(armor.weight, mask, gear.weight, equip.load){
+        classify <- function(capacity){
+            share <- (armor.weight+gear.weight)/capacity
+            ifelse(share <= 0.25+1e-9, "Fast", ifelse(share <= 0.5+1e-9, "Mid", ifelse(share <= 1+1e-9, "Fat", "Overloaded")))
+        }
+        with.bonus <- classify(ifelse(mask, 1.05*equip.load, equip.load))
+        list(class = with.bonus, by.mask.bonus = mask & with.bonus != classify(equip.load))
+    }
 
     shiny::observeEvent(input$tradeoff_go, {
 
@@ -863,7 +880,47 @@ server <- function(input, output, session){
         withCallingHandlers({
 
             shinybusy::show_modal_spinner()
-            tradeoffdata(do.call(get.armor.tradeoffs, c(list(metric = input$tradeoff_metric, weight.step = 1), current.settings())))
+
+            settings <- current.settings()
+            equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
+            gear.weight <- settings$unarmored.weight
+            heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
+            ## Armor weight at which each roll class ends: Fast/Mid, Mid/Fat, Fat/overloaded
+            lines <- roll.shares*equip.load-gear.weight
+            step <- as.numeric(input$tradeoff_detail)
+
+            ## One segment per roll class, each from the previous line (exclusive) to its own
+            ## (inclusive), clipped to [0, heaviest armor]; past the Fat line, no load limit
+            segment.rolls <- c(names(roll.shares), "None")
+            segment.ends <- c(lines, Inf)
+            segments <- list()
+            covered.to <- -Inf
+            for(s in seq_along(segment.rolls)){
+                lower <- max(0, covered.to)
+                upper <- min(segment.ends[s], heaviest.armor)
+                if(upper >= lower){
+                    segment.settings <- settings
+                    segment.settings$roll <- segment.rolls[s]
+                    curve <- do.call(get.armor.tradeoffs, c(list(metric = input$tradeoff_metric, weight.step = step, min.armor.weight = lower, max.armor.weight = upper), segment.settings))$data
+                    ## A limit on the previous line belongs to the faster class
+                    curve <- curve[ARMOR_WEIGHT_LIMIT > covered.to+1e-9]
+                    if(nrow(curve) > 0){
+                        segments[[length(segments)+1]] <- curve[, ROLL_LIMIT := segment.rolls[s]]
+                    }
+                }
+                covered.to <- max(covered.to, upper)
+            }
+            curve <- data.table::rbindlist(segments)
+
+            classes <- roll.class(curve$ARMOR_WEIGHT, !is.na(curve$HEAD) & curve$HEAD == "Mask of the Father", gear.weight, equip.load)
+            curve[, ROLL := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
+
+            tradeoffdata(
+                list(
+                    metric = input$tradeoff_metric, data = curve, lines = lines, selected.roll = settings$roll,
+                    gear.weight = gear.weight, equip.load = equip.load
+                )
+            )
             output$errormessage <- shiny::renderText("")
 
             for(message in unique(tradeoff.warnings)){
@@ -890,26 +947,36 @@ server <- function(input, output, session){
     })
 
     output$tradeoff_plot <- plotly::renderPlotly({
-        curve <- tradeoffdata()
-        shiny::req(curve)
-        d <- curve$data
-        metric.label <- tradeoff.metric.labels[[curve$args$metric]]
+        result <- tradeoffdata()
+        shiny::req(result)
+        d <- data.table::copy(result$data)
+        metric.label <- tradeoff.metric.labels[[result$metric]]
         d$hover <-
             ifelse(
                 is.na(d$BEST_VALUE),
                 sprintf("Armor weight up to %.1f<br>No armor set fits the other settings", d$ARMOR_WEIGHT_LIMIT),
                 sprintf(
-                    "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f; score %.3f (%s)",
+                    "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - rolls %s<br>Score %.3f (%s)",
                     d$ARMOR_WEIGHT_LIMIT, metric.label, format(round(d$BEST_VALUE, 3)),
-                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, d$SCORE_RAW, d$SCORE_QUALITY
+                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, d$ROLL, d$SCORE_RAW, d$SCORE_QUALITY
                 )
             )
         d$point <- seq_len(nrow(d))
-        allowance <- max(d$ARMOR_WEIGHT_LIMIT)
-        shapes <- list(list(type = "line", x0 = allowance, x1 = allowance, y0 = 0, y1 = 1, yref = "paper", line = list(dash = "dash", color = "gray")))
-        annotations <- list(list(x = allowance, y = 1, yref = "paper", text = "current allowance", showarrow = FALSE, xanchor = "right", yanchor = "bottom"))
+
+        ## Roll breakpoints that fall within the chart, the selected roll type's emphasized
+        shapes <- list()
+        annotations <- list()
+        line.labels <- c(Fast = "Fast | Mid", Mid = "Mid | Fat", Fat = "Fat | Overloaded")
+        for(roll in names(result$lines)){
+            x <- result$lines[[roll]]
+            if(x >= 0 && x <= max(d$ARMOR_WEIGHT_LIMIT)){
+                selected <- roll == result$selected.roll
+                shapes[[length(shapes)+1]] <- list(type = "line", x0 = x, x1 = x, y0 = 0, y1 = 1, yref = "paper", line = list(dash = if(selected) "solid" else "dash", width = if(selected) 2 else 1, color = if(selected) "black" else "gray"))
+                annotations[[length(annotations)+1]] <- list(x = x, y = 1, yref = "paper", text = if(selected) paste0("<b>", line.labels[[roll]], "</b>") else line.labels[[roll]], showarrow = FALSE, xanchor = "right", yanchor = "bottom")
+            }
+        }
         ## Poise breakpoints players aim for (see the User Guide)
-        if(curve$args$metric == "POISE"){
+        if(result$metric == "POISE"){
             for(breakpoint in c(21, 31, 46, 61)){
                 shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = breakpoint, y1 = breakpoint, line = list(dash = "dot", color = "firebrick"))
                 annotations[[length(annotations)+1]] <- list(x = 0, xref = "paper", y = breakpoint, text = paste("Poise", breakpoint), showarrow = FALSE, xanchor = "left", yanchor = "bottom")
@@ -927,10 +994,11 @@ server <- function(input, output, session){
         plotly::event_register(p, "plotly_click")
     })
 
-    ## Clicking a point: its armor set's links. event_data() warns until the chart has been drawn
-    ## and registered its click event, which is expected before the first Compute.
-    shiny::observeEvent(suppressWarnings(plotly::event_data("plotly_click", source = "tradeoffs")), {
-        click <- suppressWarnings(plotly::event_data("plotly_click", source = "tradeoffs"))
+    ## Clicking a point: its armor set's links. Triggered by plotly's own click input rather than by
+    ## event_data(), which (via a deferred check) warns whenever it's called before the chart has
+    ## been drawn and registered its click event - here it only runs after an actual click.
+    shiny::observeEvent(input[["plotly_click-tradeoffs"]], {
+        click <- plotly::event_data("plotly_click", source = "tradeoffs")
         point <- tradeoffdata()$data[click$customdata[1]]
         if(nrow(point) == 1 && !is.na(point$HEAD)){
             show.armor.links(point)
@@ -938,10 +1006,10 @@ server <- function(input, output, session){
     })
 
     output$tradeoff_table <- DT::renderDataTable({
-        curve <- tradeoffdata()
-        shiny::req(curve)
+        result <- tradeoffdata()
+        shiny::req(result)
         DT::datatable(
-            curve$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ARMOR_WEIGHT, TOTAL_POISE, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)],
+            result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ARMOR_WEIGHT, ROLL, TOTAL_POISE, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)],
             selection = "single",
             options = list(scrollX = TRUE, pageLength = 10)
         ) |>

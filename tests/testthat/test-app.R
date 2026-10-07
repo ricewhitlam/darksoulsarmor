@@ -263,7 +263,12 @@ test_that("a warning during refresh doesn't abort it, and is shown as a notifica
     })
 })
 
-test_that("the Trade-offs tab computes the curve for the sidebar's settings, charts it, and links its sets", {
+## The Trade-offs tab charts every armor weight, computed in one segment per roll class (each under
+## that roll type's load limit, so the Mask of the Father's bonus is credited as it would be), with
+## lines where the roll class changes. With endurance 40, no load rings and 12 gear weight, the
+## equip load is 80: Fast ends at 25% - 12 = 8 armor weight, Mid at 28, Fat at 68 - past the
+## heaviest possible armor (52.5), so there's no overloaded segment.
+test_that("the Trade-offs tab stitches per-roll-class curves over every armor weight", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         session$setInputs(constraints = 1)
         session$setInputs(roll = "Mid", unarmored.weight = 12, endurance.level = 40)
@@ -272,26 +277,49 @@ test_that("the Trade-offs tab computes the curve for the sidebar's settings, cha
         session$setInputs(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE)
         session$setInputs(dismiss_ring_modal = 1)
 
-        session$setInputs(tradeoff_metric = "POISE", tradeoff_go = 1)
-        expected <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, roll = "Mid", unarmored.weight = 12, wolf.ring = TRUE)$data
-        expect_equal(tradeoffdata()$data, expected)
-        expect_equal(range(tradeoffdata()$data$ARMOR_WEIGHT_LIMIT), c(0, 28))
+        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", tradeoff_go = 1)
+        result <- tradeoffdata()
         expect_equal(output$errormessage, "")
+        expect_equal(unname(result$lines), c(8, 28, 68))
+        expect_equal(result$selected.roll, "Mid")
+        expect_equal(range(result$data$ARMOR_WEIGHT_LIMIT), c(0, 52.5))
+
+        ## Each segment is exactly get.armor.tradeoffs under that segment's roll type
+        settings <- list(metric = "POISE", endurance.level = 40, unarmored.weight = 12, wolf.ring = TRUE)
+        segment <- function(roll, from, to){ do.call(get.armor.tradeoffs, c(settings, list(roll = roll, min.armor.weight = from, max.armor.weight = to)))$data }
+        expected <- rbind(segment("Fast", 0, 8), segment("Mid", 8, 28)[ARMOR_WEIGHT_LIMIT > 8], segment("Fat", 28, 52.5)[ARMOR_WEIGHT_LIMIT > 28])
+        cols <- names(expected)
+        expect_equal(result$data[, ..cols], expected)
+        expect_equal(result$data$ROLL_LIMIT, rep(c("Fast", "Mid", "Fat"), c(9, 20, 25)))
         expect_no_error(output$tradeoff_plot)
         expect_no_error(output$tradeoff_table)
 
-        ## A table row with a head piece: its links open
+        ## Every point's roll class is from its own weight plus the gear weight
+        expected.class <- roll.class(expected$ARMOR_WEIGHT, expected$HEAD == "Mask of the Father", 12, 80)
+        expect_equal(sub(" [(].*", "", result$data$ROLL), expected.class$class)
+
+        ## A table row with a head piece, and a clicked chart point, open their links
         row <- which(!is.na(expected$HEAD) & expected$HEAD != "No Head")[1]
         session$setInputs(tradeoff_table_rows_selected = row)
         expect_match(output$tabhead$html, head.data.unupgraded[ARMOR == expected$HEAD[row], LINK], fixed = TRUE)
-
-        ## Clicking a chart point (plotly's click event, as the browser sends it): its links open
         point <- which(!is.na(expected$CHEST) & expected$CHEST != "No Chest")[1]
         session$setInputs(`plotly_click-tradeoffs` = sprintf('[{"curveNumber":0,"pointNumber":%d,"customdata":%d}]', point - 1, point))
         expect_match(output$tabchest$html, chest.data.unupgraded[ARMOR == expected$CHEST[point], LINK], fixed = TRUE)
 
-        ## Switching the metric recomputes
-        session$setInputs(tradeoff_metric = "MAG_DEF", tradeoff_go = 2)
-        expect_equal(tradeoffdata()$args$metric, "MAG_DEF")
+        ## Fine detail: every 0.1, still meeting at the lines
+        session$setInputs(tradeoff_metric = "MAG_DEF", tradeoff_detail = "0.1", tradeoff_go = 2)
+        limits <- tradeoffdata()$data$ARMOR_WEIGHT_LIMIT
+        expect_equal(tradeoffdata()$metric, "MAG_DEF")
+        expect_true(all(diff(limits) <= 0.1 + 1e-9))
+        expect_true(all(c(8, 28) %in% round(limits, 9)))
+    })
+})
+
+test_that("roll classes account for the Mask of the Father's bonus", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        ## Equip load 80, gear 12: without the Mask, Fast ends at 8 armor weight; with it, at 9
+        r <- roll.class(c(8, 8.5, 8.5, 9.0, 28, 30, 70), c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE), 12, 80)
+        expect_equal(r$class, c("Fast", "Mid", "Fast", "Fast", "Mid", "Fat", "Overloaded"))
+        expect_equal(r$by.mask.bonus, c(FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE))
     })
 })

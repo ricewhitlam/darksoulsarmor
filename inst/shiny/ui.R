@@ -83,11 +83,22 @@ bslib::page_sidebar(
                             )
                         )
                     ),
+                    shiny::column(
+                        4,
+                        shiny::radioButtons(
+                            inputId = "tradeoff_detail",
+                            label = "Detail",
+                            choices = c("Standard (every 1.0)" = "1", "Fine (every 0.1, slower)" = "0.1"),
+                            selected = "1",
+                            inline = TRUE
+                        )
+                    ),
                     shiny::column(4, shiny::br(), shiny::actionButton(inputId = "tradeoff_go", label = "Compute Trade-offs"))
                 ),
                 shiny::helpText(
-                    "For each armor weight from 0 up to what your current settings allow, the most of the chosen stat any armor set can reach,",
-                    "with every other setting in the sidebar applied. Hover over a point for its set; click a point or a table row for its links."
+                    "For every armor weight, the most of the chosen stat any armor set can reach with every other setting in the sidebar applied.",
+                    "Vertical lines mark where your roll type changes (the selected roll type's line is solid). Hover over a point for its set",
+                    "and how it rolls; click a point or a table row for its links."
                 ),
                 plotly::plotlyOutput(outputId = "tradeoff_plot"),
                 DT::dataTableOutput(outputId = "tradeoff_table")
