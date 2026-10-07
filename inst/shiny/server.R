@@ -1091,8 +1091,8 @@ server <- function(input, output, session){
     })
 
 
-    ## The settings behind a download, one per row, under the app's own labels
-    settings.sheet <- function(args, metric){
+    ## The settings behind a download (the last refresh's), one per row, under the app's own labels
+    settings.sheet <- function(args){
         yes.no <- function(x){ if(x) "Yes" else "No" }
         listed <- function(x){ paste(x, collapse = "; ") }
         data.table::data.table(
@@ -1103,9 +1103,7 @@ server <- function(input, output, session){
                 "Havel's Ring", "Ring of Favor", "Wolf Ring",
                 "Roll Type", "Weight without Armor", "Endurance Level",
                 paste("Minimum", minima.metrics),
-                paste("Score Weight", weight.metrics),
-                "Trade-offs: Maximize",
-                "Package Version", "Downloaded"
+                paste("Score Weight", weight.metrics)
             ),
             VALUE = c(
                 format(args$max.table.size, scientific = FALSE), args$starting.class, listed(args$areas.completed), listed(args$upgrade.types),
@@ -1114,9 +1112,7 @@ server <- function(input, output, session){
                 yes.no(args$havel.ring), yes.no(args$favor.ring), yes.no(args$wolf.ring),
                 args$roll, as.character(args$unarmored.weight), as.character(args$endurance.level),
                 as.character(args$minima),
-                paste0(as.character(round(100*args$weights, 6)), "%"),
-                tradeoff.metric.labels[[metric]],
-                as.character(utils::packageVersion("darksoulsarmor")), format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z")
+                paste0(as.character(round(100*args$weights, 6)), "%")
             )
         )
     }
@@ -1125,7 +1121,8 @@ server <- function(input, output, session){
     ## for the current Maximize choice (computed now if the tab hasn't shown it since that
     ## refresh), and the settings behind both
     output$download <- shiny::downloadHandler(
-        filename = function(){"ds_armor_data.xlsx"},
+        ## Stamped with the time of the download (the server's clock), without colons for Windows
+        filename = function(){paste0("ds_armor_data_", format(Sys.time(), "%Y-%m-%d_%H%M%S"), ".xlsx")},
         content = function(file){
             if(!been.refreshed()){
                 stop("Click 'Refresh Armor Data' before downloading")
@@ -1140,7 +1137,7 @@ server <- function(input, output, session){
                 list(
                     Results = armordata()$data,
                     `Trade-offs` = tradeoff.table(tradeoffs),
-                    Settings = settings.sheet(snapshot, input$tradeoff_metric)
+                    Settings = settings.sheet(snapshot)
                 ),
                 file
             )

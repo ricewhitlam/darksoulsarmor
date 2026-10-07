@@ -231,6 +231,8 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         ## The Trade-offs tab was never opened, so the download computes the curve (and keeps it)
         expect_null(tradeoffdata())
         file <- output$download
+        ## Named for the time of the download
+        expect_match(basename(file), "^ds_armor_data_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}[.]xlsx$")
         expect_equal(readxl::excel_sheets(file), c("Results", "Trade-offs", "Settings"))
         expect_equal(tradeoff.computations(), 1)
         expect_equal(tradeoffdata()$metric, "POISE")
@@ -252,8 +254,8 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         expect_equal(setting("Score Weight PHYS_DEF"), "16%")
         expect_equal(setting("Score Weight CURSE_RES"), "4%")
         expect_equal(setting("Head"), paste(armordata()$args$head.filter, collapse = "; "))
-        expect_equal(setting("Trade-offs: Maximize"), "Poise")
-        expect_equal(setting("Package Version"), as.character(utils::packageVersion("darksoulsarmor")))
+        ## Only the settings of the search itself: the rest is in the data
+        expect_equal(nrow(settings), 16 + 12 + 10)
 
         ## A curve the tab already holds is reused, and the score's table has its own columns
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
@@ -263,8 +265,6 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         trade.offs <- readxl::read_xlsx(file, sheet = "Trade-offs")
         expect_equal(names(trade.offs), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "SCORE_QUALITY", "ROLL", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_equal(as.data.frame(trade.offs), as.data.frame(tradeoff.table(tradeoffdata())))
-        settings <- readxl::read_xlsx(file, sheet = "Settings")
-        expect_equal(settings$VALUE[settings$SETTING == "Trade-offs: Maximize"], "Score")
     })
 })
 
