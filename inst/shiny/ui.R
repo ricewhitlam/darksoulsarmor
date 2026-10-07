@@ -82,16 +82,6 @@ bslib::page_sidebar(
                                 "Bleed Resistance" = "BLEED_RES", "Poison Resistance" = "POIS_RES", "Curse Resistance" = "CURSE_RES"
                             )
                         )
-                    ),
-                    shiny::column(
-                        4,
-                        shiny::radioButtons(
-                            inputId = "tradeoff_detail",
-                            label = "Detail",
-                            choices = c("Standard (every 1.0)" = "1", "Fine (every 0.1, slower)" = "0.1"),
-                            selected = "1",
-                            inline = TRUE
-                        )
                     )
                 ),
                 shiny::helpText(

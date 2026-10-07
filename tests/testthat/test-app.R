@@ -210,13 +210,13 @@ test_that("row links, the results table, the download, and the User Guide all wo
 })
 
 ## "Download Armor Data" saves one workbook describing the last refresh: the Results table, the
-## Trade-offs table for the current Maximize/Detail choices - computed for the download if the tab
+## Trade-offs table for the current Maximize choice - computed for the download if the tab
 ## hasn't shown it since that refresh, and reused otherwise - and the settings behind both.
 test_that("the download saves the results, trade-offs, and settings of the last refresh", {
     skip_if_not_installed("readxl")
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         ## Nothing to save before the first refresh
-        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Results")
+        session$setInputs(tradeoff_metric = "POISE", main_tabs = "Results")
         expect_error(output$download, "Refresh Armor Data")
 
         values <- minima.inputs(minimum.values, minima.ids)
@@ -253,7 +253,6 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         expect_equal(setting("Score Weight CURSE_RES"), "4%")
         expect_equal(setting("Head"), paste(armordata()$args$head.filter, collapse = "; "))
         expect_equal(setting("Trade-offs: Maximize"), "Poise")
-        expect_equal(setting("Trade-offs: Detail"), "Standard (every 1.0)")
         expect_equal(setting("Package Version"), as.character(utils::packageVersion("darksoulsarmor")))
 
         ## A curve the tab already holds is reused, and the score's table has its own columns
@@ -334,20 +333,23 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         session$setInputs(dismiss_ring_modal = 1)
 
         session$setInputs(go = 1)
-        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Trade-offs")
+        session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
         result <- tradeoffdata()
         expect_equal(output$errormessage, "")
         expect_equal(unname(result$lines), c(8, 28, 68))
         expect_equal(result$selected.roll, "Mid")
         expect_equal(range(result$data$ARMOR_WEIGHT_LIMIT), c(0, 52.5))
+        ## Every 0.1 armor weight, meeting at the lines
+        expect_true(all(abs(diff(result$data$ARMOR_WEIGHT_LIMIT) - 0.1) < 1e-9))
+        expect_true(all(c(8, 28) %in% round(result$data$ARMOR_WEIGHT_LIMIT, 9)))
 
         ## Each segment is exactly get.armor.tradeoffs under that segment's roll type
         settings <- list(metric = "POISE", endurance.level = 40, unarmored.weight = 12, wolf.ring = TRUE)
-        segment <- function(roll, from, to){ do.call(get.armor.tradeoffs, c(settings, list(roll = roll, min.armor.weight = from, max.armor.weight = to)))$data }
+        segment <- function(roll, from, to){ do.call(get.armor.tradeoffs, c(settings, list(roll = roll, weight.step = 0.1, min.armor.weight = from, max.armor.weight = to)))$data }
         expected <- rbind(segment("Fast", 0, 8), segment("Mid", 8, 28)[ARMOR_WEIGHT_LIMIT > 8], segment("Fat", 28, 52.5)[ARMOR_WEIGHT_LIMIT > 28])
         cols <- names(expected)
         expect_equal(result$data[, ..cols], expected)
-        expect_equal(result$data$ROLL_LIMIT, rep(c("Fast", "Mid", "Fat"), c(9, 20, 25)))
+        expect_equal(result$data$ROLL_LIMIT, rep(c("Fast", "Mid", "Fat"), c(81, 200, 245)))
         expect_no_error(output$tradeoff_table)
         ## Points are hovered and clicked by weight alone
         expect_match(output$tradeoff_plot, '"hovermode":"x"', fixed = TRUE)
@@ -369,17 +371,14 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         session$setInputs(`plotly_click-tradeoffs` = sprintf('[{"curveNumber":0,"pointNumber":%d,"customdata":%d}]', point - 1, point))
         expect_match(output$tabchest$html, chest.data.unupgraded[ARMOR == expected$CHEST[point], LINK], fixed = TRUE)
 
-        ## Fine detail: every 0.1, still meeting at the lines
-        session$setInputs(tradeoff_metric = "MAG_DEF", tradeoff_detail = "0.1")
-        limits <- tradeoffdata()$data$ARMOR_WEIGHT_LIMIT
+        ## Another stat: its own value column
+        session$setInputs(tradeoff_metric = "MAG_DEF")
         expect_equal(tradeoffdata()$metric, "MAG_DEF")
-        expect_true(all(diff(limits) <= 0.1 + 1e-9))
-        expect_true(all(c(8, 28) %in% round(limits, 9)))
         expect_identical(names(tradeoff.table(tradeoffdata()))[2], "MAG_DEF")
         expect_no_error(output$tradeoff_table)
 
         ## With the score as the stat, it's the value column and isn't repeated
-        session$setInputs(tradeoff_metric = "SCORE", tradeoff_detail = "1")
+        session$setInputs(tradeoff_metric = "SCORE")
         expect_identical(names(tradeoff.table(tradeoffdata())), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "SCORE_QUALITY", "ROLL", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_no_error(output$tradeoff_table)
     })
@@ -387,13 +386,13 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
 
 ## Both tabs describe the last successful refresh. The chart is computed only once its tab is open
 ## after a refresh, from that refresh's settings (never unsaved sidebar edits); it's recomputed when
-## a refresh changes the settings or Maximize/Detail change, and kept - only the emphasized roll
+## a refresh changes the settings or Maximize changes, and kept - only the emphasized roll
 ## line moving - when a refresh changes just the table size or the roll type. A failed refresh
 ## changes neither tab.
 test_that("the Trade-offs chart follows the last refresh, not unsaved settings", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         ## Before any refresh: nothing to chart, and one message covers both tabs
-        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Trade-offs")
+        session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
         expect_null(tradeoffdata())
         expect_equal(output$refreshmessage, "Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results for both tabs")
 
@@ -467,11 +466,11 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         expect_equal(armordata()$args$minima[minima.index.of("POISE")], 30)
 
         ## Charting poise: its minimum is ignored, bleed's applies
-        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Trade-offs")
+        session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 30)
         expect_equal(result$lines[["Fast"]], 2.5)
-        fast <- get.armor.tradeoffs(metric = "POISE", minima = c(BLEED_RES = 20), max.armor.weight = 2.5)$data
+        fast <- get.armor.tradeoffs(metric = "POISE", minima = c(BLEED_RES = 20), weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(fast)), names(fast), with = FALSE], fast)
         expect_true(any(result$data$BEST_VALUE < 30, na.rm = TRUE))
         expect_true(grepl("Your minimum: 30", output$tradeoff_plot, fixed = TRUE))
@@ -480,7 +479,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         session$setInputs(tradeoff_metric = "BLEED_RES")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 20)
-        fast <- get.armor.tradeoffs(metric = "BLEED_RES", minima = c(POISE = 30), max.armor.weight = 2.5)$data
+        fast <- get.armor.tradeoffs(metric = "BLEED_RES", minima = c(POISE = 30), weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(fast)), names(fast), with = FALSE], fast)
         expect_true(grepl("Your minimum: 20", output$tradeoff_plot, fixed = TRUE))
 
@@ -488,7 +487,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         session$setInputs(tradeoff_metric = "SCORE")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 0)
-        fast <- get.armor.tradeoffs(metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), max.armor.weight = 2.5)$data
+        fast <- get.armor.tradeoffs(metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(fast)), names(fast), with = FALSE], fast)
         expect_false(grepl("Your minimum", output$tradeoff_plot, fixed = TRUE))
     })
