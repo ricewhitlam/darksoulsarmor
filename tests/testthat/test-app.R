@@ -283,6 +283,7 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
         submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
+        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "Talisman", right.1 = "Claymore", left.2 = "Dagger", right.2 = "None"), 40), 1)
         session$setInputs(go = 1)
         ## An unsaved edit afterwards isn't part of the download
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", no.weapons, 10), 1)
@@ -313,6 +314,10 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         expect_equal(setting("Score Weight PHYS_DEF"), "16%")
         expect_equal(setting("Score Weight CURSE_RES"), "4%")
         expect_equal(setting("Head"), paste(armordata()$args$head.filter, collapse = "; "))
+        ## Movement, Endurance, then the weapons right hand first, as Load Inputs shows them
+        first <- match("Movement", settings$SETTING)
+        expect_equal(settings$SETTING[first + 0:5], c("Movement", "Endurance Level", "Right Hand Weapon 1", "Right Hand Weapon 2", "Left Hand Weapon 1", "Left Hand Weapon 2"))
+        expect_equal(settings$VALUE[first + 1:5], c("40", "Claymore", "None", "Talisman", "Dagger"))
         ## Only the settings of the search itself: the rest is in the data
         expect_equal(nrow(settings), 19 + 12 + 10)
 

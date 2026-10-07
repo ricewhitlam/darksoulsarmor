@@ -1142,7 +1142,7 @@ server <- function(input, output, session){
                 "Head", "Chest", "Hands", "Legs",
                 "Armor Level (Regular)", "Armor Level (Twinkling)",
                 "Havel's Ring", "Ring of Favor", "Wolf Ring",
-                "Movement", "Left Hand Weapon 1", "Right Hand Weapon 1", "Left Hand Weapon 2", "Right Hand Weapon 2", "Endurance Level",
+                "Movement", "Endurance Level", "Right Hand Weapon 1", "Right Hand Weapon 2", "Left Hand Weapon 1", "Left Hand Weapon 2",
                 paste("Minimum", minima.metrics),
                 paste("Score Weight", weight.metrics)
             ),
@@ -1151,7 +1151,7 @@ server <- function(input, output, session){
                 listed(args$head.filter), listed(args$chest.filter), listed(args$hands.filter), listed(args$legs.filter),
                 args$regular.level, args$twinkling.level,
                 yes.no(args$havel.ring), yes.no(args$favor.ring), yes.no(args$wolf.ring),
-                args$movement, unname(args$weapons), as.character(args$endurance.level),
+                args$movement, as.character(args$endurance.level), unname(args$weapons[c("right.1", "right.2", "left.1", "left.2")]),
                 as.character(args$minima),
                 paste0(as.character(round(100*args$weights, 6)), "%")
             )
