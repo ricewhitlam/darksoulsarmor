@@ -5,7 +5,7 @@
 utils::globalVariables(c(
     "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "SCORE_RAW", "SCORE_QUALITY",
     "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
-    "areas", "classes", "means", "stddevs", "corrs",
+    "areas", "classes", "weapons", "WEAPON", "means", "stddevs", "corrs",
     "head.data.unupgraded", "chest.data.unupgraded", "hands.data.unupgraded", "legs.data.unupgraded",
     "METRICS", "metric", "weight.index", "minima.index",
     "HEAD", "CHEST", "HANDS", "LEGS", "ARMOR_WEIGHT", "TOTAL_POISE", "ARMOR_WEIGHT_LIMIT", "BEST_VALUE", "."
@@ -45,7 +45,22 @@ NULL
 #' @name classes
 #' @format 
 #' This is the underlying list which is used to indicate
-#' starting class to \code{\link{get.optimal.armor.combos}}. 
+#' starting class to \code{\link{get.optimal.armor.combos}}.
+#' @docType data
+#' @keywords data
+NULL
+
+#' Table of every weapon, shield, bow and catalyst that can fill a weapon slot
+#'
+#' @name weapons
+#' @format
+#' \describe{
+#'   \item{WEAPON}{Name of the weapon.}
+#'   \item{WEIGHT}{Its weight, which infusions and upgrades don't change.}
+#' }
+#' Weight is the only property the package uses: a weapon's other effects (e.g. the Gargoyle Tail
+#' Axe raising unarmored poison and bleed resistance) change the character, not its armor, so they
+#' are outside the armor stats the package computes.
 #' @docType data
 #' @keywords data
 NULL

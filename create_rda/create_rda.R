@@ -185,6 +185,10 @@ areas <-
     )
 classes <- c("Warrior", "Knight", "Wanderer", "Thief", "Bandit", "Hunter", "Sorcerer", "Pyromancer", "Cleric", "Deprived")
 
+## Every weapon, shield, bow and catalyst that can fill a weapon slot, with its weight - the only
+## property the package uses. Infusions and upgrades don't change a weapon's weight.
+weapons <- fread("create_rda/weapons.csv")
+
 ## Save out to rda files. head.data.unupgraded etc., areas, and classes are the package's public,
 ## documented data (data/*.rda). means/stddevs/corrs exist only to normalize the score formula
 ## in get.optimal.armor.combos and are not meant to be used directly, so they are saved
@@ -196,6 +200,7 @@ use_data(
     legs.data.unupgraded,
     areas,
     classes,
+    weapons,
     overwrite = TRUE
 )
 use_data(

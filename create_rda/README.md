@@ -17,6 +17,9 @@ correction, etc.).
   once from the game's own armor parameters (`EquipParamProtector`), and are written to 9
   significant digits, enough to recover each 32-bit value exactly; `create_rda.R` snaps them back
   to it.
+- `weapons.csv` - every weapon, shield, bow and catalyst that can fill a weapon slot, with its
+  weight (from the game's own weapon parameters, `EquipParamWeapon`; infusions and upgrades don't
+  change weight).
 - `armor_metainfo.csv` - piece metadata: type (head/chest/hands/legs), upgrade path
   (`None`/`Regular`/`Twinkling`), and the `AREA_MATCH_TYPE`/`AREA_LIST` columns used for
   area-of-origin filtering.
