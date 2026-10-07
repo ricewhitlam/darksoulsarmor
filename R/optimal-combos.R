@@ -505,12 +505,17 @@ find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$un
     level.legs.scores <- stats::setNames(working.legs.data$SCORE, working.legs.data$ARMOR)
 
     ## Ranking by a single stat instead of the score: the search only needs each piece's value in
-    ## SCORE (any stat summed across the four slots works the same way), so swap that stat in
+    ## SCORE (any stat summed across the four slots works the same way), so swap that stat in -
+    ## plus the piece's score times a factor small enough never to outweigh a real difference in
+    ## the stat (Poise totals differ by at least 1, defenses/resistances by at least 0.1, and a
+    ## combination's score is within about +-15), so that among combinations tied on the stat, the
+    ## best-scoring one wins.
     if(rank.metric != "SCORE"){
-        working.head.data[, SCORE := get(rank.metric)]
-        working.chest.data[, SCORE := get(rank.metric)]
-        working.hands.data[, SCORE := get(rank.metric)]
-        working.legs.data[, SCORE := get(rank.metric)]
+        tie.break.factor <- if(rank.metric == "POISE") 1e-4 else 1e-5
+        working.head.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
+        working.chest.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
+        working.hands.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
+        working.legs.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
     }
 
     ## Calc equip load values

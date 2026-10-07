@@ -61,8 +61,14 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
             fits <- grid[WEIGHT <= limit + ifelse(MASK, mask.bonus, 0) + 1e-9]
             if(nrow(fits) == 0) NA_real_ else max(fits$VALUE)
         })
+        ## Among the combinations tied on the best value, the best-scoring one is chosen
+        expected.score <- sapply(actual$ARMOR_WEIGHT_LIMIT, function(limit){
+            fits <- grid[WEIGHT <= limit + ifelse(MASK, mask.bonus, 0) + 1e-9]
+            if(nrow(fits) == 0) NA_real_ else max(fits[VALUE >= max(VALUE) - 1e-6, SCORE])
+        })
         info <- paste("trial", trial, metric)
         expect_equal(actual$BEST_VALUE, expected, tolerance = 1e-9, info = info)
+        expect_equal(actual$SCORE_RAW, expected.score, tolerance = 1e-6, info = info)
 
         ## Limits run from 0 to the current allowance in the requested steps
         allowance <- min(threshold - args$unarmored.weight, max(head.data.unupgraded$WEIGHT) + max(chest.data.unupgraded$WEIGHT) + max(hands.data.unupgraded$WEIGHT) + max(legs.data.unupgraded$WEIGHT))
