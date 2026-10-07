@@ -7,6 +7,7 @@
 get.armor.tradeoffs(
   metric = "SCORE",
   weight.step = 1,
+  min.armor.weight = 0,
   max.armor.weight = NULL,
   ...
 )
@@ -20,14 +21,18 @@ Wolf Ring's bonus if \code{wolf.ring = TRUE}), or one of \code{"PHYS_DEF"}, \cod
 Defaults to \code{"SCORE"}.}
 
 \item{weight.step}{A length 1 positive \code{numeric}: the spacing of the armor-weight limits. Limits
-run from 0 up to \code{max.armor.weight} in steps of this size, plus \code{max.armor.weight}
-itself. Armor weights are multiples of 0.1, so steps below 0.1 add points but no detail.
-Defaults to \code{1}.}
+are the multiples of this size between \code{min.armor.weight} and \code{max.armor.weight},
+plus those two limits themselves. Armor weights are multiples of 0.1, so steps below 0.1 add
+points but no detail. Defaults to \code{1}.}
+
+\item{min.armor.weight}{A length 1 non-negative \code{numeric}: the smallest armor-weight limit, no
+larger than \code{max.armor.weight}. Defaults to \code{0}.}
 
 \item{max.armor.weight}{A length 1 non-negative \code{numeric}, or \code{NULL}: the largest armor-weight
 limit. \code{NULL} (the default) uses the armor weight the other settings currently allow - the
 roll type's share of the equip load, less \code{unarmored.weight} - or, with
-\code{roll = "None"}, the heaviest possible armor.}
+\code{roll = "None"}, the heaviest possible armor (with no load limit, the Mask of the Father's
+equip load bonus doesn't apply).}
 
 \item{...}{Any other arguments of \code{\link{get.optimal.armor.combos}} (except \code{max.table.size}),
 with the same meaning and defaults.}

@@ -105,3 +105,21 @@ test_that("get.armor.tradeoffs validates its own arguments", {
     curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.25, max.armor.weight = 3)$data
     expect_equal(curve$ARMOR_WEIGHT_LIMIT, seq(0, 3, by = 0.25))
 })
+
+test_that("a curve over part of the weight range matches the full curve there", {
+    settings <- list(metric = "POISE", endurance.level = 40, roll = "Mid", unarmored.weight = 12, wolf.ring = TRUE)
+    full <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.1, max.armor.weight = 12)))$data
+    part <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.5, min.armor.weight = 3.2, max.armor.weight = 12)))$data
+    ## Both ends plus the multiples of the step between them
+    expect_equal(part$ARMOR_WEIGHT_LIMIT, c(3.2, seq(3.5, 12, by = 0.5)))
+    ## The best combination at each limit is unique (the tie-break is a total order), so the same
+    ## rows come back however the range was split
+    expect_equal(part, full[match(round(part$ARMOR_WEIGHT_LIMIT, 9), round(full$ARMOR_WEIGHT_LIMIT, 9))])
+    ## A single limit
+    one <- do.call(get.armor.tradeoffs, c(settings, list(min.armor.weight = 7.3, max.armor.weight = 7.3)))$data
+    expect_equal(one, full[round(ARMOR_WEIGHT_LIMIT, 9) == 7.3])
+
+    expect_error(get.armor.tradeoffs(min.armor.weight = -1), "min.armor.weight")
+    expect_error(get.armor.tradeoffs(min.armor.weight = c(1, 2)), "min.armor.weight")
+    expect_error(get.armor.tradeoffs(min.armor.weight = 5, max.armor.weight = 4), "min.armor.weight.*larger than max.armor.weight")
+})

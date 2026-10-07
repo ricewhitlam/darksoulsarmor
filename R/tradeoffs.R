@@ -25,15 +25,20 @@
 #'
 #' @param
 #' weight.step A length 1 positive \code{numeric}: the spacing of the armor-weight limits. Limits
-#' run from 0 up to \code{max.armor.weight} in steps of this size, plus \code{max.armor.weight}
-#' itself. Armor weights are multiples of 0.1, so steps below 0.1 add points but no detail.
-#' Defaults to \code{1}.
+#' are the multiples of this size between \code{min.armor.weight} and \code{max.armor.weight},
+#' plus those two limits themselves. Armor weights are multiples of 0.1, so steps below 0.1 add
+#' points but no detail. Defaults to \code{1}.
+#'
+#' @param
+#' min.armor.weight A length 1 non-negative \code{numeric}: the smallest armor-weight limit, no
+#' larger than \code{max.armor.weight}. Defaults to \code{0}.
 #'
 #' @param
 #' max.armor.weight A length 1 non-negative \code{numeric}, or \code{NULL}: the largest armor-weight
 #' limit. \code{NULL} (the default) uses the armor weight the other settings currently allow - the
 #' roll type's share of the equip load, less \code{unarmored.weight} - or, with
-#' \code{roll = "None"}, the heaviest possible armor.
+#' \code{roll = "None"}, the heaviest possible armor (with no load limit, the Mask of the Father's
+#' equip load bonus doesn't apply).
 #'
 #' @param
 #' ... Any other arguments of \code{\link{get.optimal.armor.combos}} (except \code{max.table.size}),
@@ -49,7 +54,7 @@
 #' @examples
 #' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, roll = "Mid", unarmored.weight = 12)
 #'
-get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, max.armor.weight = NULL, ...){
+get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.weight = 0, max.armor.weight = NULL, ...){
 
     metric.options <- c("SCORE", "POISE", METRICS[!is.na(weight.index)][order(weight.index), metric])
 
@@ -84,6 +89,15 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, max.armor.wei
         }
     }
 
+    ## Check min.armor.weight (against max.armor.weight once that's known, below)
+    if(!is.numeric(min.armor.weight)){
+        stop("Invalid argument 'min.armor.weight'")
+    } else if(length(min.armor.weight) != 1){
+        stop("Invalid argument 'min.armor.weight'")
+    } else if(!is.finite(min.armor.weight) || min.armor.weight < 0){
+        stop("Invalid argument 'min.armor.weight'")
+    }
+
     ## Every other argument is validated by get.optimal.armor.combos itself, exactly as it would be
     ## there; only one result is needed per weight limit
     search.args <- list(...)
@@ -100,9 +114,16 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, max.armor.wei
         heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
         max.armor.weight <- max(0, min(load.threshold-args$unarmored.weight, heaviest.armor))
     }
-    limits <- sort(unique(round(c(seq(0, max.armor.weight, by = weight.step), max.armor.weight), 9)), decreasing = TRUE)
+    if(min.armor.weight > max.armor.weight){
+        stop(sprintf("Invalid argument 'min.armor.weight': larger than max.armor.weight (%s)", format(max.armor.weight)))
+    }
+    ## The multiples of weight.step in range, plus both ends (a common grid, so curves over adjacent
+    ## ranges line up)
+    first.multiple <- ceiling(round(min.armor.weight/weight.step, 9))*weight.step
+    multiples <- if(first.multiple <= max.armor.weight) seq(first.multiple, max.armor.weight, by = weight.step) else numeric(0)
+    limits <- sort(unique(round(c(min.armor.weight, multiples, max.armor.weight), 9)), decreasing = TRUE)
 
-    out <- list(args = c(list(metric = metric, weight.step = weight.step, max.armor.weight = max.armor.weight), args), data = data.table::data.table())
+    out <- list(args = c(list(metric = metric, weight.step = weight.step, min.armor.weight = min.armor.weight, max.armor.weight = max.armor.weight), args), data = data.table::data.table())
 
     ## From the largest limit down. The best combination at a limit stays the best at every lower
     ## limit it still fits under (lowering the limit only removes combinations), so it's reused down
