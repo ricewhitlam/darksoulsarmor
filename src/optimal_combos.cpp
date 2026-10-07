@@ -1,6 +1,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <tuple>
 #include <vector>
 
@@ -234,6 +235,26 @@ DataFrame optimal_armor_combinations(
             curr_L = L;
         } else{
             curr_L = loop_size;
+        }
+
+        // Shell-level bound: every combo in this shell uses the (loop_size-1)th piece of at least
+        // one slot that isn't capped (a capped slot has no piece that deep), so none can score more
+        // than the best of [that slot's (loop_size-1)th score + every other slot's best score].
+        // Each slot is sorted descending, so the bound can only fall as loop_size grows. Once the
+        // heap is full and it's strictly below the worst kept score (compared as score_key()s, as
+        // the heap does - a tie could still win on the tie-break), nothing in this shell or any
+        // later one can be kept, so the search is over. The sums keep the candidates' own
+        // head+chest+hands+legs order with each term at least as large, so they can't round below
+        // any candidate's score.
+        if(at_max_queue_size){
+            double shell_bound = -std::numeric_limits<double>::infinity();
+            if(!I_capped){ shell_bound = std::max(shell_bound, head.SCORE[loop_size_1]+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE); }
+            if(!J_capped){ shell_bound = std::max(shell_bound, head.SCORE[0]+chest.SCORE[loop_size_1]+best_hands_SCORE+best_legs_SCORE); }
+            if(!K_capped){ shell_bound = std::max(shell_bound, head.SCORE[0]+best_chest_SCORE+hands.SCORE[loop_size_1]+best_legs_SCORE); }
+            if(!L_capped){ shell_bound = std::max(shell_bound, head.SCORE[0]+best_chest_SCORE+best_hands_SCORE+legs.SCORE[loop_size_1]); }
+            if(score_key(shell_bound) < armor_combos.front().key){
+                break;
+            }
         }
 
         for(int i = 0; i < curr_I; ++i){
