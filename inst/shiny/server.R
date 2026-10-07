@@ -972,7 +972,7 @@ server <- function(input, output, session){
             if(x >= 0 && x <= max(d$ARMOR_WEIGHT_LIMIT)){
                 selected <- roll == result$selected.roll
                 shapes[[length(shapes)+1]] <- list(type = "line", x0 = x, x1 = x, y0 = 0, y1 = 1, yref = "paper", line = list(dash = if(selected) "solid" else "dash", width = if(selected) 2 else 1, color = if(selected) "black" else "gray"))
-                annotations[[length(annotations)+1]] <- list(x = x, y = 1, yref = "paper", text = if(selected) paste0("<b>", line.labels[[roll]], "</b>") else line.labels[[roll]], showarrow = FALSE, xanchor = "right", yanchor = "bottom")
+                annotations[[length(annotations)+1]] <- list(x = x, y = 1, yref = "paper", text = if(selected) paste0("<b>", line.labels[[roll]], "</b>") else line.labels[[roll]], showarrow = FALSE, xanchor = "center", yanchor = "bottom")
             }
         }
         ## Poise breakpoints players aim for (see the User Guide)
