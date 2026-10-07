@@ -397,6 +397,46 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
     })
 })
 
+## A minimum on the charted stat would only cut the curve off below it, so the chart ignores it and
+## draws it as a reference line instead; every other minimum still applies. With the defaults the
+## Fast segment runs from 0 to 2.5 armor weight.
+test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        values <- minima.inputs(minimum.values, minima.ids)
+        values[[metric.input.id("POISE", "minima")]] <- 30
+        values[[metric.input.id("BLEED_RES", "minima")]] <- 20
+        submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        session$setInputs(go = 1)
+        expect_equal(armordata()$args$minima[minima.index.of("POISE")], 30)
+
+        ## Charting poise: its minimum is ignored, bleed's applies
+        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Trade-offs")
+        result <- tradeoffdata()
+        expect_equal(result$stat.minimum, 30)
+        expect_equal(result$lines[["Fast"]], 2.5)
+        fast <- get.armor.tradeoffs(metric = "POISE", minima = c(BLEED_RES = 20), max.armor.weight = 2.5)$data
+        expect_equal(result$data[seq_len(nrow(fast)), names(fast), with = FALSE], fast)
+        expect_true(any(result$data$BEST_VALUE < 30, na.rm = TRUE))
+        expect_true(grepl("Your minimum: 30", output$tradeoff_plot, fixed = TRUE))
+
+        ## Charting bleed resistance: the other way around
+        session$setInputs(tradeoff_metric = "BLEED_RES")
+        result <- tradeoffdata()
+        expect_equal(result$stat.minimum, 20)
+        fast <- get.armor.tradeoffs(metric = "BLEED_RES", minima = c(POISE = 30), max.armor.weight = 2.5)$data
+        expect_equal(result$data[seq_len(nrow(fast)), names(fast), with = FALSE], fast)
+        expect_true(grepl("Your minimum: 20", output$tradeoff_plot, fixed = TRUE))
+
+        ## The score has no minimum of its own: both apply, and there's no reference line
+        session$setInputs(tradeoff_metric = "SCORE")
+        result <- tradeoffdata()
+        expect_equal(result$stat.minimum, 0)
+        fast <- get.armor.tradeoffs(metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), max.armor.weight = 2.5)$data
+        expect_equal(result$data[seq_len(nrow(fast)), names(fast), with = FALSE], fast)
+        expect_false(grepl("Your minimum", output$tradeoff_plot, fixed = TRUE))
+    })
+})
+
 test_that("roll classes account for the Mask of the Father's bonus", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         ## Equip load 80, gear 12: without the Mask, Fast ends at 8 armor weight; with it, at 9

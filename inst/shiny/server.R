@@ -903,6 +903,13 @@ server <- function(input, output, session){
 
             ## The last refresh's (validated) settings, less the Results-only table size
             settings <- snapshot[setdiff(names(snapshot), "max.table.size")]
+            ## A minimum on the charted stat itself would only cut the curve off below it, so it's
+            ## ignored here and drawn as a reference line instead; every other minimum still applies
+            stat.minimum <- 0
+            if(input$tradeoff_metric != "SCORE"){
+                stat.minimum <- settings$minima[minima.index.of(input$tradeoff_metric)]
+                settings$minima[minima.index.of(input$tradeoff_metric)] <- 0
+            }
             equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
             gear.weight <- settings$unarmored.weight
             heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
@@ -939,7 +946,7 @@ server <- function(input, output, session){
             tradeoffdata(
                 list(
                     metric = input$tradeoff_metric, data = curve, lines = lines, selected.roll = settings$roll,
-                    gear.weight = gear.weight, equip.load = equip.load, key = key
+                    gear.weight = gear.weight, equip.load = equip.load, stat.minimum = stat.minimum, key = key
                 )
             )
             tradeoff.computations(tradeoff.computations()+1)
@@ -1003,6 +1010,11 @@ server <- function(input, output, session){
                 shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = breakpoint, y1 = breakpoint, line = list(dash = "dot", color = "firebrick"))
                 annotations[[length(annotations)+1]] <- list(x = 0, xref = "paper", y = breakpoint, text = paste("Poise", breakpoint), showarrow = FALSE, xanchor = "left", yanchor = "bottom")
             }
+        }
+        ## The user's minimum on the charted stat (ignored by the curve itself)
+        if(result$stat.minimum > 0){
+            shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = result$stat.minimum, y1 = result$stat.minimum, line = list(dash = "dash", color = "steelblue"))
+            annotations[[length(annotations)+1]] <- list(x = 1, xref = "paper", y = result$stat.minimum, text = paste("Your minimum:", format(result$stat.minimum)), showarrow = FALSE, xanchor = "right", yanchor = "bottom")
         }
         p <-
             plotly::plot_ly(
