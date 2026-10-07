@@ -353,6 +353,11 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
         expect_no_error(output$tradeoff_table)
         ## Points are hovered and clicked by weight alone
         expect_match(output$tradeoff_plot, '"hovermode":"x"', fixed = TRUE)
+        ## Sets kept Mid only by the Mask of the Father's bonus: named in full in the table, abbreviated
+        ## in the hover
+        expect_true("Mid (Mask of the Father bonus)" %in% result$data$MOVEMENT)
+        expect_match(output$tradeoff_plot, "Movement: Mid (MotF bonus)", fixed = TRUE)
+        expect_false(grepl("Mask of the Father bonus", output$tradeoff_plot, fixed = TRUE))
 
         ## The table: limit, best value named for the stat, movement, scores, pieces
         table <- tradeoff.table(result)

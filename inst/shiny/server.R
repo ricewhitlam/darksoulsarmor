@@ -998,7 +998,8 @@ server <- function(input, output, session){
                 sprintf(
                     "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - Movement: %s<br>Score %.3f (%s)",
                     d$ARMOR_WEIGHT_LIMIT, metric.label, format(round(d$BEST_VALUE, 3)),
-                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, d$MOVEMENT, d$SCORE_RAW, d$SCORE_QUALITY
+                    ## The Mask of the Father abbreviated, to keep the hover box narrow
+                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, sub("Mask of the Father bonus", "MotF bonus", d$MOVEMENT, fixed = TRUE), d$SCORE_RAW, d$SCORE_QUALITY
                 )
             )
         d$point <- seq_len(nrow(d))
