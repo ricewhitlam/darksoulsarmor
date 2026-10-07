@@ -294,6 +294,11 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         expect_no_error(output$tradeoff_plot)
         expect_no_error(output$tradeoff_table)
 
+        ## The table: limit, best value named for the stat, roll, pieces, scores
+        table <- tradeoff.table(result)
+        expect_identical(names(table), c("ARMOR_WEIGHT_LIMIT", "POISE", "ROLL", "HEAD", "CHEST", "HANDS", "LEGS", "SCORE_RAW", "SCORE_QUALITY"))
+        expect_equal(table$POISE, result$data$BEST_VALUE)
+
         ## Every point's roll class is from its own weight plus the gear weight
         expected.class <- roll.class(expected$ARMOR_WEIGHT, expected$HEAD == "Mask of the Father", 12, 80)
         expect_equal(sub(" [(].*", "", result$data$ROLL), expected.class$class)
@@ -312,6 +317,13 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         expect_equal(tradeoffdata()$metric, "MAG_DEF")
         expect_true(all(diff(limits) <= 0.1 + 1e-9))
         expect_true(all(c(8, 28) %in% round(limits, 9)))
+        expect_identical(names(tradeoff.table(tradeoffdata()))[2], "MAG_DEF")
+        expect_no_error(output$tradeoff_table)
+
+        ## With the score as the stat, it's the value column and isn't repeated
+        session$setInputs(tradeoff_metric = "SCORE", tradeoff_detail = "1", tradeoff_go = 3)
+        expect_identical(names(tradeoff.table(tradeoffdata())), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "ROLL", "HEAD", "CHEST", "HANDS", "LEGS", "SCORE_QUALITY"))
+        expect_no_error(output$tradeoff_table)
     })
 })
 

@@ -1005,17 +1005,34 @@ server <- function(input, output, session){
         }
     })
 
+    ## The table under the chart: limit, best value (named for the chosen stat), roll class, pieces,
+    ## then the set's scores - with the score itself as the value when it's the chosen stat, rather
+    ## than shown twice. Each set's real armor weight is in the chart's hover.
+    tradeoff.table <- function(result){
+        if(result$metric == "SCORE"){
+            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE_RAW, ROLL, HEAD, CHEST, HANDS, LEGS, SCORE_QUALITY)])
+        }
+        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ROLL, HEAD, CHEST, HANDS, LEGS, SCORE_RAW, SCORE_QUALITY)]
+        data.table::setnames(table, "BEST_VALUE", result$metric)
+        return(table)
+    }
+
     output$tradeoff_table <- DT::renderDataTable({
         result <- tradeoffdata()
         shiny::req(result)
-        DT::datatable(
-            result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, ARMOR_WEIGHT, ROLL, TOTAL_POISE, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)],
-            selection = "single",
-            options = list(scrollX = TRUE, paging = FALSE, scrollY = "400px", scrollCollapse = TRUE)
-        ) |>
-        DT::formatCurrency(c("ARMOR_WEIGHT_LIMIT", "ARMOR_WEIGHT"), currency = "", interval = 3, mark = ",", digits = 1) |>
-        DT::formatCurrency(c("BEST_VALUE", "SCORE_RAW"), currency = "", interval = 3, mark = ",", digits = 3) |>
-        DT::formatCurrency("TOTAL_POISE", currency = "", interval = 3, mark = ",", digits = 0)
+        value.digits <- if(result$metric == "POISE") 0 else 1
+        table <-
+            DT::datatable(
+                tradeoff.table(result),
+                selection = "single",
+                options = list(scrollX = TRUE, paging = FALSE, scrollY = "400px", scrollCollapse = TRUE)
+            ) |>
+            DT::formatCurrency("ARMOR_WEIGHT_LIMIT", currency = "", interval = 3, mark = ",", digits = 1) |>
+            DT::formatCurrency("SCORE_RAW", currency = "", interval = 3, mark = ",", digits = 3)
+        if(result$metric != "SCORE"){
+            table <- DT::formatCurrency(table, result$metric, currency = "", interval = 3, mark = ",", digits = value.digits)
+        }
+        table
     })
 
     shiny::observeEvent(input$tradeoff_table_rows_selected, {
