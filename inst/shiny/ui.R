@@ -24,8 +24,7 @@ bslib::page_sidebar(
                 shiny::hr(),
 
                 shiny::actionButton(inputId = "go", label = "Refresh Armor Data"),
-                shiny::downloadButton("download","Download Armor Data"),
-            
+
             ),
         
         shiny::tags$head(
@@ -65,6 +64,7 @@ bslib::page_sidebar(
             id = "main_tabs",
             bslib::nav_panel(
                 "Results",
+                shiny::div(shiny::downloadButton("download", "Download Armor Data")),
                 DT::dataTableOutput(outputId = "table")
             ),
             bslib::nav_panel(
@@ -92,11 +92,10 @@ bslib::page_sidebar(
                             selected = "1",
                             inline = TRUE
                         )
-                    ),
-                    shiny::column(4, shiny::br(), shiny::actionButton(inputId = "tradeoff_go", label = "Compute Trade-offs"))
+                    )
                 ),
                 shiny::helpText(
-                    "For every armor weight, the most of the chosen stat any armor set can reach with every other setting in the sidebar applied.",
+                    "For every armor weight, the most of the chosen stat any armor set can reach, using the settings of the last refresh.",
                     "Vertical lines mark where your roll type changes (the selected roll type's line is solid). Hover over a point for its set",
                     "and how it rolls; click a point or a table row for its links."
                 ),

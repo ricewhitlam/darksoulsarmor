@@ -124,10 +124,10 @@ server <- function(input, output, session){
             if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged)))){
                 output$refreshmessage <- shiny::renderText("")
             } else{
-                output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to pull new results")
+                output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
             }
         } else{
-            output$refreshmessage <- shiny::renderText("Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results")
+            output$refreshmessage <- shiny::renderText("Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results for both tabs")
         }
     })
 
@@ -870,7 +870,27 @@ server <- function(input, output, session){
         list(class = with.bonus, by.mask.bonus = mask & with.bonus != classify(equip.load))
     }
 
-    shiny::observeEvent(input$tradeoff_go, {
+    ## How many times the curve has been computed - lets the tests tell a recompute from a reuse
+    tradeoff.computations <- shiny::reactiveVal(0)
+
+    ## The chart shows the settings of the last successful refresh (armordata()$args), exactly like
+    ## the Results table - never unsaved or newer sidebar settings - so both tabs always describe
+    ## the same character. It's computed while its tab is open, whenever something it depends on has
+    ## changed: a refresh with different settings, or another Maximize/Detail choice. Neither the
+    ## table size nor the roll type changes the curve (it covers every roll class), so a refresh that
+    ## changes only those keeps it and just moves the emphasized roll line.
+    shiny::observeEvent(list(input$main_tabs, armordata(), input$tradeoff_metric, input$tradeoff_detail), {
+        shiny::req(identical(input$main_tabs, "Trade-offs"), been.refreshed(), input$tradeoff_metric, input$tradeoff_detail)
+        snapshot <- armordata()$args
+        key <- list(settings = snapshot[setdiff(names(snapshot), c("max.table.size", "roll"))], metric = input$tradeoff_metric, detail = input$tradeoff_detail)
+        current <- tradeoffdata()
+        if(!is.null(current) && identical(current$key, key)){
+            if(!identical(current$selected.roll, snapshot$roll)){
+                current$selected.roll <- snapshot$roll
+                tradeoffdata(current)
+            }
+            return(invisible(NULL))
+        }
 
         ## Same error/warning handling as "Refresh Armor Data" above
         tradeoff.warnings <- character(0)
@@ -881,7 +901,8 @@ server <- function(input, output, session){
 
             shinybusy::show_modal_spinner()
 
-            settings <- current.settings()
+            ## The last refresh's (validated) settings, less the Results-only table size
+            settings <- snapshot[setdiff(names(snapshot), "max.table.size")]
             equip.load <- (settings$endurance.level+40)*ifelse(settings$havel.ring, 1.5, 1)*ifelse(settings$favor.ring, 1.2, 1)
             gear.weight <- settings$unarmored.weight
             heaviest.armor <- max(head.data.unupgraded$WEIGHT)+max(chest.data.unupgraded$WEIGHT)+max(hands.data.unupgraded$WEIGHT)+max(legs.data.unupgraded$WEIGHT)
@@ -918,9 +939,10 @@ server <- function(input, output, session){
             tradeoffdata(
                 list(
                     metric = input$tradeoff_metric, data = curve, lines = lines, selected.roll = settings$roll,
-                    gear.weight = gear.weight, equip.load = equip.load
+                    gear.weight = gear.weight, equip.load = equip.load, key = key
                 )
             )
+            tradeoff.computations(tradeoff.computations()+1)
             output$errormessage <- shiny::renderText("")
 
             for(message in unique(tradeoff.warnings)){

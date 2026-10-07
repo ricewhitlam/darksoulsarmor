@@ -277,7 +277,8 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         session$setInputs(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE)
         session$setInputs(dismiss_ring_modal = 1)
 
-        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", tradeoff_go = 1)
+        session$setInputs(go = 1)
+        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Trade-offs")
         result <- tradeoffdata()
         expect_equal(output$errormessage, "")
         expect_equal(unname(result$lines), c(8, 28, 68))
@@ -312,7 +313,7 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         expect_match(output$tabchest$html, chest.data.unupgraded[ARMOR == expected$CHEST[point], LINK], fixed = TRUE)
 
         ## Fine detail: every 0.1, still meeting at the lines
-        session$setInputs(tradeoff_metric = "MAG_DEF", tradeoff_detail = "0.1", tradeoff_go = 2)
+        session$setInputs(tradeoff_metric = "MAG_DEF", tradeoff_detail = "0.1")
         limits <- tradeoffdata()$data$ARMOR_WEIGHT_LIMIT
         expect_equal(tradeoffdata()$metric, "MAG_DEF")
         expect_true(all(diff(limits) <= 0.1 + 1e-9))
@@ -321,9 +322,78 @@ test_that("the Trade-offs tab stitches per-roll-class curves over every armor we
         expect_no_error(output$tradeoff_table)
 
         ## With the score as the stat, it's the value column and isn't repeated
-        session$setInputs(tradeoff_metric = "SCORE", tradeoff_detail = "1", tradeoff_go = 3)
+        session$setInputs(tradeoff_metric = "SCORE", tradeoff_detail = "1")
         expect_identical(names(tradeoff.table(tradeoffdata())), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "SCORE_QUALITY", "ROLL", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_no_error(output$tradeoff_table)
+    })
+})
+
+## Both tabs describe the last successful refresh. The chart is computed only once its tab is open
+## after a refresh, from that refresh's settings (never unsaved sidebar edits); it's recomputed when
+## a refresh changes the settings or Maximize/Detail change, and kept - only the emphasized roll
+## line moving - when a refresh changes just the table size or the roll type. A failed refresh
+## changes neither tab.
+test_that("the Trade-offs chart follows the last refresh, not unsaved settings", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        ## Before any refresh: nothing to chart, and one message covers both tabs
+        session$setInputs(tradeoff_metric = "POISE", tradeoff_detail = "1", main_tabs = "Trade-offs")
+        expect_null(tradeoffdata())
+        expect_equal(output$refreshmessage, "Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results for both tabs")
+
+        ## A refresh while the Results tab is showing doesn't compute the chart yet
+        session$setInputs(main_tabs = "Results")
+        session$setInputs(go = 1)
+        expect_null(tradeoffdata())
+        expect_equal(tradeoff.computations(), 0)
+
+        ## Opening the tab computes it from the refresh's settings (the defaults)
+        session$setInputs(main_tabs = "Trade-offs")
+        expect_equal(tradeoff.computations(), 1)
+        defaults <- get.armor.tradeoffs(metric = "POISE", max.armor.weight = 0)$data
+        expect_equal(tradeoffdata()$data[1, names(defaults), with = FALSE], defaults)
+
+        ## Switching tabs back and forth reuses it
+        session$setInputs(main_tabs = "Results")
+        session$setInputs(main_tabs = "Trade-offs")
+        expect_equal(tradeoff.computations(), 1)
+
+        ## An unsaved edit flags both tabs as stale, and charts computed meanwhile still use the
+        ## last refresh's settings
+        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE), 1)
+        expect_equal(output$refreshmessage, "Inputs have changed - click 'Refresh Armor Data' to update both tabs")
+        session$setInputs(tradeoff_metric = "SCORE")
+        session$setInputs(tradeoff_metric = "POISE")
+        expect_equal(tradeoff.computations(), 3)
+        expect_equal(tradeoffdata()$data$BEST_VALUE[1], defaults$BEST_VALUE)
+
+        ## Refreshing applies the edit to the chart too
+        session$setInputs(go = 2)
+        expect_equal(output$refreshmessage, "")
+        expect_equal(tradeoff.computations(), 4)
+        expect_true(tradeoffdata()$key$settings$wolf.ring)
+        expect_equal(tradeoffdata()$data$BEST_VALUE[1], get.armor.tradeoffs(metric = "POISE", max.armor.weight = 0, wolf.ring = TRUE)$data$BEST_VALUE)
+
+        ## A refresh changing only the roll type and the table size keeps the curve
+        curve <- tradeoffdata()$data
+        expect_equal(tradeoffdata()$selected.roll, "Fast")
+        submit.modal(session, "constraints", "dismiss_constraint_modal", list(roll = "Fat", unarmored.weight = constraint.values$unarmored.weight, endurance.level = constraint.values$endurance.level), 1)
+        submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 50)), 1)
+        session$setInputs(go = 3)
+        expect_equal(output$errormessage, "")
+        expect_equal(nrow(armordata()$data), 50)
+        expect_equal(armordata()$args$roll, "Fat")
+        expect_equal(tradeoff.computations(), 4)
+        expect_equal(tradeoffdata()$selected.roll, "Fat")
+        expect_identical(tradeoffdata()$data, curve)
+        expect_no_error(output$tradeoff_plot)
+
+        ## A failed refresh (all-zero score weights) changes neither tab
+        submit.modal(session, "weights", "dismiss_weight_modal", setNames(as.list(rep(0, length(weight.ids))), weight.ids), 1)
+        session$setInputs(go = 4)
+        expect_match(output$errormessage, "weights")
+        expect_equal(nrow(armordata()$data), 50)
+        expect_equal(tradeoff.computations(), 4)
+        expect_identical(tradeoffdata()$data, curve)
     })
 })
 
