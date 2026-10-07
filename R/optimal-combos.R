@@ -441,6 +441,39 @@ get.optimal.armor.combos <- function(
             data = data.table::data.table()
         )
 
+    return(find.armor.combos(out$args))
+
+}
+
+## The search itself, given arguments get.optimal.armor.combos has already validated (its `args`).
+## Ranks combinations by score, or - for get.armor.tradeoffs - by a single summed stat
+## (rank.metric: POISE or one defense/resistance), and takes the gear weight separately so the
+## trade-off curves can vary it past the 0-999 range user input is clamped to. Whatever it ranks by,
+## the output reports each combination's real SCORE_RAW and SCORE_QUALITY - except for one point of
+## a trade-off curve (curve.point = TRUE), which leaves SCORE_QUALITY and garbage collection to the
+## curve as a whole.
+find.armor.combos <- function(args, rank.metric = "SCORE", gear.weight = args$unarmored.weight, curve.point = FALSE){
+
+    max.table.size <- args$max.table.size
+    starting.class <- args$starting.class
+    areas.completed <- args$areas.completed
+    upgrade.types <- args$upgrade.types
+    head.filter <- args$head.filter
+    chest.filter <- args$chest.filter
+    hands.filter <- args$hands.filter
+    legs.filter <- args$legs.filter
+    regular.level <- args$regular.level
+    twinkling.level <- args$twinkling.level
+    roll <- args$roll
+    unarmored.weight <- gear.weight
+    endurance.level <- args$endurance.level
+    havel.ring <- args$havel.ring
+    favor.ring <- args$favor.ring
+    wolf.ring <- args$wolf.ring
+    minima <- args$minima
+    weights <- args$weights
+    out <- list(args = args, data = data.table::data.table())
+
     ## Get data at specified upgrade levels
     working.head.data <- get.interp.data(head.data.unupgraded, head.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
     working.chest.data <- get.interp.data(chest.data.unupgraded, chest.data.fullupgrade, as.numeric(regular.level), as.numeric(twinkling.level))
@@ -466,16 +499,29 @@ get.optimal.armor.combos <- function(
     ## Every piece's score at this upgrade level, kept from before any filtering below:
     ## SCORE_QUALITY ranks each result against every combination at this level (see
     ## score.quality() in R/score-quality.R), not just the ones the filters allow.
-    level.head.scores <- working.head.data$SCORE
-    level.chest.scores <- working.chest.data$SCORE
-    level.hands.scores <- working.hands.data$SCORE
-    level.legs.scores <- working.legs.data$SCORE
+    level.head.scores <- stats::setNames(working.head.data$SCORE, working.head.data$ARMOR)
+    level.chest.scores <- stats::setNames(working.chest.data$SCORE, working.chest.data$ARMOR)
+    level.hands.scores <- stats::setNames(working.hands.data$SCORE, working.hands.data$ARMOR)
+    level.legs.scores <- stats::setNames(working.legs.data$SCORE, working.legs.data$ARMOR)
+
+    ## Ranking by a single stat instead of the score: the search only needs each piece's value in
+    ## SCORE (any stat summed across the four slots works the same way), so swap that stat in
+    if(rank.metric != "SCORE"){
+        working.head.data[, SCORE := get(rank.metric)]
+        working.chest.data[, SCORE := get(rank.metric)]
+        working.hands.data[, SCORE := get(rank.metric)]
+        working.legs.data[, SCORE := get(rank.metric)]
+    }
 
     ## Calc equip load values
     base.load <- (endurance.level+40)*ifelse(havel.ring, 1.5, 1)*ifelse(favor.ring, 1.2, 1)
     roll.mult <- c(0.25, 0.5, 1.0, 999.0)[match(roll, c("Fast", "Mid", "Fat", "None"))]
     load.threshold <- base.load*roll.mult
-    load.threshold.father.mask <- load.threshold*1.05
+    ## With no roll constraint there's no load limit for the Mask of the Father's bonus to raise. In
+    ## a normal search both thresholds are effectively infinite either way; this matters only when
+    ## get.armor.tradeoffs lowers the limit, where a 5% bonus on the x999 "None" threshold would wrongly
+    ## exempt the Mask from every armor-weight limit.
+    load.threshold.father.mask <- if(roll == "None") load.threshold else load.threshold*1.05
     ## Mask of the Father's own weight, for "with the Mask on, how much is left for the other slots"
     ## below. Taken from the unfiltered table (weight doesn't change with upgrade level), so it's
     ## defined even when the Mask is filtered out - the pre-filters then just use a looser bound.
@@ -680,9 +726,22 @@ get.optimal.armor.combos <- function(
             )
         )
 
+    ## When ranked by another stat, the search's SCORE_RAW holds that stat's total - report the
+    ## combinations' real scores instead (each piece's score, summed in the search's own order)
+    if(rank.metric != "SCORE"){
+        out$data[, SCORE_RAW := unname(level.head.scores[HEAD]+level.chest.scores[CHEST]+level.hands.scores[HANDS]+level.legs.scores[LEGS])]
+    }
+
     ## SCORE_QUALITY: each result's exact rarity among every combination at this upgrade level
-    ## ("Top 1 in N" / "Bottom 1 in N") - see score.quality() in R/score-quality.R
-    out$data[, SCORE_QUALITY := score.quality(SCORE_RAW, level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)]
+    ## ("Top 1 in N" / "Bottom 1 in N") - see score.quality() in R/score-quality.R. One point of
+    ## a get.armor.tradeoffs curve leaves it to the caller instead, which computes it once for all
+    ## its points from these per-piece scores.
+    if(curve.point){
+        out$data[, SCORE_QUALITY := NA_character_]
+        attr(out$data, "level.scores") <- list(level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)
+    } else{
+        out$data[, SCORE_QUALITY := score.quality(SCORE_RAW, level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)]
+    }
     data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
@@ -692,7 +751,10 @@ get.optimal.armor.combos <- function(
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
     rm(list = c("weight.check", "minima.check", "init.size"))
     rm(list = c("father.mask.index", "NO_FATHER_MASK_INDEX"))
-    gc()
+    ## A get.armor.tradeoffs curve runs many searches in a row and collects once at its end
+    if(!curve.point){
+        gc()
+    }
 
     return(out)
 
