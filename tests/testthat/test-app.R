@@ -615,10 +615,14 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         regions <- result$efficiency$data
         expect_gt(nrow(regions), 1)
 
-        ## Every region drawn in its color, with its own hover text, under the curve
+        ## The curve as a thick line, then every region on top of it as a thinner line in its color,
+        ## with its own hover text
         plot <- output$tradeoff_plot
+        curve.line <- regexpr('"color":"#1f77b4","width":4', plot, fixed = TRUE)
+        expect_gt(curve.line, 0)
         for(color in unique(efficiency.color(regions$RATIO_TO_AVERAGE))){
-            expect_match(plot, color, fixed = TRUE)
+            region.line <- regexpr(sprintf('"color":"%s","width":2', color), plot, fixed = TRUE)
+            expect_gt(region.line, curve.line)
         }
         expect_match(plot, sprintf("Weight %.1f-%.1f: ", regions$FROM[1], regions$TO[1]), fixed = TRUE)
         expect_match(plot, "Score per unit weight", fixed = TRUE)

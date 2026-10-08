@@ -1086,9 +1086,15 @@ server <- function(input, output, session){
             shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = result$stat.minimum, y1 = result$stat.minimum, line = list(dash = "dash", color = "steelblue"))
             annotations[[length(annotations)+1]] <- list(x = 1, xref = "paper", y = result$stat.minimum, text = paste("Your minimum:", format(result$stat.minimum)), showarrow = FALSE, xanchor = "right", yanchor = "bottom")
         }
-        p <- plotly::plot_ly(source = "tradeoffs")
-        ## The simplified curve (get.tradeoff.efficiency), each region colored by how much it buys per
-        ## unit of weight against the curve's average, drawn under the curve itself. Each region has a
+        ## The curve itself, as a thick line...
+        p <-
+            plotly::plot_ly(
+                d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
+                type = "scatter", mode = "lines+markers", line = list(shape = "hv", color = "#1f77b4", width = 4), marker = list(color = "#1f77b4"),
+                showlegend = FALSE, source = "tradeoffs"
+            )
+        ## ...with the simplified curve (get.tradeoff.efficiency) as a thinner line on top, each region
+        ## colored by how much it buys per unit of weight against the curve's average. Each region has a
         ## point at every weight it spans, so hovering anywhere along it describes it.
         if(!is.null(result$efficiency)){
             regions <- result$efficiency$data
@@ -1102,17 +1108,13 @@ server <- function(input, output, session){
                 )
                 p <- plotly::add_trace(
                     p, x = xs, y = regions$START_VALUE[i]+regions$SLOPE[i]*(xs-regions$FROM[i]), text = text, hoverinfo = "text",
-                    type = "scatter", mode = "lines", line = list(color = colors[i], width = 6), opacity = 0.7, showlegend = FALSE, inherit = FALSE
+                    type = "scatter", mode = "lines", line = list(color = colors[i], width = 2), showlegend = FALSE, inherit = FALSE
                 )
             }
         }
         p <-
-            plotly::add_trace(
-                p, data = d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
-                type = "scatter", mode = "lines+markers", line = list(shape = "hv", color = "#1f77b4"), marker = list(color = "#1f77b4"),
-                showlegend = FALSE, inherit = FALSE
-            ) |>
             plotly::layout(
+                p,
                 xaxis = list(title = "Armor weight limit"), yaxis = list(title = paste("Best", metric.label)),
                 shapes = shapes, annotations = annotations,
                 ## Hover (and click) by weight alone, so the pointer needn't be on the marker
