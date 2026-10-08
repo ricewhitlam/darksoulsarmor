@@ -1064,9 +1064,30 @@ server <- function(input, output, session){
             )
         d$point <- seq_len(nrow(d))
 
-        ## Movement breakpoints that fall within the chart, the selected movement type's emphasized
         shapes <- list()
         annotations <- list()
+        ## Where extra weight pays off (get.tradeoff.efficiency): each region of the simplified curve
+        ## shaded behind the chart, colored as its row in the table below by how much it buys per unit
+        ## of weight against the curve's average, and named in the hover text of each point in it. A
+        ## point where two regions meet belongs to the one it ends.
+        if(!is.null(result$efficiency)){
+            regions <- result$efficiency$data
+            colors <- efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35)
+            for(i in seq_len(nrow(regions))){
+                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], line = list(width = 0), layer = "below")
+            }
+            for(j in which(!is.na(d$BEST_VALUE))){
+                i <- which(regions$FROM <= d$ARMOR_WEIGHT_LIMIT[j]+1e-9 & regions$TO >= d$ARMOR_WEIGHT_LIMIT[j]-1e-9)[1]
+                if(!is.na(i)){
+                    d$hover[j] <- paste0(d$hover[j], sprintf(
+                        "<br>Region %.1f-%.1f: %+.*f %s per unit weight%s",
+                        regions$FROM[i], regions$TO[i], value.digits+1, regions$SLOPE[i], metric.label,
+                        if(is.na(regions$RATIO_TO_AVERAGE[i])) "" else sprintf(", %.1fx average", regions$RATIO_TO_AVERAGE[i])
+                    ))
+                }
+            }
+        }
+        ## Movement breakpoints that fall within the chart, the selected movement type's emphasized
         line.labels <- c(Light = "Light | Mid", Mid = "Mid | Fat", Fat = "Fat | Poop")
         for(movement in names(result$lines)){
             x <- result$lines[[movement]]
@@ -1088,32 +1109,11 @@ server <- function(input, output, session){
             shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = result$stat.minimum, y1 = result$stat.minimum, line = list(dash = "dash", color = "steelblue"))
             annotations[[length(annotations)+1]] <- list(x = 1, xref = "paper", y = result$stat.minimum, text = paste("Your minimum:", format(result$stat.minimum)), showarrow = FALSE, xanchor = "right", yanchor = "bottom")
         }
-        ## The curve itself, as a thick line...
         p <-
             plotly::plot_ly(
                 d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
-                type = "scatter", mode = "lines+markers", line = list(shape = "hv", color = "#1f77b4", width = 4), marker = list(color = "#1f77b4"),
-                showlegend = FALSE, source = "tradeoffs"
+                type = "scatter", mode = "lines+markers", line = list(shape = "hv"), source = "tradeoffs"
             )
-        ## ...with the simplified curve (get.tradeoff.efficiency) as a thinner line on top, each region
-        ## colored by how much it buys per unit of weight against the curve's average. Each region has a
-        ## point at every weight it spans, so hovering anywhere along it describes it.
-        if(!is.null(result$efficiency)){
-            regions <- result$efficiency$data
-            colors <- efficiency.color(regions$RATIO_TO_AVERAGE)
-            for(i in seq_len(nrow(regions))){
-                xs <- d$ARMOR_WEIGHT_LIMIT[d$ARMOR_WEIGHT_LIMIT >= regions$FROM[i]-1e-9 & d$ARMOR_WEIGHT_LIMIT <= regions$TO[i]+1e-9]
-                text <- sprintf(
-                    "Weight %.1f-%.1f: %+.*f %s per unit weight%s",
-                    regions$FROM[i], regions$TO[i], value.digits+1, regions$SLOPE[i], metric.label,
-                    if(is.na(regions$RATIO_TO_AVERAGE[i])) "" else sprintf(", %.1fx average", regions$RATIO_TO_AVERAGE[i])
-                )
-                p <- plotly::add_trace(
-                    p, x = xs, y = regions$START_VALUE[i]+regions$SLOPE[i]*(xs-regions$FROM[i]), text = text, hoverinfo = "text",
-                    type = "scatter", mode = "lines", line = list(color = colors[i], width = 2), showlegend = FALSE, inherit = FALSE
-                )
-            }
-        }
         p <-
             plotly::layout(
                 p,

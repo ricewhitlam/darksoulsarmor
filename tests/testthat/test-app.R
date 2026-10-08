@@ -600,7 +600,7 @@ test_that("movement classes are the game's check, and note the Mask of the Fathe
 })
 
 ## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (5%), each
-## region colored by its slope against the curve's average - green at twice it or more, purple at
+## region shaded by its slope against the curve's average - green at twice it or more, purple at
 ## flat, grey at the average (half and double equally far from grey) - and listed in a table
 test_that("the Trade-offs tab shows where extra weight pays off", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
@@ -615,17 +615,25 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         regions <- result$efficiency$data
         expect_gt(nrow(regions), 1)
 
-        ## The curve as a thick line, then every region on top of it as a thinner line in its color,
-        ## with its own hover text
-        plot <- output$tradeoff_plot
-        curve.line <- regexpr('"color":"#1f77b4","width":4', plot, fixed = TRUE)
-        expect_gt(curve.line, 0)
-        for(color in unique(efficiency.color(regions$RATIO_TO_AVERAGE))){
-            region.line <- regexpr(sprintf('"color":"%s","width":2', color), plot, fixed = TRUE)
-            expect_gt(region.line, curve.line)
-        }
-        expect_match(plot, sprintf("Weight %.1f-%.1f: ", regions$FROM[1], regions$TO[1]), fixed = TRUE)
-        expect_match(plot, "Score per unit weight", fixed = TRUE)
+        ## Every region shaded behind the curve in its table color, and the curve the chart's only
+        ## trace, so hovering shows one box
+        plot <- jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x
+        expect_length(plot$data, 1)
+        bands <- Filter(function(shape) shape$type == "rect", plot$layout$shapes)
+        expect_equal(vapply(bands, function(band) band$x0, numeric(1)), regions$FROM)
+        expect_equal(vapply(bands, function(band) band$x1, numeric(1)), regions$TO)
+        expect_equal(vapply(bands, function(band) band$fillcolor, character(1)), efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35))
+        expect_true(all(vapply(bands, function(band) band$layer, character(1)) == "below"))
+        ## Each point with a set names its one region; where two meet, the one it ends
+        hover <- unlist(plot$data[[1]]$text)
+        weights <- unlist(plot$data[[1]]$x)
+        region.text <- sprintf("Region %.1f-%.1f: ", regions$FROM, regions$TO)
+        has.set <- !is.na(result$data$BEST_VALUE)
+        expect_true(all(vapply(hover[has.set], function(h) sum(vapply(region.text, grepl, logical(1), x = h, fixed = TRUE)), integer(1)) == 1))
+        boundary <- match(regions$TO[1], weights)
+        expect_match(hover[boundary], region.text[1], fixed = TRUE)
+        expect_match(hover[boundary+1], region.text[2], fixed = TRUE)
+        expect_match(hover[boundary], "Score per unit weight", fixed = TRUE)
 
         ## The table: one row per region, as get.tradeoff.efficiency gives them, tinted to match
         table <- efficiency.table(result)

@@ -91,8 +91,8 @@ bslib::page_sidebar(
                 ),
                 plotly::plotlyOutput(outputId = "tradeoff_plot"),
                 shiny::helpText(
-                    "The colored line simplifies the curve into regions: green regions buy more of the stat per unit of armor weight than the curve's average,",
-                    "purple ones less. The table below lists each region."
+                    "The shaded bands split the curve into regions: green regions buy more of the stat per unit of armor weight than the curve's average,",
+                    "purple ones less. Hover over a point for its region's rate; the table below lists each region."
                 ),
                 DT::dataTableOutput(outputId = "efficiency_table"),
                 DT::dataTableOutput(outputId = "tradeoff_table")
