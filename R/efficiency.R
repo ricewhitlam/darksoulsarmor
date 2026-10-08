@@ -35,8 +35,9 @@
 #' into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{6}.
 #'
 #' @param
-#' min.width A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, as a
-#' share of the curve's range of weights. 0 for no limit. Defaults to \code{0.05} (5\%).
+#' min.width A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, in
+#' units of armor weight. 0 for no limit. Defaults to \code{2.5}, about 5\% of the heaviest armor
+#' set's weight.
 #'
 #' @return
 #' A \code{list} holding (1) \code{average.slope}, the curve's total gain divided by its total
@@ -49,7 +50,7 @@
 #' score.curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
 #' efficiency <- get.tradeoff.efficiency(score.curve)
 #'
-get.tradeoff.efficiency <- function(curve, tolerance = 0.05, max.segments = 6, min.width = 0.05){
+get.tradeoff.efficiency <- function(curve, tolerance = 0.05, max.segments = 6, min.width = 2.5){
 
     ## Check curve
     if(is.list(curve) && !is.data.frame(curve)){
@@ -83,10 +84,9 @@ get.tradeoff.efficiency <- function(curve, tolerance = 0.05, max.segments = 6, m
     if(!is.numeric(min.width) || length(min.width) != 1 || !is.finite(min.width) || min.width < 0){
         stop("Invalid argument 'min.width'")
     }
-    width <- min.width*(max(x)-min(x))
 
     ## Simplify, then one segment between each pair of kept points
-    kept <- douglas.peucker(x, y, allowed, max.segments, width)
+    kept <- douglas.peucker(x, y, allowed, max.segments, min.width)
     from <- kept[-length(kept)]
     to <- kept[-1]
     out <- data.table::data.table(

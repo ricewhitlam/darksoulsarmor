@@ -51,16 +51,16 @@ test_that("the simplified line stays within the tolerance, more loosely as it gr
 ## a movement line is one segment. Points with no set are left out, and a flat region has slope 0.
 test_that("segments ignore movement types", {
     curve <- data.table::data.table(
-        ARMOR_WEIGHT_LIMIT = round(seq(0, 6, by = 0.1), 1),
-        MOVEMENT_LIMIT = rep(c("Light", "Mid"), c(11, 50))
+        ARMOR_WEIGHT_LIMIT = round(seq(0, 12, by = 0.1), 1),
+        MOVEMENT_LIMIT = rep(c("Light", "Mid"), c(11, 110))
     )
-    curve[, BEST_VALUE := ifelse(ARMOR_WEIGHT_LIMIT < 0.5, NA_real_, ifelse(ARMOR_WEIGHT_LIMIT <= 2, 3*ARMOR_WEIGHT_LIMIT, 6))]
+    curve[, BEST_VALUE := ifelse(ARMOR_WEIGHT_LIMIT < 0.5, NA_real_, ifelse(ARMOR_WEIGHT_LIMIT <= 5, 3*ARMOR_WEIGHT_LIMIT, 15))]
     e <- get.tradeoff.efficiency(curve)
     expect_named(e$data, c("FROM", "TO", "START_VALUE", "END_VALUE", "SLOPE", "RATIO_TO_AVERAGE", "ABOVE_AVERAGE"))
-    expect_equal(e$data$FROM, c(0.5, 2))
-    expect_equal(e$data$TO, c(2, 6))
+    expect_equal(e$data$FROM, c(0.5, 5))
+    expect_equal(e$data$TO, c(5, 12))
     expect_equal(e$data$SLOPE, c(3, 0))
-    expect_equal(e$average.slope, (6 - 1.5)/(6 - 0.5))
+    expect_equal(e$average.slope, (15 - 1.5)/(12 - 0.5))
 })
 
 ## Capped, the curve is split into at most max.segments segments - the first ones it splits off at
@@ -83,22 +83,21 @@ test_that("max.segments caps the segments, keeping the biggest bends", {
     expect_identical(get.tradeoff.efficiency(curve, max.segments = nrow(uncapped$data) + 1, min.width = 0), uncapped)
 })
 
-## No split leaves a segment narrower than min.width (a share of the curve's weights): a sharp
-## jump in a curve, which unlimited becomes a sliver of its own, is folded into a wider segment
+## No split leaves a segment narrower than min.width (in armor weight): a sharp jump in a curve,
+## which unlimited becomes a sliver of its own, is folded into a wider segment
 test_that("min.width keeps segments from being slivers", {
     x <- round(seq(0, 10, by = 0.1), 1)
     curve <- data.table::data.table(ARMOR_WEIGHT_LIMIT = x, BEST_VALUE = x + ifelse(x >= 5.1, 20, 0))
     sliver <- get.tradeoff.efficiency(curve, min.width = 0)
-    expect_true(any(sliver$data$TO - sliver$data$FROM < 0.5 - 1e-9))
+    expect_true(any(sliver$data$TO - sliver$data$FROM < 2.5 - 1e-9))
     e <- get.tradeoff.efficiency(curve)
-    expect_true(all(e$data$TO - e$data$FROM >= 0.05*10 - 1e-9))
+    expect_true(all(e$data$TO - e$data$FROM >= 2.5 - 1e-9))
     ## On real curves, at several widths
     for(metric in c("SCORE", "MAG_DEF", "FIRE_DEF")){
         curve <- get.armor.tradeoffs(metric = metric, weight.step = 0.1, endurance.level = 40, movement = "Light")$data
-        weights <- diff(range(curve$ARMOR_WEIGHT_LIMIT[!is.na(curve$BEST_VALUE)]))
-        for(width in c(0.025, 0.05, 0.1)){
+        for(width in c(1, 2.5, 4)){
             e <- get.tradeoff.efficiency(curve, max.segments = Inf, min.width = width)
-            expect_true(all(e$data$TO - e$data$FROM >= width*weights - 1e-9), info = paste(metric, width))
+            expect_true(all(e$data$TO - e$data$FROM >= width - 1e-9), info = paste(metric, width))
         }
     }
 })

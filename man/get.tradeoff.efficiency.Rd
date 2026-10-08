@@ -8,7 +8,7 @@ get.tradeoff.efficiency(
   curve,
   tolerance = 0.05,
   max.segments = 6,
-  min.width = 0.05
+  min.width = 2.5
 )
 }
 \arguments{
@@ -22,8 +22,9 @@ keeps every bend (up to \code{max.segments}). Defaults to \code{0.05} (5\%).}
 \item{max.segments}{A length 1 whole \code{numeric}, at least 1: the most segments to split the curve
 into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{6}.}
 
-\item{min.width}{A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, as a
-share of the curve's range of weights. 0 for no limit. Defaults to \code{0.05} (5\%).}
+\item{min.width}{A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, in
+units of armor weight. 0 for no limit. Defaults to \code{2.5}, about 5\% of the heaviest armor
+set's weight.}
 }
 \value{
 A \code{list} holding (1) \code{average.slope}, the curve's total gain divided by its total
