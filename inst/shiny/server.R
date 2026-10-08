@@ -894,6 +894,19 @@ server <- function(input, output, session){
     )
     tradeoffdata <- shiny::reactiveVal(NULL)
 
+    ## A color for each efficiency ratio (a region's slope as a multiple of the curve's average): grey
+    ## at the average, deepening to green at twice it or more and to amber at flat (0). Measured on the
+    ## ratio's log, so half and double the average are equally far from grey; no ratio (a flat curve)
+    ## is grey. Solid for the chart's lines, translucent (alpha < 1) for the table's rows.
+    efficiency.color <- function(ratio, alpha = 1){
+        t <- ifelse(is.na(ratio), 0, pmax(-1, pmin(1, log2(ratio))))
+        s <- abs(t)
+        red <- round(189+(ifelse(t > 0, 26, 224)-189)*s)
+        green <- round(189+(ifelse(t > 0, 152, 130)-189)*s)
+        blue <- round(189+(ifelse(t > 0, 80, 20)-189)*s)
+        if(alpha == 1) sprintf("rgb(%d,%d,%d)", red, green, blue) else sprintf("rgba(%d,%d,%d,%.2f)", red, green, blue, alpha)
+    }
+
     ## The movement type each set (by its pieces' names) gets with the given weapons and equip loads,
     ## by the game's check, and whether only the Mask of the Father's bonus keeps it that light
     movement.class <- function(head, chest, hands, legs, carried, load, load.father.mask){
@@ -962,10 +975,15 @@ server <- function(input, output, session){
         classes <- movement.class(curve$HEAD, curve$CHEST, curve$HANDS, curve$LEGS, carried, load, load.father.mask)
         curve[, MOVEMENT := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
 
+        ## Where extra armor weight pays off (get.tradeoff.efficiency): the curve simplified to within 5%
+        ## of its range, each movement type on its own - when some movement type has two points to join
+        fittable <- any(curve[!is.na(BEST_VALUE), .N, by = MOVEMENT_LIMIT]$N >= 2)
+        efficiency <- if(fittable) get.tradeoff.efficiency(curve, tolerance = 0.05) else NULL
+
         tradeoff.computations(tradeoff.computations()+1)
         list(
             metric = metric, data = curve, lines = lines, selected.movement = settings$movement,
-            carried = carried, equip.load = load, stat.minimum = stat.minimum,
+            carried = carried, equip.load = load, stat.minimum = stat.minimum, efficiency = efficiency,
             key = tradeoff.key(snapshot, metric)
         )
     }
@@ -1068,10 +1086,31 @@ server <- function(input, output, session){
             shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = result$stat.minimum, y1 = result$stat.minimum, line = list(dash = "dash", color = "steelblue"))
             annotations[[length(annotations)+1]] <- list(x = 1, xref = "paper", y = result$stat.minimum, text = paste("Your minimum:", format(result$stat.minimum)), showarrow = FALSE, xanchor = "right", yanchor = "bottom")
         }
+        p <- plotly::plot_ly(source = "tradeoffs")
+        ## The simplified curve (get.tradeoff.efficiency), each region colored by how much it buys per
+        ## unit of weight against the curve's average, drawn under the curve itself. Each region has a
+        ## point at every weight it spans, so hovering anywhere along it describes it.
+        if(!is.null(result$efficiency)){
+            regions <- result$efficiency$data
+            colors <- efficiency.color(regions$RATIO_TO_AVERAGE)
+            for(i in seq_len(nrow(regions))){
+                xs <- d$ARMOR_WEIGHT_LIMIT[d$ARMOR_WEIGHT_LIMIT >= regions$FROM[i]-1e-9 & d$ARMOR_WEIGHT_LIMIT <= regions$TO[i]+1e-9]
+                text <- sprintf(
+                    "Weight %.1f-%.1f: %+.*f %s per unit weight%s",
+                    regions$FROM[i], regions$TO[i], value.digits+1, regions$SLOPE[i], metric.label,
+                    if(is.na(regions$RATIO_TO_AVERAGE[i])) "" else sprintf(", %.1fx average", regions$RATIO_TO_AVERAGE[i])
+                )
+                p <- plotly::add_trace(
+                    p, x = xs, y = regions$START_VALUE[i]+regions$SLOPE[i]*(xs-regions$FROM[i]), text = text, hoverinfo = "text",
+                    type = "scatter", mode = "lines", line = list(color = colors[i], width = 6), opacity = 0.7, showlegend = FALSE, inherit = FALSE
+                )
+            }
+        }
         p <-
-            plotly::plot_ly(
-                d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
-                type = "scatter", mode = "lines+markers", line = list(shape = "hv"), source = "tradeoffs"
+            plotly::add_trace(
+                p, data = d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
+                type = "scatter", mode = "lines+markers", line = list(shape = "hv", color = "#1f77b4"), marker = list(color = "#1f77b4"),
+                showlegend = FALSE, inherit = FALSE
             ) |>
             plotly::layout(
                 xaxis = list(title = "Armor weight limit"), yaxis = list(title = paste("Best", metric.label)),
@@ -1091,6 +1130,33 @@ server <- function(input, output, session){
         if(nrow(point) == 1 && !is.na(point$HEAD)){
             show.armor.links(point)
         }
+    })
+
+    ## The efficiency table under the chart: each region of the simplified curve, what it gains in all
+    ## and per unit of weight, and that rate against the curve's average - each row tinted as its
+    ## region is colored on the chart
+    efficiency.table <- function(result){
+        regions <- result$efficiency$data
+        data.table::data.table(
+            Movement = regions$MOVEMENT_LIMIT, From = regions$FROM, To = regions$TO,
+            Gain = regions$END_VALUE-regions$START_VALUE, `Per Unit Weight` = regions$SLOPE,
+            `Vs. Average` = ifelse(is.na(regions$RATIO_TO_AVERAGE), "", sprintf("%.2fx", regions$RATIO_TO_AVERAGE)),
+            COLOR = efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35)
+        )
+    }
+
+    output$efficiency_table <- DT::renderDataTable({
+        result <- tradeoffdata()
+        shiny::req(result, result$efficiency)
+        table <- efficiency.table(result)
+        digits <- if(result$metric == "SCORE") 3 else 2
+        DT::datatable(
+            table, rownames = FALSE, selection = "none",
+            options = list(dom = "t", paging = FALSE, ordering = FALSE, columnDefs = list(list(targets = which(names(table) == "COLOR")-1, visible = FALSE)))
+        ) |>
+        DT::formatRound(c("From", "To"), 1) |>
+        DT::formatRound(c("Gain", "Per Unit Weight"), digits) |>
+        DT::formatStyle(setdiff(names(table), "COLOR"), valueColumns = "COLOR", backgroundColor = DT::styleEqual(unique(table$COLOR), unique(table$COLOR)))
     })
 
     ## The table under the chart: limit, best value (named for the chosen stat), movement class, the

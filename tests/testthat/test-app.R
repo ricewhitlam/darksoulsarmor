@@ -598,3 +598,37 @@ test_that("movement classes are the game's check, and note the Mask of the Fathe
         expect_equal(heavy$class, "Fat")
     })
 })
+
+## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (5%), each
+## region colored by its slope against the curve's average - green at twice it or more, amber at
+## flat, grey at the average (half and double equally far from grey) - and listed in a table
+test_that("the Trade-offs tab shows where extra weight pays off", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        expect_equal(efficiency.color(c(1, 2, 4, 0, 0.5, NA)), c("rgb(189,189,189)", "rgb(26,152,80)", "rgb(26,152,80)", "rgb(224,130,20)", "rgb(224,130,20)", "rgb(189,189,189)"))
+        expect_equal(efficiency.color(c(2^0.25, 2^-0.25)), c("rgb(148,180,162)", "rgb(198,174,147)"))
+        expect_equal(efficiency.color(1, alpha = 0.35), "rgba(189,189,189,0.35)")
+
+        session$setInputs(go = 1)
+        session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
+        result <- tradeoffdata()
+        expect_identical(result$efficiency, get.tradeoff.efficiency(result$data, tolerance = 0.05))
+        regions <- result$efficiency$data
+        expect_gt(nrow(regions), 1)
+
+        ## Every region drawn in its color, with its own hover text, under the curve
+        plot <- output$tradeoff_plot
+        for(color in unique(efficiency.color(regions$RATIO_TO_AVERAGE))){
+            expect_match(plot, color, fixed = TRUE)
+        }
+        expect_match(plot, sprintf("Weight %.1f-%.1f: ", regions$FROM[1], regions$TO[1]), fixed = TRUE)
+        expect_match(plot, "Score per unit weight", fixed = TRUE)
+
+        ## The table: one row per region, as get.tradeoff.efficiency gives them, tinted to match
+        table <- efficiency.table(result)
+        expect_equal(table$From, regions$FROM)
+        expect_equal(table$Gain, regions$END_VALUE - regions$START_VALUE)
+        expect_equal(table$`Per Unit Weight`, regions$SLOPE)
+        expect_equal(table$COLOR, efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35))
+        expect_no_error(output$efficiency_table)
+    })
+})
