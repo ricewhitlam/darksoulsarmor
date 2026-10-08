@@ -24,9 +24,9 @@ test_that("a curve of two straight lines is recovered exactly", {
     expect_identical(get.tradeoff.efficiency(list(data = curve)), e)
 })
 
-## On real curves, at several tolerances: every point stays within the tolerance of the simplified
-## line, segments join up at curve points in weight order, and a larger tolerance never gives more
-## segments
+## On real curves, at several tolerances (with no limit on segments or their width): every point
+## stays within the tolerance of the simplified line, segments join up at curve points in weight
+## order, and a larger tolerance never gives more segments
 test_that("the simplified line stays within the tolerance, more loosely as it grows", {
     for(metric in c("SCORE", "POISE", "MAG_DEF")){
         curve <- get.armor.tradeoffs(metric = metric, weight.step = 0.1, endurance.level = 40, movement = "Fat")$data
@@ -34,7 +34,7 @@ test_that("the simplified line stays within the tolerance, more loosely as it gr
         range <- diff(range(found$BEST_VALUE))
         counts <- integer(0)
         for(tolerance in c(0, 0.01, 0.02, 0.05, 0.1, 0.25)){
-            e <- get.tradeoff.efficiency(curve, tolerance = tolerance)
+            e <- get.tradeoff.efficiency(curve, tolerance = tolerance, max.segments = Inf, min.width = 0)
             info <- paste(metric, tolerance)
             expect_true(all(abs(simplified.at(e, found$ARMOR_WEIGHT_LIMIT) - found$BEST_VALUE) <= tolerance*range + 1e-9), info = info)
             expect_equal(e$data$FROM[-1], e$data$TO[-nrow(e$data)], info = info)
@@ -63,6 +63,46 @@ test_that("segments ignore movement types", {
     expect_equal(e$average.slope, (6 - 1.5)/(6 - 0.5))
 })
 
+## Capped, the curve is split into at most max.segments segments - the first ones it splits off at
+## any tolerance, so a larger cap keeps every break of a smaller one - and a cap the tolerance
+## doesn't reach changes nothing
+test_that("max.segments caps the segments, keeping the biggest bends", {
+    curve <- get.armor.tradeoffs(metric = "MAG_DEF", weight.step = 0.1, endurance.level = 40, movement = "Fat")$data
+    uncapped <- get.tradeoff.efficiency(curve, max.segments = Inf, min.width = 0)
+    expect_gt(nrow(uncapped$data), 5)
+    breaks <- list()
+    for(cap in 1:5){
+        e <- get.tradeoff.efficiency(curve, max.segments = cap, min.width = 0)
+        expect_equal(nrow(e$data), cap)
+        breaks[[cap]] <- e$data$FROM[-1]
+        expect_true(all(breaks[[cap]] %in% uncapped$data$FROM))
+        if(cap > 1){
+            expect_true(all(breaks[[cap - 1]] %in% breaks[[cap]]))
+        }
+    }
+    expect_identical(get.tradeoff.efficiency(curve, max.segments = nrow(uncapped$data) + 1, min.width = 0), uncapped)
+})
+
+## No split leaves a segment narrower than min.width (a share of the curve's weights): a sharp
+## jump in a curve, which unlimited becomes a sliver of its own, is folded into a wider segment
+test_that("min.width keeps segments from being slivers", {
+    x <- round(seq(0, 10, by = 0.1), 1)
+    curve <- data.table::data.table(ARMOR_WEIGHT_LIMIT = x, BEST_VALUE = x + ifelse(x >= 5.1, 20, 0))
+    sliver <- get.tradeoff.efficiency(curve, min.width = 0)
+    expect_true(any(sliver$data$TO - sliver$data$FROM < 0.5 - 1e-9))
+    e <- get.tradeoff.efficiency(curve)
+    expect_true(all(e$data$TO - e$data$FROM >= 0.05*10 - 1e-9))
+    ## On real curves, at several widths
+    for(metric in c("SCORE", "MAG_DEF", "FIRE_DEF")){
+        curve <- get.armor.tradeoffs(metric = metric, weight.step = 0.1, endurance.level = 40, movement = "Light")$data
+        weights <- diff(range(curve$ARMOR_WEIGHT_LIMIT[!is.na(curve$BEST_VALUE)]))
+        for(width in c(0.025, 0.05, 0.1)){
+            e <- get.tradeoff.efficiency(curve, max.segments = Inf, min.width = width)
+            expect_true(all(e$data$TO - e$data$FROM >= width*weights - 1e-9), info = paste(metric, width))
+        }
+    }
+})
+
 test_that("get.tradeoff.efficiency validates its arguments", {
     expect_error(get.tradeoff.efficiency(data.frame(x = 1:3)), "curve")
     expect_error(get.tradeoff.efficiency(data.table::data.table(ARMOR_WEIGHT_LIMIT = c(2, 1, 3), BEST_VALUE = 1:3)), "increasing")
@@ -71,4 +111,12 @@ test_that("get.tradeoff.efficiency validates its arguments", {
     expect_error(get.tradeoff.efficiency(curve, tolerance = -0.1), "tolerance")
     expect_error(get.tradeoff.efficiency(curve, tolerance = c(0.1, 0.2)), "tolerance")
     expect_error(get.tradeoff.efficiency(curve, tolerance = NA_real_), "tolerance")
+    expect_error(get.tradeoff.efficiency(curve, max.segments = 0), "max.segments")
+    expect_error(get.tradeoff.efficiency(curve, max.segments = 2.5), "max.segments")
+    expect_error(get.tradeoff.efficiency(curve, max.segments = c(2, 3)), "max.segments")
+    expect_error(get.tradeoff.efficiency(curve, max.segments = NA_real_), "max.segments")
+    expect_error(get.tradeoff.efficiency(curve, min.width = -0.1), "min.width")
+    expect_error(get.tradeoff.efficiency(curve, min.width = Inf), "min.width")
+    expect_error(get.tradeoff.efficiency(curve, min.width = "a"), "min.width")
+    expect_no_error(get.tradeoff.efficiency(curve, max.segments = Inf, min.width = 0))
 })

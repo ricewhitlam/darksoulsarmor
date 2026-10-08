@@ -4,7 +4,12 @@
 \alias{get.tradeoff.efficiency}
 \title{Find where extra armor weight buys the most of a stat}
 \usage{
-get.tradeoff.efficiency(curve, tolerance = 0.05)
+get.tradeoff.efficiency(
+  curve,
+  tolerance = 0.05,
+  max.segments = 5,
+  min.width = 0.05
+)
 }
 \arguments{
 \item{curve}{A curve from \code{\link{get.armor.tradeoffs}} (or its \code{data}): a table with
@@ -12,7 +17,13 @@ get.tradeoff.efficiency(curve, tolerance = 0.05)
 
 \item{tolerance}{A length 1 non-negative \code{numeric}: how far the simplified line may stray from the
 curve, as a share of the curve's range of values. Larger values give fewer, broader segments; 0
-keeps every bend. Defaults to \code{0.05} (5\%).}
+keeps every bend (up to \code{max.segments}). Defaults to \code{0.05} (5\%).}
+
+\item{max.segments}{A length 1 whole \code{numeric}, at least 1: the most segments to split the curve
+into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{5}.}
+
+\item{min.width}{A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, as a
+share of the curve's range of weights. 0 for no limit. Defaults to \code{0.05} (5\%).}
 }
 \value{
 A \code{list} holding (1) \code{average.slope}, the curve's total gain divided by its total
@@ -28,12 +39,15 @@ region. Comparing a segment's slope with the curve's average slope (its total ga
 total weight) shows where weight is best spent: regions steeper than average give more for the
 weight.
 
-The simplification is Douglas-Peucker's: starting from the straight line between the curve's first
-and last points, the point furthest from the line (vertically) is kept if it's further than the
-tolerance, and each side is simplified the same way, until every point is within the tolerance of
-the simplified line. Segments join at points of the curve - each a best set at its weight limit -
-so a slope is a rate between real sets; you can't wear the weights in between. Points with no set
-(\code{NA}) are left out.
+The simplification is Douglas-Peucker's, taken worst first: starting from the straight line between
+the curve's first and last points, the segment that strays furthest from the curve (vertically) is
+split at the point where it strays most, again and again, until every point is within the
+tolerance of the simplified line - or there are \code{max.segments} segments, which then hold the
+curve's biggest bends. A segment is only split where both sides would be at least
+\code{min.width} wide, so a sharp jump in the curve doesn't become a sliver of its own; a segment
+that can't be split that way stays whole, even if it strays further than the tolerance. Segments
+join at points of the curve - each a best set at its weight limit - so a slope is a rate between
+real sets; you can't wear the weights in between. Points with no set (\code{NA}) are left out.
 }
 \examples{
 score.curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
