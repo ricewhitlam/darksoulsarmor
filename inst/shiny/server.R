@@ -898,15 +898,15 @@ server <- function(input, output, session){
     ## at the average, deepening to green at twice it or more and to purple at flat (0) - the ends of
     ## ColorBrewer's purple-green scale, which stay distinguishable with the common forms of color
     ## blindness. Measured on the ratio's log, so half and double the average are equally far from
-    ## grey; no ratio (a flat curve) is grey. Solid for the chart's lines, translucent (alpha < 1) for
-    ## the table's rows.
-    efficiency.color <- function(ratio, alpha = 1){
+    ## grey; no ratio (a flat curve) is grey. A tint below 1 mixes the color with white: the chart's
+    ## bands and hover boxes use 0.35, light enough to read black text on.
+    efficiency.color <- function(ratio, tint = 1){
         t <- ifelse(is.na(ratio), 0, pmax(-1, pmin(1, log2(ratio))))
         s <- abs(t)
-        red <- round(189+(ifelse(t > 0, 27, 118)-189)*s)
-        green <- round(189+(ifelse(t > 0, 120, 42)-189)*s)
-        blue <- round(189+(ifelse(t > 0, 55, 131)-189)*s)
-        if(alpha == 1) sprintf("rgb(%d,%d,%d)", red, green, blue) else sprintf("rgba(%d,%d,%d,%.2f)", red, green, blue, alpha)
+        red <- 255+(189+(ifelse(t > 0, 27, 118)-189)*s-255)*tint
+        green <- 255+(189+(ifelse(t > 0, 120, 42)-189)*s-255)*tint
+        blue <- 255+(189+(ifelse(t > 0, 55, 131)-189)*s-255)*tint
+        sprintf("rgb(%d,%d,%d)", round(red), round(green), round(blue))
     }
 
     ## The movement type each set (by its pieces' names) gets with the given weapons and equip loads,
@@ -1066,15 +1066,17 @@ server <- function(input, output, session){
         shapes <- list()
         annotations <- list()
         ## Where extra weight pays off (get.tradeoff.efficiency): each region of the simplified curve
-        ## shaded behind the chart, colored as its row in the table below by how much it buys per unit
-        ## of weight against the curve's average, and named in the hover text of each point in it. A
+        ## shaded behind the chart, colored by how much it buys per unit of weight against the curve's
+        ## average, and named in the hover text of each point in it, whose box takes the same color. A
         ## point where two regions meet belongs to the one it ends. Each band is outlined in white (the
-        ## chart's background), leaving a gap at each break so that like-colored regions stay apart.
+        ## chart's background), leaving a gap at each break so that like-colored regions stay apart;
+        ## translucent rather than tinted, so the grid shows through.
+        d$hover.color <- "white"
         if(!is.null(result$efficiency)){
             regions <- result$efficiency$data
-            colors <- efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35)
+            colors <- efficiency.color(regions$RATIO_TO_AVERAGE)
             for(i in seq_len(nrow(regions))){
-                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], line = list(width = 2, color = "white"), layer = "below")
+                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], opacity = 0.35, line = list(width = 2, color = "white"), layer = "below")
             }
             for(j in which(!is.na(d$BEST_VALUE))){
                 i <- which(regions$FROM <= d$ARMOR_WEIGHT_LIMIT[j]+1e-9 & regions$TO >= d$ARMOR_WEIGHT_LIMIT[j]-1e-9)[1]
@@ -1084,6 +1086,7 @@ server <- function(input, output, session){
                         regions$FROM[i], regions$TO[i], value.digits+1, regions$SLOPE[i], metric.label,
                         if(is.na(regions$RATIO_TO_AVERAGE[i])) "" else sprintf(", %.1fx average", regions$RATIO_TO_AVERAGE[i])
                     ))
+                    d$hover.color[j] <- efficiency.color(regions$RATIO_TO_AVERAGE[i], tint = 0.35)
                 }
             }
         }
@@ -1112,6 +1115,7 @@ server <- function(input, output, session){
         p <-
             plotly::plot_ly(
                 d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
+                hoverlabel = list(bgcolor = d$hover.color, font = list(color = "black")),
                 type = "scatter", mode = "lines+markers", line = list(shape = "hv"), source = "tradeoffs"
             )
         p <-
@@ -1134,33 +1138,6 @@ server <- function(input, output, session){
         if(nrow(point) == 1 && !is.na(point$HEAD)){
             show.armor.links(point)
         }
-    })
-
-    ## The efficiency table under the chart: each region of the simplified curve, what it gains in all
-    ## and per unit of weight, and that rate against the curve's average - each row tinted as its
-    ## region is colored on the chart
-    efficiency.table <- function(result){
-        regions <- result$efficiency$data
-        data.table::data.table(
-            From = regions$FROM, To = regions$TO,
-            Gain = regions$END_VALUE-regions$START_VALUE, `Per Unit Weight` = regions$SLOPE,
-            `Vs. Average` = ifelse(is.na(regions$RATIO_TO_AVERAGE), "", sprintf("%.2fx", regions$RATIO_TO_AVERAGE)),
-            COLOR = efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35)
-        )
-    }
-
-    output$efficiency_table <- DT::renderDataTable({
-        result <- tradeoffdata()
-        shiny::req(result, result$efficiency)
-        table <- efficiency.table(result)
-        digits <- if(result$metric == "SCORE") 3 else 2
-        DT::datatable(
-            table, rownames = FALSE, selection = "none",
-            options = list(dom = "t", paging = FALSE, ordering = FALSE, columnDefs = list(list(targets = which(names(table) == "COLOR")-1, visible = FALSE)))
-        ) |>
-        DT::formatRound(c("From", "To"), 1) |>
-        DT::formatRound(c("Gain", "Per Unit Weight"), digits) |>
-        DT::formatStyle(setdiff(names(table), "COLOR"), valueColumns = "COLOR", backgroundColor = DT::styleEqual(unique(table$COLOR), unique(table$COLOR)))
     })
 
     ## The table under the chart: limit, best value (named for the chosen stat), movement class, the

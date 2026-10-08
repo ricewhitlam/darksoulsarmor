@@ -86,15 +86,11 @@ bslib::page_sidebar(
                 ),
                 shiny::helpText(
                     "For every armor weight, the most of the chosen stat any armor set can reach, using the settings of the last refresh.",
-                    "Vertical lines mark where your movement type changes (the selected movement type's line is solid). Hover over a point for its set",
-                    "and its movement type; click a point or a table row for its links."
+                    "Vertical lines mark where your movement type changes (the selected movement type's line is solid). The shaded bands split the curve",
+                    "into regions: green regions buy more of the stat per unit of armor weight than the curve's average, purple ones less. Hover over a point",
+                    "for its set, its movement type and its region's rate; click a point or a table row for its links."
                 ),
                 plotly::plotlyOutput(outputId = "tradeoff_plot"),
-                shiny::helpText(
-                    "The shaded bands split the curve into regions: green regions buy more of the stat per unit of armor weight than the curve's average,",
-                    "purple ones less. Hover over a point for its region's rate; the table below lists each region."
-                ),
-                DT::dataTableOutput(outputId = "efficiency_table"),
                 DT::dataTableOutput(outputId = "tradeoff_table")
             )
         )

@@ -601,12 +601,13 @@ test_that("movement classes are the game's check, and note the Mask of the Fathe
 
 ## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (10%), each
 ## region shaded by its slope against the curve's average - green at twice it or more, purple at
-## flat, grey at the average (half and double equally far from grey) - and listed in a table
+## flat, grey at the average (half and double equally far from grey)
 test_that("the Trade-offs tab shows where extra weight pays off", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         expect_equal(efficiency.color(c(1, 2, 4, 0, 0.5, NA)), c("rgb(189,189,189)", "rgb(27,120,55)", "rgb(27,120,55)", "rgb(118,42,131)", "rgb(118,42,131)", "rgb(189,189,189)"))
         expect_equal(efficiency.color(c(2^0.2, 2^-0.2)), c("rgb(157,175,162)", "rgb(175,160,177)"))
-        expect_equal(efficiency.color(1, alpha = 0.35), "rgba(189,189,189,0.35)")
+        ## Tinted: mixed with white
+        expect_equal(efficiency.color(c(1, 2, 0), tint = 0.35), c("rgb(232,232,232)", "rgb(175,208,185)", "rgb(207,180,212)"))
 
         session$setInputs(go = 1)
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
@@ -615,14 +616,15 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         regions <- result$efficiency$data
         expect_gt(nrow(regions), 1)
 
-        ## Every region shaded behind the curve in its table color, and the curve the chart's only
+        ## Every region shaded behind the curve in its color, and the curve the chart's only
         ## trace, so hovering shows one box
         plot <- jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x
         expect_length(plot$data, 1)
         bands <- Filter(function(shape) shape$type == "rect", plot$layout$shapes)
         expect_equal(vapply(bands, function(band) band$x0, numeric(1)), regions$FROM)
         expect_equal(vapply(bands, function(band) band$x1, numeric(1)), regions$TO)
-        expect_equal(vapply(bands, function(band) band$fillcolor, character(1)), efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35))
+        expect_equal(vapply(bands, function(band) band$fillcolor, character(1)), efficiency.color(regions$RATIO_TO_AVERAGE))
+        expect_true(all(vapply(bands, function(band) band$opacity, numeric(1)) == 0.35))
         expect_true(all(vapply(bands, function(band) band$layer, character(1)) == "below"))
         ## ...each outlined in white, so there's a gap at every break
         expect_true(all(vapply(bands, function(band) band$line$color, character(1)) == "white"))
@@ -637,13 +639,10 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         expect_match(hover[boundary], region.text[1], fixed = TRUE)
         expect_match(hover[boundary+1], region.text[2], fixed = TRUE)
         expect_match(hover[boundary], "Score per unit weight", fixed = TRUE)
-
-        ## The table: one row per region, as get.tradeoff.efficiency gives them, tinted to match
-        table <- efficiency.table(result)
-        expect_equal(table$From, regions$FROM)
-        expect_equal(table$Gain, regions$END_VALUE - regions$START_VALUE)
-        expect_equal(table$`Per Unit Weight`, regions$SLOPE)
-        expect_equal(table$COLOR, efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35))
-        expect_no_error(output$efficiency_table)
+        ## ...and its hover box takes that region's tint; a point with no set, white
+        hover.color <- unlist(plot$data[[1]]$hoverlabel$bgcolor)
+        named <- vapply(hover[has.set], function(h) which(vapply(region.text, grepl, logical(1), x = h, fixed = TRUE)), integer(1))
+        expect_equal(hover.color[has.set], efficiency.color(regions$RATIO_TO_AVERAGE[named], tint = 0.35), ignore_attr = TRUE)
+        expect_true(all(hover.color[!has.set] == "white"))
     })
 })
