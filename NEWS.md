@@ -37,6 +37,9 @@
   settings as `get.optimal.armor.combos()`. `weight.step`, `min.armor.weight`
   and `max.armor.weight` set which limits are computed. Among combinations
   tied on the stat, the best-scoring one is returned.
+* `get.tradeoff.efficiency()` simplifies a trade-off curve into straight
+  regions and compares each one's slope (stat per unit of armor weight) with
+  the curve's average, to show where extra weight pays off.
 * `minima` and `weights` accept named vectors in any order, e.g.
   `minima = c(POISE = 30)` or `weights = c(PHYS_DEF = 2, MAG_DEF = 1)`; stats
   left out are 0. Unnamed vectors work as before.
@@ -48,6 +51,8 @@
   can reach at every armor weight, every 0.1, with lines where the movement
   type changes. Hover over or click a point, or click a table row, for its set
   and links.
+* The Trade-offs chart colors regions of the curve by how much they gain per
+  unit of armor weight compared with the curve's average.
 * "Refresh Armor Data" updates both tabs, which always show the settings of
   the last refresh.
 * "Download Armor Data" saves an Excel workbook (Results, Trade-offs and

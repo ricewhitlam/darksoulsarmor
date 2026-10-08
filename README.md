@@ -76,6 +76,22 @@ curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 
 `weight.step` sets the spacing of the limits (default 1), and `min.armor.weight`/`max.armor.weight` set the range; by default it runs from 0 to what the movement type allows. Among combinations tied on the stat, the best-scoring one is returned.
 
+`get.tradeoff.efficiency()` simplifies a curve into a few straight regions (Douglas–Peucker, by default staying within 5% of the curve's range, in at most 6 regions, none narrower than 2.5 units of armor weight) and compares each region's slope, the stat gained per unit of armor weight, with the curve's average, to show where extra weight pays off:
+
+```r
+curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
+efficiency <- get.tradeoff.efficiency(curve)
+efficiency$data[, .(FROM, TO, SLOPE, RATIO_TO_AVERAGE, ABOVE_AVERAGE)]
+#>     FROM    TO      SLOPE RATIO_TO_AVERAGE ABOVE_AVERAGE
+#>    <num> <num>      <num>            <num>        <lgcl>
+#> 1:   0.0   3.5 0.76756860        3.6273473          TRUE
+#> 2:   3.5   9.3 0.39527049        1.8679547          TRUE
+#> 3:   9.3  37.8 0.17870405        0.8445130         FALSE
+#> 4:  37.8  52.5 0.07055733        0.3334372         FALSE
+```
+
+Here the score pays off most in the first few units of armor weight: 3.6 times the curve's average up to 3.5, falling below average past 9.3.
+
 ## What the score means
 
 Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance), each standardized to mean 0 and variance 1 so that stats on very different natural scales (a 40-point armor rating vs. a 2-point resistance) contribute comparably. The `weights` argument controls how much each stat counts toward the total. The resulting `SCORE_RAW` is itself standardized, and `SCORE_QUALITY` converts that into an exact rarity among every combination at the selected upgrade levels, like `"Top 1 in 40"` or `"Bottom 1 in 40"` — see `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter/constraint choices as long as the weights are the same.

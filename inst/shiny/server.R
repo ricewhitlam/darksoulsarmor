@@ -79,7 +79,10 @@ server <- function(input, output, session){
                     including the Mask of the Father's equip load bonus, so just past a line a set wearing the Mask can still have the lighter movement type. <br>
                     A minimum on the charted stat itself is ignored, since it would only cut the curve off below it. It's drawn as a dashed blue line instead. Every other minimum still applies. <br>
                     The chart is computed when the tab is opened after a refresh, which takes a few seconds. Hover anywhere above or below a point to see its set and movement type.
-                    Click there, or click a row of the table below the chart, for the pieces' links. <br> <br>
+                    Click there, or click a row of the table below the chart, for the pieces' links. <br>
+                    The shaded bands behind the curve split it into regions, each colored by how much of the stat it buys per unit of armor weight compared with the curve's average
+                    (its total gain divided by its total weight). Green regions buy more, deepest at twice the average or more; purple regions buy less, deepest where the curve is flat;
+                    grey ones are about average. Hover over a point for its region's rate; its hover box takes the region's color. <br> <br>
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
