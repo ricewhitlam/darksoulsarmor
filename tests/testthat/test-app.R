@@ -600,12 +600,12 @@ test_that("movement classes are the game's check, and note the Mask of the Fathe
 })
 
 ## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (5%), each
-## region colored by its slope against the curve's average - green at twice it or more, amber at
+## region colored by its slope against the curve's average - green at twice it or more, purple at
 ## flat, grey at the average (half and double equally far from grey) - and listed in a table
 test_that("the Trade-offs tab shows where extra weight pays off", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        expect_equal(efficiency.color(c(1, 2, 4, 0, 0.5, NA)), c("rgb(189,189,189)", "rgb(26,152,80)", "rgb(26,152,80)", "rgb(224,130,20)", "rgb(224,130,20)", "rgb(189,189,189)"))
-        expect_equal(efficiency.color(c(2^0.25, 2^-0.25)), c("rgb(148,180,162)", "rgb(198,174,147)"))
+        expect_equal(efficiency.color(c(1, 2, 4, 0, 0.5, NA)), c("rgb(189,189,189)", "rgb(27,120,55)", "rgb(27,120,55)", "rgb(118,42,131)", "rgb(118,42,131)", "rgb(189,189,189)"))
+        expect_equal(efficiency.color(c(2^0.2, 2^-0.2)), c("rgb(157,175,162)", "rgb(175,160,177)"))
         expect_equal(efficiency.color(1, alpha = 0.35), "rgba(189,189,189,0.35)")
 
         session$setInputs(go = 1)

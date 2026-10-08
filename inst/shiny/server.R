@@ -895,15 +895,17 @@ server <- function(input, output, session){
     tradeoffdata <- shiny::reactiveVal(NULL)
 
     ## A color for each efficiency ratio (a region's slope as a multiple of the curve's average): grey
-    ## at the average, deepening to green at twice it or more and to amber at flat (0). Measured on the
-    ## ratio's log, so half and double the average are equally far from grey; no ratio (a flat curve)
-    ## is grey. Solid for the chart's lines, translucent (alpha < 1) for the table's rows.
+    ## at the average, deepening to green at twice it or more and to purple at flat (0) - the ends of
+    ## ColorBrewer's purple-green scale, which stay distinguishable with the common forms of color
+    ## blindness. Measured on the ratio's log, so half and double the average are equally far from
+    ## grey; no ratio (a flat curve) is grey. Solid for the chart's lines, translucent (alpha < 1) for
+    ## the table's rows.
     efficiency.color <- function(ratio, alpha = 1){
         t <- ifelse(is.na(ratio), 0, pmax(-1, pmin(1, log2(ratio))))
         s <- abs(t)
-        red <- round(189+(ifelse(t > 0, 26, 224)-189)*s)
-        green <- round(189+(ifelse(t > 0, 152, 130)-189)*s)
-        blue <- round(189+(ifelse(t > 0, 80, 20)-189)*s)
+        red <- round(189+(ifelse(t > 0, 27, 118)-189)*s)
+        green <- round(189+(ifelse(t > 0, 120, 42)-189)*s)
+        blue <- round(189+(ifelse(t > 0, 55, 131)-189)*s)
         if(alpha == 1) sprintf("rgb(%d,%d,%d)", red, green, blue) else sprintf("rgba(%d,%d,%d,%.2f)", red, green, blue, alpha)
     }
 
