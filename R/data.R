@@ -8,7 +8,7 @@ utils::globalVariables(c(
     "areas", "classes", "weapon.data", "WEAPON", "means", "stddevs", "corrs",
     "head.data.unupgraded", "chest.data.unupgraded", "hands.data.unupgraded", "legs.data.unupgraded",
     "METRICS", "metric", "weight.index", "minima.index",
-    "HEAD", "CHEST", "HANDS", "LEGS", "ARMOR_WEIGHT", "TOTAL_POISE", "ARMOR_WEIGHT_LIMIT", "BEST_VALUE", "MOVEMENT_LIMIT", "SLOPE", "RATIO_TO_AVERAGE", "ABOVE_AVERAGE", "."
+    "HEAD", "CHEST", "HANDS", "LEGS", "ARMOR_WEIGHT", "TOTAL_POISE", "ARMOR_WEIGHT_LIMIT", "BEST_VALUE", "SLOPE", "RATIO_TO_AVERAGE", "ABOVE_AVERAGE", "."
 ))
 
 ## Canonical identity and order of every armor metric - the single source of truth for the

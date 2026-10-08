@@ -47,30 +47,26 @@ test_that("the simplified line stays within the tolerance, more loosely as it gr
     }
 })
 
-## With movement types (as in the app's stitched curves), each is simplified on its own - no segment
-## spans two - points with no set are left out, and a flat region has slope 0
-test_that("segments stay within one movement type", {
+## Movement types (as in the app's stitched curves) don't split the curve: a straight stretch across
+## a movement line is one segment. Points with no set are left out, and a flat region has slope 0.
+test_that("segments ignore movement types", {
     curve <- data.table::data.table(
         ARMOR_WEIGHT_LIMIT = round(seq(0, 6, by = 0.1), 1),
-        MOVEMENT_LIMIT = rep(c("Light", "Mid"), c(21, 40))
+        MOVEMENT_LIMIT = rep(c("Light", "Mid"), c(11, 50))
     )
     curve[, BEST_VALUE := ifelse(ARMOR_WEIGHT_LIMIT < 0.5, NA_real_, ifelse(ARMOR_WEIGHT_LIMIT <= 2, 3*ARMOR_WEIGHT_LIMIT, 6))]
     e <- get.tradeoff.efficiency(curve)
-    expect_equal(e$data$MOVEMENT_LIMIT, c("Light", "Mid"))
-    expect_equal(e$data$FROM, c(0.5, 2.1))
+    expect_named(e$data, c("FROM", "TO", "START_VALUE", "END_VALUE", "SLOPE", "RATIO_TO_AVERAGE", "ABOVE_AVERAGE"))
+    expect_equal(e$data$FROM, c(0.5, 2))
     expect_equal(e$data$TO, c(2, 6))
     expect_equal(e$data$SLOPE, c(3, 0))
     expect_equal(e$average.slope, (6 - 1.5)/(6 - 0.5))
-    ## A movement type with a single point gets no segment
-    curve[ARMOR_WEIGHT_LIMIT > 2, MOVEMENT_LIMIT := ifelse(ARMOR_WEIGHT_LIMIT == 6, "Fat", "Mid")]
-    expect_equal(get.tradeoff.efficiency(curve)$data$MOVEMENT_LIMIT, c("Light", "Mid"))
 })
 
 test_that("get.tradeoff.efficiency validates its arguments", {
     expect_error(get.tradeoff.efficiency(data.frame(x = 1:3)), "curve")
     expect_error(get.tradeoff.efficiency(data.table::data.table(ARMOR_WEIGHT_LIMIT = c(2, 1, 3), BEST_VALUE = 1:3)), "increasing")
     expect_error(get.tradeoff.efficiency(data.table::data.table(ARMOR_WEIGHT_LIMIT = 1, BEST_VALUE = 1)), "two points")
-    expect_error(get.tradeoff.efficiency(data.table::data.table(ARMOR_WEIGHT_LIMIT = 1:4, BEST_VALUE = 1:4, MOVEMENT_LIMIT = c("Light", "Mid", "Light", "Mid"))), "one range")
     curve <- data.table::data.table(ARMOR_WEIGHT_LIMIT = 1:6, BEST_VALUE = c(1, 2, 3, 3, 4, 6))
     expect_error(get.tradeoff.efficiency(curve, tolerance = -0.1), "tolerance")
     expect_error(get.tradeoff.efficiency(curve, tolerance = c(0.1, 0.2)), "tolerance")

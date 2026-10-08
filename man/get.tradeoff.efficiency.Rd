@@ -8,10 +8,7 @@ get.tradeoff.efficiency(curve, tolerance = 0.05)
 }
 \arguments{
 \item{curve}{A curve from \code{\link{get.armor.tradeoffs}} (or its \code{data}): a table with
-\code{ARMOR_WEIGHT_LIMIT} and \code{BEST_VALUE}. If it also has a \code{MOVEMENT_LIMIT} column -
-the movement type each point was found under, as in the app's Trade-offs tab, which stitches
-several curves together - each movement type is simplified on its own, so no segment spans two,
-since crossing a movement type's line costs more than weight.}
+\code{ARMOR_WEIGHT_LIMIT} and \code{BEST_VALUE}. Any other columns are ignored.}
 
 \item{tolerance}{A length 1 non-negative \code{numeric}: how far the simplified line may stray from the
 curve, as a share of the curve's range of values. Larger values give fewer, broader segments; 0
@@ -19,12 +16,10 @@ keeps every bend. Defaults to \code{0.05} (5\%).}
 }
 \value{
 A \code{list} holding (1) \code{average.slope}, the curve's total gain divided by its total
-weight, and (2) a \code{data.table} with one row per segment, in weight order: its
-\code{MOVEMENT_LIMIT} (when the curve has one), the weights it spans (\code{FROM}, \code{TO}), the
-curve's values there (\code{START_VALUE}, \code{END_VALUE}), its \code{SLOPE}, that slope as a
-multiple of the average (\code{RATIO_TO_AVERAGE}, \code{NA} when the average is 0), and whether
-it's steeper than average (\code{ABOVE_AVERAGE}). A movement type with a single point has no
-segment.
+weight, and (2) a \code{data.table} with one row per segment, in weight order: the weights it
+spans (\code{FROM}, \code{TO}), the curve's values there (\code{START_VALUE}, \code{END_VALUE}),
+its \code{SLOPE}, that slope as a multiple of the average (\code{RATIO_TO_AVERAGE}, \code{NA} when
+the average is 0), and whether it's steeper than average (\code{ABOVE_AVERAGE}).
 }
 \description{
 Simplifies a trade-off curve (from \code{\link{get.armor.tradeoffs}}) into a few straight-line
