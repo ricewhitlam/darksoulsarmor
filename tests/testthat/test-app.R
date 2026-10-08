@@ -599,6 +599,28 @@ test_that("movement classes are the game's check, and note the Mask of the Fathe
     })
 })
 
+## The chart's one trace as plotted: its weights, hover text, and hover colors, one per point (NA for
+## a gap)
+plotted <- function(plot){
+    each <- function(v){ vapply(v, function(e) if(is.null(e)) NA else e, if(is.numeric(v[[1]])) numeric(1) else character(1)) }
+    trace <- plot$data[[1]]
+    list(x = each(trace$x), text = each(trace$text), color = each(trace$hoverlabel$bgcolor))
+}
+
+## Every point's hover box is tinted (by the app's efficiency.color) as the region its hover text
+## names; one in no region, white
+expect_hover_colors <- function(trace, regions, efficiency.color){
+    expect_equal(length(trace$color), length(trace$x))
+    region.text <- sprintf("Region %.1f-%.1f: ", regions$FROM, regions$TO)
+    named <- vapply(trace$text, function(h){
+        i <- which(vapply(region.text, grepl, logical(1), x = h, fixed = TRUE))
+        if(length(i) == 1) i else NA_integer_
+    }, integer(1))
+    expect_equal(unname(trace$color[!is.na(named)]), efficiency.color(regions$RATIO_TO_AVERAGE[named[!is.na(named)]], tint = 0.35))
+    expect_true(all(trace$color[is.na(named)] == "white"))
+    expect_gt(sum(!is.na(named)), 0)
+}
+
 ## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (10%), each
 ## region shaded by its slope against the curve's average - green at twice it or more, purple at
 ## flat, grey at the average (half and double equally far from grey)
@@ -630,19 +652,26 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         expect_true(all(vapply(bands, function(band) band$line$color, character(1)) == "white"))
         expect_true(all(vapply(bands, function(band) band$line$width, numeric(1)) > 0))
         ## Each point with a set names its one region; where two meet, the one it ends
-        hover <- unlist(plot$data[[1]]$text)
-        weights <- unlist(plot$data[[1]]$x)
+        trace <- plotted(plot)
         region.text <- sprintf("Region %.1f-%.1f: ", regions$FROM, regions$TO)
-        has.set <- !is.na(result$data$BEST_VALUE)
-        expect_true(all(vapply(hover[has.set], function(h) sum(vapply(region.text, grepl, logical(1), x = h, fixed = TRUE)), integer(1)) == 1))
-        boundary <- match(regions$TO[1], weights)
-        expect_match(hover[boundary], region.text[1], fixed = TRUE)
-        expect_match(hover[boundary+1], region.text[2], fixed = TRUE)
-        expect_match(hover[boundary], "Score per unit weight", fixed = TRUE)
-        ## ...and its hover box takes that region's tint; a point with no set, white
-        hover.color <- unlist(plot$data[[1]]$hoverlabel$bgcolor)
-        named <- vapply(hover[has.set], function(h) which(vapply(region.text, grepl, logical(1), x = h, fixed = TRUE)), integer(1))
-        expect_equal(hover.color[has.set], efficiency.color(regions$RATIO_TO_AVERAGE[named], tint = 0.35), ignore_attr = TRUE)
-        expect_true(all(hover.color[!has.set] == "white"))
+        boundary <- match(regions$TO[1], trace$x)
+        expect_match(trace$text[boundary], region.text[1], fixed = TRUE)
+        expect_match(trace$text[boundary+1], region.text[2], fixed = TRUE)
+        expect_match(trace$text[boundary], "Score per unit weight", fixed = TRUE)
+        ## ...and its hover box takes that region's tint
+        expect_hover_colors(trace, regions, efficiency.color)
+
+        ## Likewise when the curve starts with weights no set fits (here under a poise minimum), which
+        ## plotly leaves off the chart: each box still takes the tint of the region its text names
+        values <- minima.inputs(minimum.values, minima.ids)
+        values[[metric.input.id("POISE", "minima")]] <- 30
+        submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        session$setInputs(go = 2)
+        session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
+        result <- tradeoffdata()
+        expect_true(is.na(result$data$BEST_VALUE[1]))
+        trace <- plotted(jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x)
+        expect_equal(trace$x[1], result$data$ARMOR_WEIGHT_LIMIT[match(TRUE, !is.na(result$data$BEST_VALUE))])
+        expect_hover_colors(trace, result$efficiency$data, efficiency.color)
     })
 })

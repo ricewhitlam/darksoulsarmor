@@ -1112,6 +1112,13 @@ server <- function(input, output, session){
             shapes[[length(shapes)+1]] <- list(type = "line", x0 = 0, x1 = 1, xref = "paper", y0 = result$stat.minimum, y1 = result$stat.minimum, line = list(dash = "dash", color = "steelblue"))
             annotations[[length(annotations)+1]] <- list(x = 1, xref = "paper", y = result$stat.minimum, text = paste("Your minimum:", format(result$stat.minimum)), showarrow = FALSE, xanchor = "right", yanchor = "bottom")
         }
+        ## The curve from its first point with a set to its last: plotly drops points with no set at
+        ## either end from the line and its hover text, but not from the hover colors, which would then
+        ## be out of step. (Points with no set in between stay, as a gap, so the colors keep step.)
+        shown <- which(!is.na(d$BEST_VALUE))
+        if(length(shown) > 0){
+            d <- d[min(shown):max(shown)]
+        }
         p <-
             plotly::plot_ly(
                 d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
