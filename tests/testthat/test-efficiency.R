@@ -69,9 +69,9 @@ test_that("segments ignore movement types", {
 test_that("max.segments caps the segments, keeping the biggest bends", {
     curve <- get.armor.tradeoffs(metric = "MAG_DEF", weight.step = 0.1, endurance.level = 40, movement = "Fat")$data
     uncapped <- get.tradeoff.efficiency(curve, max.segments = Inf, min.width = 0)
-    expect_gt(nrow(uncapped$data), 5)
+    expect_gt(nrow(uncapped$data), 6)
     breaks <- list()
-    for(cap in 1:5){
+    for(cap in 1:6){
         e <- get.tradeoff.efficiency(curve, max.segments = cap, min.width = 0)
         expect_equal(nrow(e$data), cap)
         breaks[[cap]] <- e$data$FROM[-1]

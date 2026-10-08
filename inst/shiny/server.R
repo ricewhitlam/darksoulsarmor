@@ -978,7 +978,7 @@ server <- function(input, output, session){
         curve[, MOVEMENT := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
 
         ## Where extra armor weight pays off (get.tradeoff.efficiency, at its defaults: within 5% of the
-        ## curve's range, at most 5 regions, none under 5% of its weights) - when it has two points to join
+        ## curve's range, at most 6 regions, none under 5% of its weights) - when it has two points to join
         efficiency <- if(sum(!is.na(curve$BEST_VALUE)) >= 2) get.tradeoff.efficiency(curve) else NULL
 
         tradeoff.computations(tradeoff.computations()+1)

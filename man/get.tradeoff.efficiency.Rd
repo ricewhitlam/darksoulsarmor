@@ -7,7 +7,7 @@
 get.tradeoff.efficiency(
   curve,
   tolerance = 0.05,
-  max.segments = 5,
+  max.segments = 6,
   min.width = 0.05
 )
 }
@@ -20,7 +20,7 @@ curve, as a share of the curve's range of values. Larger values give fewer, broa
 keeps every bend (up to \code{max.segments}). Defaults to \code{0.05} (5\%).}
 
 \item{max.segments}{A length 1 whole \code{numeric}, at least 1: the most segments to split the curve
-into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{5}.}
+into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{6}.}
 
 \item{min.width}{A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, as a
 share of the curve's range of weights. 0 for no limit. Defaults to \code{0.05} (5\%).}

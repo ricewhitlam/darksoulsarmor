@@ -32,7 +32,7 @@
 #'
 #' @param
 #' max.segments A length 1 whole \code{numeric}, at least 1: the most segments to split the curve
-#' into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{5}.
+#' into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{6}.
 #'
 #' @param
 #' min.width A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, as a
@@ -49,7 +49,7 @@
 #' score.curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
 #' efficiency <- get.tradeoff.efficiency(score.curve)
 #'
-get.tradeoff.efficiency <- function(curve, tolerance = 0.05, max.segments = 5, min.width = 0.05){
+get.tradeoff.efficiency <- function(curve, tolerance = 0.05, max.segments = 6, min.width = 0.05){
 
     ## Check curve
     if(is.list(curve) && !is.data.frame(curve)){
