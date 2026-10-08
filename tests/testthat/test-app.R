@@ -621,7 +621,7 @@ expect_hover_colors <- function(trace, regions, efficiency.color){
     expect_gt(sum(!is.na(named)), 0)
 }
 
-## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (10%), each
+## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (7.5%), each
 ## region shaded by its slope against the curve's average - green at twice it or more, purple at
 ## flat, grey at the average (half and double equally far from grey)
 test_that("the Trade-offs tab shows where extra weight pays off", {
@@ -634,7 +634,7 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         session$setInputs(go = 1)
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
         result <- tradeoffdata()
-        expect_identical(result$efficiency, get.tradeoff.efficiency(result$data, tolerance = 0.1))
+        expect_identical(result$efficiency, get.tradeoff.efficiency(result$data, tolerance = 0.075))
         regions <- result$efficiency$data
         expect_gt(nrow(regions), 1)
 
