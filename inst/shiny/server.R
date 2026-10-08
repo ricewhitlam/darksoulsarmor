@@ -1069,12 +1069,13 @@ server <- function(input, output, session){
         ## Where extra weight pays off (get.tradeoff.efficiency): each region of the simplified curve
         ## shaded behind the chart, colored as its row in the table below by how much it buys per unit
         ## of weight against the curve's average, and named in the hover text of each point in it. A
-        ## point where two regions meet belongs to the one it ends.
+        ## point where two regions meet belongs to the one it ends. Each band is outlined in white (the
+        ## chart's background), leaving a gap at each break so that like-colored regions stay apart.
         if(!is.null(result$efficiency)){
             regions <- result$efficiency$data
             colors <- efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35)
             for(i in seq_len(nrow(regions))){
-                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], line = list(width = 0), layer = "below")
+                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], line = list(width = 2, color = "white"), layer = "below")
             }
             for(j in which(!is.na(d$BEST_VALUE))){
                 i <- which(regions$FROM <= d$ARMOR_WEIGHT_LIMIT[j]+1e-9 & regions$TO >= d$ARMOR_WEIGHT_LIMIT[j]-1e-9)[1]

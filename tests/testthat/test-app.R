@@ -624,6 +624,9 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         expect_equal(vapply(bands, function(band) band$x1, numeric(1)), regions$TO)
         expect_equal(vapply(bands, function(band) band$fillcolor, character(1)), efficiency.color(regions$RATIO_TO_AVERAGE, alpha = 0.35))
         expect_true(all(vapply(bands, function(band) band$layer, character(1)) == "below"))
+        ## ...each outlined in white, so there's a gap at every break
+        expect_true(all(vapply(bands, function(band) band$line$color, character(1)) == "white"))
+        expect_true(all(vapply(bands, function(band) band$line$width, numeric(1)) > 0))
         ## Each point with a set names its one region; where two meet, the one it ends
         hover <- unlist(plot$data[[1]]$text)
         weights <- unlist(plot$data[[1]]$x)
