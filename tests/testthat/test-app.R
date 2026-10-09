@@ -354,6 +354,45 @@ test_that("'Normalize to 100%' rescales the weights to sum to exactly 100.0 at o
     })
 })
 
+## The Load Inputs modal shows each weapon's weight beside its name and, under the dropdowns as they
+## change, the weapons' total and the armor weight that leaves for each movement type: the Trade-offs
+## chart's lines, at the endurance being entered and the current rings
+test_that("the Load Inputs modal shows the weapons' weights and what they leave for armor", {
+    modals <- character(0)
+    local_mocked_bindings(
+        showModal = function(ui, ...){
+            modals <<- c(modals, as.character(ui))
+        },
+        .package = "shiny"
+    )
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(constraints = 1)
+        expect_length(modals, 1)
+        expect_match(modals[1], 'data-show-subtext="true"', fixed = TRUE)
+        for(weapon in c("Claymore", "Talisman", "Dagger", "Zweihander")){
+            subtext <- sprintf('<option[^>]*data-subtext="%.1f"[^>]*>%s</option>', weapon.data$WEIGHT[weapon.data$WEAPON == weapon], weapon)
+            expect_match(modals[1], subtext, info = weapon)
+        }
+        expect_match(modals[1], "weapon_summary", fixed = TRUE)
+
+        ## The saved settings: END 10 (load 50), no weapons, no rings
+        expect_equal(output$weapon_summary, "Weapons: 0.0 in total. Leaves for armor: Light 12.5, Mid 25.0, Fat 50.0")
+        ## As weapons and endurance are entered, before Done: load 80, weapons 6 + 0.3
+        session$setInputs(weapon.right.1 = "Claymore", weapon.left.1 = "Talisman", endurance.level = 40)
+        expect_equal(output$weapon_summary, "Weapons: 6.3 in total. Leaves for armor: Light 13.7, Mid 33.7, Fat 73.7")
+        ## An empty endurance box falls back to the saved level
+        session$setInputs(endurance.level = NA)
+        expect_equal(output$weapon_summary, "Weapons: 6.3 in total. Leaves for armor: Light 6.2, Mid 18.7, Fat 43.7")
+        ## Weapons heavier than a movement type's whole load leave none for it
+        session$setInputs(weapon.right.1 = "Smough's Hammer", weapon.left.1 = "None")
+        expect_equal(output$weapon_summary, "Weapons: 28.0 in total. Leaves for armor: Light none, Mid none, Fat 22.0")
+        ## The current rings count: Havel's Ring at END 40 makes the load 120
+        session$setInputs(weapon.right.1 = "Claymore", weapon.left.1 = "Talisman", endurance.level = 40)
+        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = TRUE, favor.ring = FALSE, wolf.ring = FALSE), 1)
+        expect_equal(output$weapon_summary, "Weapons: 6.3 in total. Leaves for armor: Light 23.7, Mid 53.7, Fat 113.7")
+    })
+})
+
 ## tryCatch(warning = ...) stops at the first warning just like an error does, so any warning
 ## raised during a refresh (e.g. a dependency's deprecation notice) used to abandon the refresh
 ## halfway and show the warning as if it were an error. Warnings must let the refresh finish and
