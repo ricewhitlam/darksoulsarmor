@@ -484,21 +484,7 @@ server <- function(input, output, session){
         )
     })
 
-    ## Under the weapon dropdowns, as they're changed: the weapons' total weight, and the armor weight
-    ## that leaves for each movement type at the endurance level being entered and the current rings -
-    ## the Trade-offs chart's movement lines, without the Mask of the Father's bonus - at display
-    ## precision (exactly at a line, the game's own check decides). Settings not yet entered (an empty
-    ## endurance box) fall back to the saved ones.
-    weapon.summary <- function(weapons, endurance.level, havel.ring, favor.ring){
-        carried <- weapons.weight(weapons)
-        load <- equip.load(endurance.level, havel.ring, favor.ring, father.mask = FALSE)
-        armor <- sapply(c("Light", "Mid", "Fat"), function(movement){
-            left <- movement.line(load, movement)-carried
-            if(left < 0) "none" else sprintf("%.1f", left)
-        })
-        sprintf("Weapons: %.1f in total. Leaves for armor: Light %s, Mid %s, Fat %s", carried, armor[["Light"]], armor[["Mid"]], armor[["Fat"]])
-    }
-
+    ## Under the weapon dropdowns, as they're changed: the weapons' total weight
     output$weapon_summary <- shiny::renderText({
         weapons <- constraint.values$weapons
         for(slot in names(weapons)){
@@ -507,8 +493,7 @@ server <- function(input, output, session){
                 weapons[[slot]] <- chosen
             }
         }
-        endurance.level <- if(shiny::isTruthy(input$endurance.level)) round(input$endurance.level, 0) else constraint.values$endurance.level
-        weapon.summary(weapons, endurance.level, ring.values$havel.ring, ring.values$favor.ring)
+        sprintf("Weapons: %.1f in total", weapons.weight(weapons))
     })
 
     shiny::observeEvent(input$dismiss_constraint_modal, {
