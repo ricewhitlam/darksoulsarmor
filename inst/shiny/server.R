@@ -910,6 +910,11 @@ server <- function(input, output, session){
     )
     tradeoffdata <- shiny::reactiveVal(NULL)
 
+    ## The color jumps are drawn in on the Trade-offs chart: a dark blue, set apart from the curve's
+    ## lighter one by depth and weight
+    JUMP.COLOR <- "rgb(8,48,107)"
+    CURVE.COLOR <- "rgb(31,119,180)"
+
     ## A color for each efficiency ratio (a region's slope as a multiple of the curve's average): grey
     ## at the average, deepening to green at twice it or more and to purple at flat (0) - the ends of
     ## ColorBrewer's purple-green scale, which stay distinguishable with the common forms of color
@@ -993,17 +998,27 @@ server <- function(input, output, session){
         classes <- movement.class(curve$HEAD, curve$CHEST, curve$HANDS, curve$LEGS, carried, load, load.father.mask)
         curve[, MOVEMENT := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
 
-        ## Where extra armor weight pays off (get.tradeoff.efficiency, at its defaults: some jumps, some
-        ## flats) - when it has two points to join
-        efficiency <- if(sum(!is.na(curve$BEST_VALUE)) >= 2) get.tradeoff.efficiency(curve) else NULL
-
         tradeoff.computations(tradeoff.computations()+1)
         list(
             metric = metric, data = curve, lines = lines, selected.movement = settings$movement,
-            carried = carried, equip.load = load, stat.minimum = stat.minimum, efficiency = efficiency,
+            carried = carried, equip.load = load, stat.minimum = stat.minimum,
             key = tradeoff.key(snapshot, metric)
         )
     }
+
+    ## Where extra armor weight pays off on the chart's curve (get.tradeoff.efficiency): its jumps,
+    ## lines, flats and boundary points, with as many jumps and flats as the tab's choices ask for
+    ## ("some" if a client sends anything else) - when it has two points to join. Recomputed when only
+    ## those choices change, without searching again.
+    tradeoff.efficiency <- shiny::reactive({
+        result <- tradeoffdata()
+        shiny::req(result)
+        level <- function(value){ if(length(value) == 1 && value %in% c("few", "some", "many")) value else "some" }
+        if(sum(!is.na(result$data$BEST_VALUE)) < 2){
+            return(NULL)
+        }
+        get.tradeoff.efficiency(result$data, jumps = level(input$tradeoff_jumps), flats = level(input$tradeoff_flats))
+    })
 
     ## The chart shows the settings of the last successful refresh (armordata()$args), exactly like
     ## the Results table - never unsaved or newer sidebar settings - so both tabs always describe
@@ -1081,29 +1096,63 @@ server <- function(input, output, session){
 
         shapes <- list()
         annotations <- list()
-        ## Where extra weight pays off (get.tradeoff.efficiency): each region (line or flat) of the curve
-        ## shaded behind the chart, colored by how much it buys per unit of weight against the curve's
-        ## average, and named in the hover text of each point in it, whose box takes the same color. A
-        ## point where two regions meet belongs to the one it ends. Each band is outlined in white (the
-        ## chart's background), leaving a gap at each break so that like-colored regions stay apart;
-        ## translucent rather than tinted, so the grid shows through.
+        ## The value axis: the curve, and the poise breakpoints and minimum drawn across it, with a
+        ## margin - set rather than left to plotly, so that the flats' hatching can fill it top to bottom
+        across <- c(if(result$metric == "POISE") c(21, 31, 46, 61), if(result$stat.minimum > 0) result$stat.minimum)
+        value.range <- range(c(d$BEST_VALUE[!is.na(d$BEST_VALUE)], across))
+        margin <- if(diff(value.range) > 0) 0.06*diff(value.range) else 1
+        value.range <- value.range+c(-1, 1)*margin
+
+        ## Where extra weight pays off (get.tradeoff.efficiency): each line shaded behind the chart,
+        ## colored by how much it buys per unit of weight against the curve's average, outlined in white
+        ## (the chart's background) so neighbouring lines stay apart, translucent so the grid shows
+        ## through; each flat hatched in grey; each jump's rise drawn over the curve and labelled with
+        ## its gain; each boundary point marked on the curve. Each point's hover text names the piece
+        ## it's in, and its box takes that piece's color (a line's tint, a flat's grey, white otherwise);
+        ## a boundary point also gives the rates either side.
+        pieces <- if(is.null(tradeoff.efficiency())) NULL else tradeoff.efficiency()$data
         d$hover.color <- "white"
-        if(!is.null(result$efficiency)){
-            regions <- result$efficiency$data[TYPE %in% c("line", "flat")]
-            colors <- efficiency.color(regions$RATIO_TO_AVERAGE)
-            for(i in seq_len(nrow(regions))){
-                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], opacity = 0.35, line = list(width = 2, color = "white"), layer = "below")
+        if(!is.null(pieces)){
+            lines.of <- pieces[TYPE == "line"]
+            colors <- efficiency.color(lines.of$RATIO_TO_AVERAGE)
+            for(i in seq_len(nrow(lines.of))){
+                shapes[[length(shapes)+1]] <- list(type = "rect", x0 = lines.of$FROM[i], x1 = lines.of$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], opacity = 0.35, line = list(width = 2, color = "white"), layer = "below")
             }
+            ## The pieces a point can belong to: jumps, lines, flats, and boundary points that are a
+            ## single step between two flats (others share their step with the line beside them)
+            between.flats <- pieces$TYPE == "boundary" & c(FALSE, head(pieces$TYPE, -1) == "flat") & c(tail(pieces$TYPE, -1) == "flat", FALSE)
+            owners <- pieces[pieces$TYPE != "boundary" | between.flats]
+            first.weight <- d$ARMOR_WEIGHT_LIMIT[which(!is.na(d$BEST_VALUE))[1]]
+            rate <- function(v) if(v == 0) "flat" else sprintf("%.2fx average", v)
             for(j in which(!is.na(d$BEST_VALUE))){
-                i <- which(regions$FROM <= d$ARMOR_WEIGHT_LIMIT[j]+1e-9 & regions$TO >= d$ARMOR_WEIGHT_LIMIT[j]-1e-9)[1]
-                if(!is.na(i)){
-                    d$hover[j] <- paste0(d$hover[j], sprintf(
-                        "<br>Region %.1f-%.1f: %+.*f %s per unit weight%s",
-                        regions$FROM[i], regions$TO[i], value.digits+1, regions$GAIN[i]/(regions$TO[i]-regions$FROM[i]), metric.label,
-                        if(is.na(regions$RATIO_TO_AVERAGE[i])) "" else sprintf(", %.1fx average", regions$RATIO_TO_AVERAGE[i])
-                    ))
-                    d$hover.color[j] <- efficiency.color(regions$RATIO_TO_AVERAGE[i], tint = 0.35)
+                w <- d$ARMOR_WEIGHT_LIMIT[j]
+                i <- which((owners$FROM < w-1e-9 | abs(w-first.weight) < 1e-9) & owners$TO >= w-1e-9)[1]
+                if(is.na(i)){
+                    next
                 }
+                o <- owners[i]
+                ## Its first point: the next weight after the point it's measured from
+                from <- if(abs(o$FROM-first.weight) < 1e-9 && i == 1) o$FROM else min(d$ARMOR_WEIGHT_LIMIT[d$ARMOR_WEIGHT_LIMIT > o$FROM+1e-9])
+                span <- if(abs(from-o$TO) < 1e-9) sprintf("%.1f", o$TO) else sprintf("%.1f-%.1f", from, o$TO)
+                d$hover[j] <- paste0(d$hover[j], "<br>", switch(o$TYPE,
+                    line = sprintf("Line %s: %.2fx average (%+.*f %s per unit weight)", span, o$RATIO_TO_AVERAGE, value.digits+1, o$GAIN/(o$TO-o$FROM), metric.label),
+                    flat = sprintf("Flat %s: no gain", span),
+                    jump = sprintf("Jump at %.1f: %+.*f %s for %.1f weight", o$TO, value.digits, o$GAIN, metric.label, o$TO-o$FROM),
+                    boundary = sprintf("Step at %.1f between two flats: %+.*f %s", o$TO, value.digits, o$GAIN, metric.label)
+                ))
+                d$hover.color[j] <- switch(o$TYPE, line = efficiency.color(o$RATIO_TO_AVERAGE, tint = 0.35), flat = "rgb(232,232,232)", "white")
+                at <- which(pieces$TYPE == "boundary" & abs(pieces$TO-w) < 1e-9 & !between.flats)
+                if(length(at) > 0){
+                    d$hover[j] <- paste0(d$hover[j], sprintf("<br>Boundary: %s, then %s",rate(pieces$RATIO_BEFORE[at[1]]), rate(pieces$RATIO_AFTER[at[1]])))
+                }
+            }
+            ## Jump labels, to the left of each rise, halfway up it
+            jumps.of <- pieces[TYPE == "jump"]
+            for(i in seq_len(nrow(jumps.of))){
+                annotations[[length(annotations)+1]] <- list(
+                    x = jumps.of$TO[i], y = (jumps.of$START_VALUE[i]+jumps.of$END_VALUE[i])/2, text = sprintf("%+.*f", value.digits, jumps.of$GAIN[i]),
+                    showarrow = FALSE, xanchor = "right", xshift = -4, font = list(color = JUMP.COLOR), bgcolor = "rgba(255,255,255,0.8)"
+                )
             }
         }
         ## Movement breakpoints that fall within the chart, the selected movement type's emphasized
@@ -1135,16 +1184,49 @@ server <- function(input, output, session){
         if(length(shown) > 0){
             d <- d[min(shown):max(shown)]
         }
-        p <-
-            plotly::plot_ly(
-                d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
-                hoverlabel = list(bgcolor = d$hover.color, font = list(color = "black")),
-                type = "scatter", mode = "lines+markers", line = list(shape = "hv"), source = "tradeoffs"
+        ## The flats first (behind the curve), then the curve, then the jumps' rises and the boundary
+        ## points over it - all but the curve left out of hover, so that each weight has one box
+        p <- plotly::plot_ly(source = "tradeoffs")
+        if(!is.null(pieces)){
+            flats.of <- pieces[TYPE == "flat"]
+            for(i in seq_len(nrow(flats.of))){
+                p <- plotly::add_trace(
+                    p, x = c(flats.of$FROM[i], flats.of$FROM[i], flats.of$TO[i], flats.of$TO[i], flats.of$FROM[i]),
+                    y = value.range[c(1, 2, 2, 1, 1)], name = "flat", type = "scatter", mode = "lines", fill = "toself",
+                    fillcolor = "rgba(150,150,150,0.12)", fillpattern = list(shape = "/", fgcolor = "rgb(150,150,150)", size = 8, solidity = 0.15),
+                    line = list(width = 0), hoverinfo = "skip", showlegend = FALSE, inherit = FALSE
+                )
+            }
+        }
+        p <- plotly::add_trace(
+            p, data = d, x = ~ARMOR_WEIGHT_LIMIT, y = ~BEST_VALUE, customdata = ~point, text = ~hover, hoverinfo = "text",
+            hoverlabel = list(bgcolor = d$hover.color, font = list(color = "black")), name = "curve",
+            ## plotly's usual first color, set because the flats' traces come before it
+            type = "scatter", mode = "lines+markers", line = list(shape = "hv", color = CURVE.COLOR), marker = list(color = CURVE.COLOR),
+            showlegend = FALSE, inherit = FALSE
+        )
+        if(!is.null(pieces) && any(pieces$TYPE == "jump")){
+            jumps.of <- pieces[TYPE == "jump"]
+            ## Each rise as the curve draws it (along, then up), the jumps apart
+            rise.x <- unlist(lapply(seq_len(nrow(jumps.of)), function(i) c(jumps.of$FROM[i], jumps.of$TO[i], jumps.of$TO[i], NA)))
+            rise.y <- unlist(lapply(seq_len(nrow(jumps.of)), function(i) c(jumps.of$START_VALUE[i], jumps.of$START_VALUE[i], jumps.of$END_VALUE[i], NA)))
+            p <- plotly::add_trace(
+                p, x = rise.x, y = rise.y, name = "jumps", type = "scatter", mode = "lines",
+                line = list(color = JUMP.COLOR, width = 5), connectgaps = FALSE, hoverinfo = "skip", showlegend = FALSE, inherit = FALSE
             )
+        }
+        if(!is.null(pieces) && any(pieces$TYPE == "boundary")){
+            bounds.of <- pieces[TYPE == "boundary"]
+            p <- plotly::add_trace(
+                p, x = bounds.of$TO, y = bounds.of$END_VALUE, name = "boundaries", type = "scatter", mode = "markers",
+                marker = list(symbol = "diamond-open", size = 11, color = "rgb(40,40,40)", line = list(width = 2)),
+                hoverinfo = "skip", showlegend = FALSE, inherit = FALSE
+            )
+        }
         p <-
             plotly::layout(
                 p,
-                xaxis = list(title = "Armor weight limit"), yaxis = list(title = paste("Best", metric.label)),
+                xaxis = list(title = "Armor weight limit"), yaxis = list(title = paste("Best", metric.label), range = value.range),
                 shapes = shapes, annotations = annotations,
                 ## Hover (and click) by weight alone, so the pointer needn't be on the marker
                 hovermode = "x"

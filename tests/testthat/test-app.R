@@ -632,31 +632,41 @@ test_that("movement classes are the game's check, and note the Mask of the Fathe
     })
 })
 
-## The chart's one trace as plotted: its weights, hover text, and hover colors, one per point (NA for
-## a gap)
+## The chart's traces by name, and its curve as plotted: its weights, values, hover text, and hover
+## colors, one per point (NA for a gap)
+traces.named <- function(plot, name){ Filter(function(trace) identical(trace$name, name), plot$data) }
 plotted <- function(plot){
     each <- function(v){ vapply(v, function(e) if(is.null(e)) NA else e, if(is.numeric(v[[1]])) numeric(1) else character(1)) }
-    trace <- plot$data[[1]]
-    list(x = each(trace$x), text = each(trace$text), color = each(trace$hoverlabel$bgcolor))
+    trace <- traces.named(plot, "curve")[[1]]
+    list(x = each(trace$x), y = each(trace$y), text = each(trace$text), color = each(trace$hoverlabel$bgcolor))
 }
 
-## Every point's hover box is tinted (by the app's efficiency.color) as the region its hover text
-## names; one in no region, white
-expect_hover_colors <- function(trace, regions, efficiency.color){
-    expect_equal(length(trace$color), length(trace$x))
-    region.text <- sprintf("Region %.1f-%.1f: ", regions$FROM, regions$TO)
-    named <- vapply(trace$text, function(h){
-        i <- which(vapply(region.text, grepl, logical(1), x = h, fixed = TRUE))
-        if(length(i) == 1) i else NA_integer_
+## The piece each point of the curve belongs to (an index into pieces): the one it ends or lies
+## within - a jump, line or flat, or a boundary that is a single step between two flats - the curve's
+## first point belonging to the first piece
+owner.of <- function(x, pieces){
+    between.flats <- pieces$TYPE == "boundary" & c(FALSE, head(pieces$TYPE, -1) == "flat") & c(tail(pieces$TYPE, -1) == "flat", FALSE)
+    owners <- which(pieces$TYPE != "boundary" | between.flats)
+    vapply(x, function(w){
+        if(is.na(w)) return(NA_integer_)
+        if(abs(w-pieces$FROM[1]) < 1e-9) return(owners[1])
+        owners[pieces$FROM[owners] < w-1e-9 & pieces$TO[owners] >= w-1e-9][1]
     }, integer(1))
-    expect_equal(unname(trace$color[!is.na(named)]), efficiency.color(regions$RATIO_TO_AVERAGE[named[!is.na(named)]], tint = 0.35))
-    expect_true(all(trace$color[is.na(named)] == "white"))
-    expect_gt(sum(!is.na(named)), 0)
 }
 
-## The Trade-offs tab's efficiency view: the curve described by get.tradeoff.efficiency (at its
-## defaults), each region (line or flat) shaded by its rate against the curve's average - green at
-## twice it or more, purple at flat, grey at the average (half and double equally far from grey)
+## Every point's hover box is tinted as the piece it belongs to: a line's tint (by the app's
+## efficiency.color), a flat's grey, white for a jump or a step between two flats
+expect_hover_colors <- function(trace, pieces, efficiency.color){
+    expect_equal(length(trace$color), length(trace$x))
+    owner <- owner.of(trace$x[!is.na(trace$y)], pieces)
+    expected <- ifelse(pieces$TYPE[owner] == "line", efficiency.color(pieces$RATIO_TO_AVERAGE[owner], tint = 0.35), ifelse(pieces$TYPE[owner] == "flat", "rgb(232,232,232)", "white"))
+    expect_equal(unname(trace$color[!is.na(trace$y)]), expected)
+}
+
+## The Trade-offs tab's efficiency view: the curve described by get.tradeoff.efficiency (as many
+## jumps and flats as the tab's choices ask for), each line shaded by its rate against the curve's
+## average - green at twice it or more, purple at flat, grey at the average (half and double equally
+## far from grey) - each flat hatched, each jump drawn and labelled, each boundary point marked
 test_that("the Trade-offs tab shows where extra weight pays off", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         expect_equal(efficiency.color(c(1, 2, 4, 0, 0.5, NA)), c("rgb(189,189,189)", "rgb(27,120,55)", "rgb(27,120,55)", "rgb(118,42,131)", "rgb(118,42,131)", "rgb(189,189,189)"))
@@ -667,35 +677,60 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         session$setInputs(go = 1)
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
         result <- tradeoffdata()
-        expect_identical(result$efficiency, get.tradeoff.efficiency(result$data))
-        regions <- result$efficiency$data[TYPE %in% c("line", "flat")]
-        expect_gt(nrow(regions), 1)
+        expect_identical(tradeoff.efficiency(), get.tradeoff.efficiency(result$data))
+        pieces <- tradeoff.efficiency()$data
+        ## The score at the defaults: a steep line, a shallow one, then a flat, a boundary point
+        ## between each
+        expect_equal(pieces$TYPE, c("line", "boundary", "line", "boundary", "flat"))
+        lines.of <- pieces[TYPE == "line"]
 
-        ## Every region shaded behind the curve in its color, and the curve the chart's only
-        ## trace, so hovering shows one box
+        ## Every line shaded behind the curve in its color, outlined in white, so there's a gap at
+        ## every break
         plot <- jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x
-        expect_length(plot$data, 1)
         bands <- Filter(function(shape) shape$type == "rect", plot$layout$shapes)
-        expect_equal(vapply(bands, function(band) band$x0, numeric(1)), regions$FROM)
-        expect_equal(vapply(bands, function(band) band$x1, numeric(1)), regions$TO)
-        expect_equal(vapply(bands, function(band) band$fillcolor, character(1)), efficiency.color(regions$RATIO_TO_AVERAGE))
+        expect_equal(vapply(bands, function(band) band$x0, numeric(1)), lines.of$FROM)
+        expect_equal(vapply(bands, function(band) band$x1, numeric(1)), lines.of$TO)
+        expect_equal(vapply(bands, function(band) band$fillcolor, character(1)), efficiency.color(lines.of$RATIO_TO_AVERAGE))
         expect_true(all(vapply(bands, function(band) band$opacity, numeric(1)) == 0.35))
         expect_true(all(vapply(bands, function(band) band$layer, character(1)) == "below"))
-        ## ...each outlined in white, so there's a gap at every break
         expect_true(all(vapply(bands, function(band) band$line$color, character(1)) == "white"))
         expect_true(all(vapply(bands, function(band) band$line$width, numeric(1)) > 0))
-        ## Each point with a set names its one region; where two meet, the one it ends
+
+        ## The flat hatched, behind the curve and across the whole value axis (set by the app); the
+        ## boundary points marked on the curve; only the curve hovers, so each weight shows one box
+        expect_equal(vapply(plot$data, function(trace) trace$name, character(1)), c("flat", "curve", "boundaries"))
+        flat <- traces.named(plot, "flat")[[1]]
+        expect_equal(range(unlist(flat$x)), c(pieces[TYPE == "flat"]$FROM, pieces[TYPE == "flat"]$TO))
+        expect_equal(range(unlist(flat$y)), unlist(plot$layout$yaxis$range))
+        expect_equal(flat$fill, "toself")
+        expect_equal(flat$fillpattern$shape, "/")
+        expect_lt(plot$layout$yaxis$range[[1]], min(result$data$BEST_VALUE, na.rm = TRUE))
+        expect_gt(plot$layout$yaxis$range[[2]], max(result$data$BEST_VALUE, na.rm = TRUE))
+        boundaries <- traces.named(plot, "boundaries")[[1]]
+        expect_equal(unlist(boundaries$x), pieces[TYPE == "boundary"]$TO)
+        expect_equal(unlist(boundaries$y), pieces[TYPE == "boundary"]$END_VALUE)
+        expect_equal(boundaries$marker$symbol, "diamond-open")
+        expect_true(all(vapply(plot$data, function(trace) identical(trace$name, "curve") || all(unlist(trace$hoverinfo) == "skip"), logical(1))))
+
+        ## Each point names its piece: a line from its first point (the curve's first, or the one
+        ## after the line's base) to its last, with its rate; then the flat. A boundary point adds the
+        ## rates either side.
         trace <- plotted(plot)
-        region.text <- sprintf("Region %.1f-%.1f: ", regions$FROM, regions$TO)
-        boundary <- match(regions$TO[1], trace$x)
-        expect_match(trace$text[boundary], region.text[1], fixed = TRUE)
-        expect_match(trace$text[boundary+1], region.text[2], fixed = TRUE)
-        expect_match(trace$text[boundary], "Score per unit weight", fixed = TRUE)
-        ## ...and its hover box takes that region's tint
-        expect_hover_colors(trace, regions, efficiency.color)
+        at <- function(w) which(abs(trace$x-w) < 1e-9)
+        line.text <- sprintf("Line %.1f-%.1f: %.2fx average (%+.4f Score per unit weight)", c(lines.of$FROM[1], lines.of$FROM[2]+0.1), lines.of$TO, lines.of$RATIO_TO_AVERAGE, lines.of$GAIN/(lines.of$TO-lines.of$FROM))
+        expect_match(trace$text[at(0)], line.text[1], fixed = TRUE)
+        expect_match(trace$text[at(lines.of$TO[1])], line.text[1], fixed = TRUE)
+        expect_match(trace$text[at(lines.of$TO[1])], sprintf("Boundary: %.2fx average, then %.2fx average", lines.of$RATIO_TO_AVERAGE[1], lines.of$RATIO_TO_AVERAGE[2]), fixed = TRUE)
+        expect_match(trace$text[at(lines.of$TO[1]+0.1)], line.text[2], fixed = TRUE)
+        expect_false(grepl("Boundary", trace$text[at(lines.of$TO[1]+0.1)], fixed = TRUE))
+        expect_match(trace$text[at(lines.of$TO[2])], sprintf("Boundary: %.2fx average, then flat", lines.of$RATIO_TO_AVERAGE[2]), fixed = TRUE)
+        expect_match(trace$text[at(52.5)], sprintf("Flat %.1f-52.5: no gain", lines.of$TO[2]+0.1), fixed = TRUE)
+        expect_true(all(lengths(regmatches(trace$text, gregexpr("<br>(Line|Flat|Jump|Step) ", trace$text))) == 1))
+        ## ...and its hover box takes that piece's color
+        expect_hover_colors(trace, pieces, efficiency.color)
 
         ## Likewise when the curve starts with weights no set fits (here under a poise minimum), which
-        ## plotly leaves off the chart: each box still takes the tint of the region its text names
+        ## plotly leaves off the chart: each box still takes the color of the piece its text names
         values <- minima.inputs(minimum.values, minima.ids)
         values[[metric.input.id("POISE", "minima")]] <- 30
         submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
@@ -705,6 +740,89 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         expect_true(is.na(result$data$BEST_VALUE[1]))
         trace <- plotted(jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x)
         expect_equal(trace$x[1], result$data$ARMOR_WEIGHT_LIMIT[match(TRUE, !is.na(result$data$BEST_VALUE))])
-        expect_hover_colors(trace, result$efficiency$data[TYPE %in% c("line", "flat")], efficiency.color)
+        expect_match(trace$text[1], sprintf("Line %.1f-", trace$x[1]), fixed = TRUE)
+        expect_hover_colors(trace, tradeoff.efficiency()$data, efficiency.color)
     })
+})
+
+## Jumps: the rise itself drawn over the curve in dark blue, labelled with its gain, its point's
+## hover naming it in a white box. At the defaults, curse resistance jumps 15 at 28.5, then stays
+## flat.
+test_that("the Trade-offs chart draws and labels jumps", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(go = 1)
+        session$setInputs(tradeoff_metric = "CURSE_RES", main_tabs = "Trade-offs")
+        pieces <- tradeoff.efficiency()$data
+        jump <- pieces[TYPE == "jump"]
+        expect_equal(nrow(jump), 1)
+        expect_equal(c(jump$FROM, jump$TO, jump$GAIN), c(28.4, 28.5, 15))
+
+        plot <- jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x
+        expect_equal(vapply(plot$data, function(trace) trace$name, character(1)), c("flat", "curve", "jumps", "boundaries"))
+        jumps <- traces.named(plot, "jumps")[[1]]
+        ## (plotly drops the gap after the last jump)
+        expect_equal(unlist(jumps$x), c(28.4, 28.5, 28.5))
+        expect_equal(unlist(jumps$y), c(jump$START_VALUE, jump$START_VALUE, jump$END_VALUE))
+        expect_equal(jumps$line$color, JUMP.COLOR)
+        expect_true(all(unlist(jumps$hoverinfo) == "skip"))
+        label <- Filter(function(a) identical(a$text, "+15.0"), plot$layout$annotations)
+        expect_length(label, 1)
+        expect_equal(label[[1]]$x, 28.5)
+        expect_equal(label[[1]]$y, (jump$START_VALUE+jump$END_VALUE)/2)
+        expect_equal(label[[1]]$font$color, JUMP.COLOR)
+
+        trace <- plotted(plot)
+        expect_match(trace$text[which(abs(trace$x-28.5) < 1e-9)], "Jump at 28.5: +15.0 Curse Resistance for 0.1 weight", fixed = TRUE)
+        expect_match(trace$text[which(abs(trace$x-28.6) < 1e-9)], "Flat 28.6-52.5: no gain", fixed = TRUE)
+        expect_hover_colors(trace, pieces, efficiency.color)
+        ## The curve keeps plotly's usual blue, though the flat's trace comes first
+        expect_equal(traces.named(plot, "curve")[[1]]$line$color, CURVE.COLOR)
+    })
+})
+
+## The Jumps and Flats choices: Some of each by default, as get.tradeoff.efficiency; another choice
+## redescribes the curve without searching again; anything else a client sends counts as Some. With
+## Many flats, fire defense has a single step between two flats, which owns its point.
+test_that("the Trade-offs tab's Jumps and Flats choices redescribe the curve", {
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        session$setInputs(go = 1)
+        session$setInputs(tradeoff_metric = "FIRE_DEF", main_tabs = "Trade-offs")
+        result <- tradeoffdata()
+        computed <- tradeoff.computations()
+        expect_identical(tradeoff.efficiency(), get.tradeoff.efficiency(result$data, jumps = "some", flats = "some"))
+
+        session$setInputs(tradeoff_jumps = "many", tradeoff_flats = "few")
+        expect_identical(tradeoff.efficiency(), get.tradeoff.efficiency(result$data, jumps = "many", flats = "few"))
+        session$setInputs(tradeoff_jumps = "lots", tradeoff_flats = "few")
+        expect_identical(tradeoff.efficiency(), get.tradeoff.efficiency(result$data, jumps = "some", flats = "few"))
+        session$setInputs(tradeoff_jumps = "few", tradeoff_flats = c("few", "many"))
+        expect_identical(tradeoff.efficiency(), get.tradeoff.efficiency(result$data, jumps = "few", flats = "some"))
+        expect_equal(tradeoff.computations(), computed)
+
+        session$setInputs(tradeoff_jumps = "some", tradeoff_flats = "many")
+        pieces <- tradeoff.efficiency()$data
+        expect_identical(tradeoff.efficiency(), get.tradeoff.efficiency(result$data, flats = "many"))
+        step <- which(pieces$TYPE == "boundary" & pieces$FROM == 32.3)
+        expect_equal(pieces$TYPE[step+c(-1, 1)], c("flat", "flat"))
+        plot <- jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x
+        expect_equal(sum(vapply(plot$data, function(trace) identical(trace$name, "flat"), logical(1))), sum(pieces$TYPE == "flat"))
+        trace <- plotted(plot)
+        expect_match(trace$text[which(abs(trace$x-32.4) < 1e-9)], sprintf("Step at 32.4 between two flats: +%.1f Fire Defense", pieces$GAIN[step]), fixed = TRUE)
+        expect_false(grepl("Boundary", trace$text[which(abs(trace$x-32.4) < 1e-9)], fixed = TRUE))
+        expect_match(trace$text[which(abs(trace$x-32.5) < 1e-9)], "Flat 32.5-", fixed = TRUE)
+        expect_hover_colors(trace, pieces, efficiency.color)
+        expect_equal(tradeoff.computations(), computed)
+    })
+})
+
+## The tab's choices, beside Maximize: Few, Some (chosen) or Many
+test_that("the Trade-offs tab offers Jumps and Flats choices", {
+    ui <- as.character(source(system.file("shiny", "ui.R", package = "darksoulsarmor"), local = new.env())$value)
+    for(id in c("tradeoff_jumps", "tradeoff_flats")){
+        select <- regmatches(ui, regexpr(sprintf("<select id=\"%s\"[\\s\\S]*?</select>", id), ui, perl = TRUE))
+        expect_length(select, 1)
+        expect_match(select, "<option value=\"few\">Few</option>", fixed = TRUE)
+        expect_match(select, "<option value=\"some\" selected>Some</option>", fixed = TRUE)
+        expect_match(select, "<option value=\"many\">Many</option>", fixed = TRUE)
+    }
 })

@@ -82,6 +82,14 @@ bslib::page_sidebar(
                                 "Bleed Resistance" = "BLEED_RES", "Poison Resistance" = "POIS_RES", "Curse Resistance" = "CURSE_RES"
                             )
                         )
+                    ),
+                    shiny::column(
+                        2,
+                        shiny::selectInput(inputId = "tradeoff_jumps", label = "Jumps", choices = c("Few" = "few", "Some" = "some", "Many" = "many"), selected = "some")
+                    ),
+                    shiny::column(
+                        2,
+                        shiny::selectInput(inputId = "tradeoff_flats", label = "Flats", choices = c("Few" = "few", "Some" = "some", "Many" = "many"), selected = "some")
                     )
                 ),
                 shiny::helpText(
