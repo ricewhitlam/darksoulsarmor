@@ -76,21 +76,29 @@ curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 
 `weight.step` sets the spacing of the limits (default 1), and `min.armor.weight`/`max.armor.weight` set the range; by default it runs from 0 to what the movement type allows. Among combinations tied on the stat, the best-scoring one is returned.
 
-`get.tradeoff.efficiency()` simplifies a curve into a few straight regions (Douglas–Peucker, by default staying within 5% of the curve's range, in at most 6 regions, none narrower than 2.5 units of armor weight) and compares each region's slope, the stat gained per unit of armor weight, with the curve's average, to show where extra weight pays off:
+`get.tradeoff.efficiency()` describes a curve in four kinds of piece, to show where extra weight pays off:
+
+- **jumps:** single steps that gain far more than the curve gains over the weight around them;
+- **flats:** stretches where more weight buys nothing;
+- **lines:** straight-line fits to the stretches between them, each compared with the curve's average rate (its total gain over its total weight);
+- **boundary points:** the steps where one line or flat gives way to the next.
 
 ```r
-curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
+curve <- get.armor.tradeoffs(metric = "CURSE_RES", weight.step = 0.1, endurance.level = 40, movement = "Fat")
 efficiency <- get.tradeoff.efficiency(curve)
-efficiency$data[, .(FROM, TO, SLOPE, RATIO_TO_AVERAGE, ABOVE_AVERAGE)]
-#>     FROM    TO      SLOPE RATIO_TO_AVERAGE ABOVE_AVERAGE
-#>    <num> <num>      <num>            <num>        <lgcl>
-#> 1:   0.0   3.5 0.76756860        3.6273473          TRUE
-#> 2:   3.5   9.3 0.39527049        1.8679547          TRUE
-#> 3:   9.3  37.8 0.17870405        0.8445130         FALSE
-#> 4:  37.8  52.5 0.07055733        0.3334372         FALSE
+efficiency$data[, .(TYPE, FROM, TO, GAIN, RATIO_TO_AVERAGE)]
+#>        TYPE  FROM    TO  GAIN RATIO_TO_AVERAGE
+#>      <char> <num> <num> <num>            <num>
+#> 1:     line   0.0   5.0   114        6.7247191
+#> 2: boundary   4.9   5.0    11               NA
+#> 3:     line   5.0  28.4    49        0.6176174
+#> 4:     jump  28.4  28.5    15               NA
+#> 5:     flat  28.5  52.5     0        0.0000000
 ```
 
-Here the score pays off most in the first few units of armor weight: 3.6 times the curve's average up to 3.5, falling below average past 9.3.
+Here curse resistance pays off steeply up to 5.0 armor weight, at 6.7 times the curve's average. It then buys less than average up to 28.4, jumps by 15 at 28.5, and gains nothing after that.
+
+`jumps` and `flats` (each `"few"`, `"some"` (the default) or `"many"`) set the sensitivity at which these features are identified. The rules and their defaults were tuned by judgement to describe typical curves well, so the description is a heuristic rather than an exact measure.
 
 ## What the score means
 
