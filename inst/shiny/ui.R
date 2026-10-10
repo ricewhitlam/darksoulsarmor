@@ -94,9 +94,11 @@ bslib::page_sidebar(
                 ),
                 shiny::helpText(
                     "For every armor weight, the most of the chosen stat any armor set can reach, using the settings of the last refresh.",
-                    "Vertical lines mark where your movement type changes (the selected movement type's line is solid). The shaded bands split the curve",
-                    "into regions: green regions buy more of the stat per unit of armor weight than the curve's average, purple ones less. Hover over a point",
-                    "for its set, its movement type and its region's rate; click a point or a table row for its links."
+                    "Vertical lines mark where your movement type changes (the selected movement type's line is solid). Shaded bands are stretches of steady",
+                    "gain: green ones buy more of the stat per unit of armor weight than the curve's average, purple ones less. Hatched areas are flats, where",
+                    "more weight buys nothing. Dark blue rises are jumps, single steps that gain far more than the weight around them, labelled with their gain.",
+                    "Diamonds mark where one stretch gives way to the next. Jumps and Flats set the sensitivity at which these features are identified. Hover",
+                    "over a point for its set, its movement type and the stretch it's in; click a point or a table row for its links."
                 ),
                 plotly::plotlyOutput(outputId = "tradeoff_plot"),
                 DT::dataTableOutput(outputId = "tradeoff_table")
