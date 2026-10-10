@@ -237,7 +237,9 @@ test_that("the User Guide describes the current app", {
     for(text in c("Both tabs, Results and Trade-offs, show the settings of the last refresh", "saves an Excel workbook",
                   "'Movement' is used to specify", "Poop (no limit", "Score Inputs:", "Fat | Poop", "A minimum on the charted stat itself is ignored",
                   "or on a point or row in the Trade-offs tab", "with the game's own upgrade rates, exactly as the game computes them", "The download holds the exact values", "Right Hand Weapon 1' through 'Left Hand Weapon 2' are the weapons", "given your equip load and weapons", "install_github(\"ricewhitlam/darksoulsarmor\")",
-                  "The shaded bands behind the curve split it into regions", "purple regions buy less", "its hover box takes the region's color")){
+                  "Each weapon's weight is shown beside its name, and the weapons' total weight under the dropdowns",
+                  "The chart splits the curve into pieces", "Lines (shaded bands)", "Flats (grey hatching)", "Jumps (dark blue rises", "Boundary points (diamonds)",
+                  "'Jumps' and 'Flats' set the sensitivity", "its hover box takes the piece's color", "These descriptions are heuristic")){
         expect_match(guide, text, fixed = TRUE)
     }
     for(text in c("Compute Trade-offs", "Roll Type", "Weight Inputs", "Overloaded", "Fast", "Detail", "approximated", "Weight without Armor", "weigh slightly more than the weight it's charted at")){

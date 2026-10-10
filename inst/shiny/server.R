@@ -55,7 +55,8 @@ server <- function(input, output, session){
                     'Movement' is used to specify the heaviest movement type the character may have: Light (armor and other equipment at or below 25% of equip load, for a light roll),
                     Mid (at or below 50%, mid roll), Fat (at or below 100%, fat roll), or Poop (no limit: over 100%, the character can't roll and walks slowly). <br>
                     'Endurance Level' is used to specify the character's current level in the Endurance stat - Endurance affects equip load. <br>
-                    'Right Hand Weapon 1' through 'Left Hand Weapon 2' are the weapons, shields, catalysts, talismans and bows in the four weapon slots. Only their weight is used, and rings and ammunition weigh nothing,
+                    'Right Hand Weapon 1' through 'Left Hand Weapon 2' are the weapons, shields, catalysts, talismans and bows in the four weapon slots.
+                    Each weapon's weight is shown beside its name, and the weapons' total weight under the dropdowns. Only their weight is used, and rings and ammunition weigh nothing,
                     so together with your armor they are everything you carry. They're chosen per slot because the game adds up equipment weight one item at a time, in slot order, with limited precision.
                     A set weighing exactly 25.0% on paper can still give a mid roll, and with two or more talismans equipped, which slot holds what can make the difference. The app checks movement exactly as the game does. <br> <br>
 
@@ -80,9 +81,15 @@ server <- function(input, output, session){
                     A minimum on the charted stat itself is ignored, since it would only cut the curve off below it. It's drawn as a dashed blue line instead. Every other minimum still applies. <br>
                     The chart is computed when the tab is opened after a refresh, which takes a few seconds. Hover anywhere above or below a point to see its set and movement type.
                     Click there, or click a row of the table below the chart, for the pieces' links. <br>
-                    The shaded bands behind the curve split it into regions, each colored by how much of the stat it buys per unit of armor weight compared with the curve's average
-                    (its total gain divided by its total weight). Green regions buy more, deepest at twice the average or more; purple regions buy less, deepest where the curve is flat;
-                    grey ones are about average. Hover over a point for its region's rate; its hover box takes the region's color. <br> <br>
+                    The chart splits the curve into pieces, to show where extra armor weight pays off: <br>
+                    Lines (shaded bands) are stretches where the stat rises steadily. Each is colored by how much of the stat it buys per unit of armor weight compared with the curve's average
+                    (its total gain divided by its total weight). Green bands buy more, purple ones buy less, and grey ones are about average. <br>
+                    Flats (grey hatching) are stretches where more weight buys nothing. <br>
+                    Jumps (dark blue rises, labelled with their gain) are single steps of 0.1 that gain far more than the curve gains over the weight around them. <br>
+                    Boundary points (diamonds) mark where one stretch gives way to the next, at the step where the rate changes. <br>
+                    'Jumps' and 'Flats' set the sensitivity at which these features are identified: Few picks out only the most prominent, Many finds smaller ones too.
+                    Hover over a point for the piece it's in and its rate; its hover box takes the piece's color, and at a boundary point it also gives the rates on either side.
+                    These descriptions are heuristic: the rules behind them and their default settings were tuned by judgement to describe typical curves well, which is why the sensitivity can be adjusted. <br> <br>
 
                     Miscellaneous notes: <br> <br>
                     Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
