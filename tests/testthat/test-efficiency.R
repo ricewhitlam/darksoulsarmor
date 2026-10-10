@@ -24,8 +24,9 @@ weights.16.12 <- c(PHYS_DEF = 16, STRIKE_DEF = 16, SLASH_DEF = 16, THRUST_DEF = 
 ## Score with physical defenses at 16% and elemental at 12%, armor fully upgraded: with a poise
 ## minimum of 61, four jumps (one at 25.5, beside the bigger 25.1, as it stands out once 25.1 is set
 ## aside), lines between them, and the flat end; with none, a steep line, a shallow one and the flat
-## end, with no jumps; with a minimum of 31, the jump at 21.0 promoted from the boundary between a
-## steeper line and a shallower one, being among the curve's biggest steps
+## end, with no jumps; with a minimum of 31, jumps at 13.5, 14.3 and 15.0, and at 21.0, promoted from
+## the boundary between a steeper line and a shallower one (being among the curve's biggest steps),
+## before one shallow line to the flat end
 test_that("score curves are described with their jumps, lines and flats", {
     poise.61 <- curve.over.all.weights(metric = "SCORE", weights = weights.16.12, minima = c(POISE = 61), regular.level = "+10", twinkling.level = "+5")
     expect_equal(described(get.tradeoff.efficiency(poise.61)), paste(
@@ -36,8 +37,8 @@ test_that("score curves are described with their jumps, lines and flats", {
         "line to 7.1 4.94x | boundary 7.1 4.94x>0.50x | line to 42.1 0.50x | boundary 42.1 0.50x>flat | flat to 52.5")
     poise.31 <- curve.over.all.weights(metric = "SCORE", weights = weights.16.12, minima = c(POISE = 31), regular.level = "+10", twinkling.level = "+5")
     expect_equal(described(get.tradeoff.efficiency(poise.31)), paste(
-        "line to 13.4 1.18x | jump 13.5 | line to 15.0 6.55x | boundary 15.0 6.55x>1.82x | line to 20.9 1.82x | jump 21.0 |",
-        "line to 31.6 0.63x | boundary 31.6 0.63x>0.31x | line to 42.1 0.31x | boundary 42.1 0.31x>flat | flat to 52.5"))
+        "line to 13.4 1.18x | jump 13.5 | line to 14.2 3.10x | jump 14.3 | line to 14.9 3.38x | jump 15.0 |",
+        "line to 20.9 1.82x | jump 21.0 | line to 42.1 0.47x | boundary 42.1 0.47x>flat | flat to 52.5"))
     ## Unupgraded, with the default weights: two lines and the flat end
     expect_equal(described(get.tradeoff.efficiency(curve.over.all.weights(metric = "SCORE"))),
         "line to 7.5 2.72x | boundary 7.5 2.72x>0.84x | line to 45.6 0.84x | boundary 45.6 0.84x>flat | flat to 52.5")
@@ -123,9 +124,10 @@ test_that("equal steps are jumps together or not at all", {
     expect_equal(d$TO[d$TYPE == "jump"], c(3, 9, 12, 15, 18, 21, 24))
 })
 
-## A stretch is described with as few lines as each halve the error: a curve of exactly two straight
-## lines is two lines (not more, once the error is nil), meeting at its bend
-test_that("lines are added only while they halve the error", {
+## A stretch is described with as few lines as each cut the error enough (to 45% of what it was): a
+## curve of exactly two straight lines is two lines (not more, once the error is nil), meeting at its
+## bend
+test_that("lines are added only while they cut the error enough", {
     x <- round(seq(0, 30, by = 0.1), 1)
     y <- ifelse(x <= 10, 3*x, 30 + 0.5*(x - 10))
     d <- get.tradeoff.efficiency(data.table::data.table(ARMOR_WEIGHT_LIMIT = x, BEST_VALUE = y))$data

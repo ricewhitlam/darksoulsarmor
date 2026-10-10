@@ -11,7 +11,7 @@ get.tradeoff.efficiency(curve, jumps = "some", flats = "some")
 \code{ARMOR_WEIGHT_LIMIT} and \code{BEST_VALUE}. Any other columns are ignored.}
 
 \item{jumps}{How many jumps to look for: \code{"few"} (at most 3, each rising at least 10\% of the range
-and worth at least 1.6 weight), \code{"some"} (at most 6, 6\%, 1.375 weight) or \code{"many"} (at
+and worth at least 1.6 weight), \code{"some"} (at most 6, 6\%, 1.23 weight) or \code{"many"} (at
 most 8, 3\%, 0.85 weight). Defaults to \code{"some"}.}
 
 \item{flats}{How many flats to look for: \code{"few"} (at most 2, each at least 15\% of the width),
@@ -54,8 +54,8 @@ would go past the maximum is left out, along with everything smaller).
 to a maximum, equal lengths taken together or not at all.
 
 \strong{Lines.} Each stretch between the jumps and flats is fitted with the best 1, 2, 3 or 4
-least-squares lines, each at least 2.5 weight wide, adding a line only if it at least halves the
-error (root mean square). A line's rate is its gain from the set before it to its last set,
+least-squares lines, each at least 2.5 weight wide, adding a line only if it brings the error (root
+mean square) down to at most 45\% of what it was. A line's rate is its gain from the set before it to its last set,
 divided by the weight between them. A line with no gain is a flat.
 
 \strong{Boundary points.} Between two lines, the break moves to the biggest step within 1.25 weight

@@ -29,8 +29,8 @@
 #' to a maximum, equal lengths taken together or not at all.
 #'
 #' \strong{Lines.} Each stretch between the jumps and flats is fitted with the best 1, 2, 3 or 4
-#' least-squares lines, each at least 2.5 weight wide, adding a line only if it at least halves the
-#' error (root mean square). A line's rate is its gain from the set before it to its last set,
+#' least-squares lines, each at least 2.5 weight wide, adding a line only if it brings the error (root
+#' mean square) down to at most 45\% of what it was. A line's rate is its gain from the set before it to its last set,
 #' divided by the weight between them. A line with no gain is a flat.
 #'
 #' \strong{Boundary points.} Between two lines, the break moves to the biggest step within 1.25 weight
@@ -49,7 +49,7 @@
 #'
 #' @param
 #' jumps How many jumps to look for: \code{"few"} (at most 3, each rising at least 10\% of the range
-#' and worth at least 1.6 weight), \code{"some"} (at most 6, 6\%, 1.375 weight) or \code{"many"} (at
+#' and worth at least 1.6 weight), \code{"some"} (at most 6, 6\%, 1.23 weight) or \code{"many"} (at
 #' most 8, 3\%, 0.85 weight). Defaults to \code{"some"}.
 #'
 #' @param
@@ -199,7 +199,7 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
 ## weight a jump must be worth at the rate around it
 JUMP.LEVELS <- list(
     few = list(max = 3, size = 0.10, worth = 1.6),
-    some = list(max = 6, size = 0.06, worth = 1.375),
+    some = list(max = 6, size = 0.06, worth = 1.23),
     many = list(max = 8, size = 0.03, worth = 0.85)
 )
 FLAT.LEVELS <- list(
@@ -213,7 +213,7 @@ FLAT.LEVELS <- list(
 ## how narrow a line can be; and how far a boundary point between two lines may move to a big step
 WORTH.WINDOW <- 4.5
 MAX.LINES <- 4
-LINE.CUT <- 0.5
+LINE.CUT <- 0.45
 LINE.WIDTH <- 2.5
 BOUNDARY.WINDOW <- 1.25
 
@@ -388,7 +388,7 @@ fewest.lines <- function(x, y){
             B[k, j] <- i[which.min(v)]
         }
     }
-    ## As many lines as each halve the error (none more once it's nil)
+    ## As many lines as each cut the error enough (none more once it's nil)
     k <- 1
     nil <- 1e-12*(1+(max(y)-min(y))^2)*m
     while(k < MAX.LINES && F[k, m] > nil && is.finite(F[k+1, m]) && sqrt(F[k+1, m]) <= LINE.CUT*sqrt(F[k, m])){
