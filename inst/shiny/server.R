@@ -993,8 +993,8 @@ server <- function(input, output, session){
         classes <- movement.class(curve$HEAD, curve$CHEST, curve$HANDS, curve$LEGS, carried, load, load.father.mask)
         curve[, MOVEMENT := ifelse(is.na(ARMOR_WEIGHT), NA_character_, ifelse(classes$by.mask.bonus, paste(classes$class, "(Mask of the Father bonus)"), classes$class))]
 
-        ## Where extra armor weight pays off (get.tradeoff.efficiency, at its defaults: within 5% of the
-        ## curve's range, at most 6 regions, none under 2.5 weight) - when it has two points to join
+        ## Where extra armor weight pays off (get.tradeoff.efficiency, at its defaults: some jumps, some
+        ## flats) - when it has two points to join
         efficiency <- if(sum(!is.na(curve$BEST_VALUE)) >= 2) get.tradeoff.efficiency(curve) else NULL
 
         tradeoff.computations(tradeoff.computations()+1)
@@ -1081,7 +1081,7 @@ server <- function(input, output, session){
 
         shapes <- list()
         annotations <- list()
-        ## Where extra weight pays off (get.tradeoff.efficiency): each region of the simplified curve
+        ## Where extra weight pays off (get.tradeoff.efficiency): each region (line or flat) of the curve
         ## shaded behind the chart, colored by how much it buys per unit of weight against the curve's
         ## average, and named in the hover text of each point in it, whose box takes the same color. A
         ## point where two regions meet belongs to the one it ends. Each band is outlined in white (the
@@ -1089,7 +1089,7 @@ server <- function(input, output, session){
         ## translucent rather than tinted, so the grid shows through.
         d$hover.color <- "white"
         if(!is.null(result$efficiency)){
-            regions <- result$efficiency$data
+            regions <- result$efficiency$data[TYPE %in% c("line", "flat")]
             colors <- efficiency.color(regions$RATIO_TO_AVERAGE)
             for(i in seq_len(nrow(regions))){
                 shapes[[length(shapes)+1]] <- list(type = "rect", x0 = regions$FROM[i], x1 = regions$TO[i], y0 = 0, y1 = 1, yref = "paper", fillcolor = colors[i], opacity = 0.35, line = list(width = 2, color = "white"), layer = "below")
@@ -1099,7 +1099,7 @@ server <- function(input, output, session){
                 if(!is.na(i)){
                     d$hover[j] <- paste0(d$hover[j], sprintf(
                         "<br>Region %.1f-%.1f: %+.*f %s per unit weight%s",
-                        regions$FROM[i], regions$TO[i], value.digits+1, regions$SLOPE[i], metric.label,
+                        regions$FROM[i], regions$TO[i], value.digits+1, regions$GAIN[i]/(regions$TO[i]-regions$FROM[i]), metric.label,
                         if(is.na(regions$RATIO_TO_AVERAGE[i])) "" else sprintf(", %.1fx average", regions$RATIO_TO_AVERAGE[i])
                     ))
                     d$hover.color[j] <- efficiency.color(regions$RATIO_TO_AVERAGE[i], tint = 0.35)

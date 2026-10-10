@@ -654,9 +654,9 @@ expect_hover_colors <- function(trace, regions, efficiency.color){
     expect_gt(sum(!is.na(named)), 0)
 }
 
-## The Trade-offs tab's efficiency view: the curve simplified by get.tradeoff.efficiency (at its
-## defaults), each region shaded by its slope against the curve's average - green at twice it or
-## more, purple at flat, grey at the average (half and double equally far from grey)
+## The Trade-offs tab's efficiency view: the curve described by get.tradeoff.efficiency (at its
+## defaults), each region (line or flat) shaded by its rate against the curve's average - green at
+## twice it or more, purple at flat, grey at the average (half and double equally far from grey)
 test_that("the Trade-offs tab shows where extra weight pays off", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         expect_equal(efficiency.color(c(1, 2, 4, 0, 0.5, NA)), c("rgb(189,189,189)", "rgb(27,120,55)", "rgb(27,120,55)", "rgb(118,42,131)", "rgb(118,42,131)", "rgb(189,189,189)"))
@@ -668,7 +668,7 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
         result <- tradeoffdata()
         expect_identical(result$efficiency, get.tradeoff.efficiency(result$data))
-        regions <- result$efficiency$data
+        regions <- result$efficiency$data[TYPE %in% c("line", "flat")]
         expect_gt(nrow(regions), 1)
 
         ## Every region shaded behind the curve in its color, and the curve the chart's only
@@ -705,6 +705,6 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
         expect_true(is.na(result$data$BEST_VALUE[1]))
         trace <- plotted(jsonlite::fromJSON(output$tradeoff_plot, simplifyVector = FALSE)$x)
         expect_equal(trace$x[1], result$data$ARMOR_WEIGHT_LIMIT[match(TRUE, !is.na(result$data$BEST_VALUE))])
-        expect_hover_colors(trace, result$efficiency$data, efficiency.color)
+        expect_hover_colors(trace, result$efficiency$data[TYPE %in% c("line", "flat")], efficiency.color)
     })
 })

@@ -2,56 +2,75 @@
 % Please edit documentation in R/efficiency.R
 \name{get.tradeoff.efficiency}
 \alias{get.tradeoff.efficiency}
-\title{Find where extra armor weight buys the most of a stat}
+\title{Describe where extra armor weight pays off}
 \usage{
-get.tradeoff.efficiency(
-  curve,
-  tolerance = 0.05,
-  max.segments = 6,
-  min.width = 2.5
-)
+get.tradeoff.efficiency(curve, jumps = "some", flats = "some")
 }
 \arguments{
 \item{curve}{A curve from \code{\link{get.armor.tradeoffs}} (or its \code{data}): a table with
 \code{ARMOR_WEIGHT_LIMIT} and \code{BEST_VALUE}. Any other columns are ignored.}
 
-\item{tolerance}{A length 1 non-negative \code{numeric}: how far the simplified line may stray from the
-curve, as a share of the curve's range of values. Larger values give fewer, broader segments; 0
-keeps every bend (up to \code{max.segments}). Defaults to \code{0.05} (5\%).}
+\item{jumps}{How many jumps to look for: \code{"few"} (at most 3, each rising at least 10\% of the range
+and worth at least 1.5 weight), \code{"some"} (at most 6, 5\%, 1.25 weight) or \code{"many"} (at
+most 8, 3\%, 0.75 weight). Defaults to \code{"some"}.}
 
-\item{max.segments}{A length 1 whole \code{numeric}, at least 1: the most segments to split the curve
-into, whatever the tolerance. \code{Inf} for no limit. Defaults to \code{6}.}
-
-\item{min.width}{A length 1 non-negative \code{numeric}: the narrowest a split may leave a segment, in
-units of armor weight. 0 for no limit. Defaults to \code{2.5}, about 5\% of the heaviest armor
-set's weight.}
+\item{flats}{How many flats to look for: \code{"few"} (at most 2, each at least 15\% of the width),
+\code{"some"} (at most 3, 10\%) or \code{"many"} (at most 5, 5\%). Defaults to \code{"some"}.}
 }
 \value{
 A \code{list} holding (1) \code{average.slope}, the curve's total gain divided by its total
-weight, and (2) a \code{data.table} with one row per segment, in weight order: the weights it
-spans (\code{FROM}, \code{TO}), the curve's values there (\code{START_VALUE}, \code{END_VALUE}),
-its \code{SLOPE}, that slope as a multiple of the average (\code{RATIO_TO_AVERAGE}, \code{NA} when
-the average is 0), and whether it's steeper than average (\code{ABOVE_AVERAGE}).
+weight, and (2) a \code{data.table} with one row per piece, in weight order: its \code{TYPE}
+(\code{"jump"}, \code{"line"}, \code{"flat"} or \code{"boundary"}); the weights it runs between
+(\code{FROM}, \code{TO}: from the set before it to its last set, so that jumps, lines and flats
+join end to end, a jump or boundary point being one step) and the curve's values there
+(\code{START_VALUE}, \code{END_VALUE}), with their difference (\code{GAIN}); for lines and flats,
+the rate as a multiple of the average (\code{RATIO_TO_AVERAGE}, \code{NA} when the average is 0)
+and whether it's above average (\code{ABOVE_AVERAGE}); and for boundary points, the rates before
+and after (\code{RATIO_BEFORE}, \code{RATIO_AFTER}). A boundary point's step also belongs to a
+line beside it, except for one between two flats.
 }
 \description{
-Simplifies a trade-off curve (from \code{\link{get.armor.tradeoffs}}) into a few straight-line
-segments, each with a slope: how much of the stat each extra unit of armor weight buys across that
-region. Comparing a segment's slope with the curve's average slope (its total gain divided by its
-total weight) shows where weight is best spent: regions steeper than average give more for the
-weight.
+Describes a trade-off curve (from \code{\link{get.armor.tradeoffs}}) as a sequence of pieces, so
+that each step of the curve belongs to exactly one of them:
+\itemize{
+  \item \strong{jumps}: single steps where a little more weight buys a lot;
+  \item \strong{lines}: regions with a steady rate, compared with the curve's average rate (its
+  total gain divided by its total weight) - above it, extra weight buys more than average;
+  \item \strong{flats}: regions where extra weight buys nothing;
+}
+with a \strong{boundary point} wherever two regions (lines or flats) meet.
 
-The simplification is Douglas-Peucker's, taken worst first: starting from the straight line between
-the curve's first and last points, the segment that strays furthest from the curve (vertically) is
-split at the point where it strays most, again and again, until every point is within the
-tolerance of the simplified line - or there are \code{max.segments} segments, which then hold the
-curve's biggest bends. A segment is only split where both sides would be at least
-\code{min.width} wide, so a sharp jump in the curve doesn't become a sliver of its own; a segment
-that can't be split that way stays whole, even if it strays further than the tolerance. Segments
-join at points of the curve - each a best set at its weight limit - so a slope is a rate between
-real sets; you can't wear the weights in between. Points with no set (\code{NA}) are left out.
+Points with no set (\code{NA}) are left out. The range is the curve's highest value less its
+lowest, and the width its last weight less its first.
+
+\strong{Jumps.} A step is a jump if it rises at least a share of the range, and is worth at least
+an amount of weight at the rate around it: its rise divided by the rate of the rest of the gain
+within 3 weight either side of it, leaving out any jumps already chosen. So a big step in a steep
+stretch, whose neighbours rise as fast, isn't a jump; the stretch is a steep line. Jumps are
+chosen biggest first, up to a maximum; equal steps are taken together or not at all (a group that
+would go past the maximum is left out, along with everything smaller).
+
+\strong{Flats.} A run of steps with no gain at least a share of the width long, longest first, up
+to a maximum, equal lengths taken together or not at all.
+
+\strong{Lines.} Each stretch between the jumps and flats is fitted with the best 1, 2, 3 or 4
+least-squares lines, each at least 2.5 weight wide, adding a line only if it at least halves the
+error (root mean square). A line's rate is its gain from the set before it to its last set,
+divided by the weight between them. A line with no gain is a flat.
+
+\strong{Boundary points.} Between two lines, the break moves to the biggest step within 1.25 weight
+of where the fit put it, which becomes the last step of the earlier line; from a line into a flat,
+it's the last step before the flat; from a flat into a line, the first step after it. A single step
+between two flats is itself the boundary point between them.
+
+\strong{Promoted jumps.} While fewer jumps than the maximum are in use, a boundary point's step
+becomes a jump if it's among the curve's largest steps (as many as the maximum, equal ones together),
+rises at least half the share of the range a jump otherwise needs, and is worth as much weight;
+biggest first, the curve described again around each.
 }
 \examples{
 score.curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
 efficiency <- get.tradeoff.efficiency(score.curve)
+fewer.jumps <- get.tradeoff.efficiency(score.curve, jumps = "few")
 
 }
