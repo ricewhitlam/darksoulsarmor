@@ -11,8 +11,8 @@ get.tradeoff.efficiency(curve, jumps = "some", flats = "some")
 \code{ARMOR_WEIGHT_LIMIT} and \code{BEST_VALUE}. Any other columns are ignored.}
 
 \item{jumps}{How many jumps to look for: \code{"few"} (at most 3, each rising at least 10\% of the range
-and worth at least 1.5 weight), \code{"some"} (at most 6, 5\%, 1.25 weight) or \code{"many"} (at
-most 8, 3\%, 0.75 weight). Defaults to \code{"some"}.}
+and worth at least 1.6 weight), \code{"some"} (at most 6, 6\%, 1.375 weight) or \code{"many"} (at
+most 8, 3\%, 0.85 weight). Defaults to \code{"some"}.}
 
 \item{flats}{How many flats to look for: \code{"few"} (at most 2, each at least 15\% of the width),
 \code{"some"} (at most 3, 10\%) or \code{"many"} (at most 5, 5\%). Defaults to \code{"some"}.}
@@ -45,7 +45,7 @@ lowest, and the width its last weight less its first.
 
 \strong{Jumps.} A step is a jump if it rises at least a share of the range, and is worth at least
 an amount of weight at the rate around it: its rise divided by the rate of the rest of the gain
-within 3 weight either side of it, leaving out any jumps already chosen. So a big step in a steep
+within 4.5 weight either side of it, leaving out any jumps already chosen. So a big step in a steep
 stretch, whose neighbours rise as fast, isn't a jump; the stretch is a steep line. Jumps are
 chosen biggest first, up to a maximum; equal steps are taken together or not at all (a group that
 would go past the maximum is left out, along with everything smaller).

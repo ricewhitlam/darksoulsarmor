@@ -64,6 +64,17 @@ test_that("steep staircases are lines, and single steps between flats are bounda
     expect_equal(c(d$RATIO_BEFORE[k], d$RATIO_AFTER[k]), c(0, 0))
 })
 
+## Lightning defense's lone +8 at 41.4 is too small a share of its range to be a jump, so 10.2 to 45.6
+## is one shallow line. Curse resistance's big early steps are a steep staircase up to 5.0, and its +9
+## steps after it too small to be jumps, so it's one steep line, one shallow line, and the jump of 15
+## at 28.5 before the flat end.
+test_that("small steps and steep staircases aren't jumps", {
+    expect_equal(described(get.tradeoff.efficiency(curve.over.all.weights(metric = "LITNG_DEF"))),
+        "line to 10.1 3.09x | boundary 10.1 3.09x>0.60x | line to 45.6 0.60x | boundary 45.6 0.60x>flat | flat to 52.5")
+    expect_equal(described(get.tradeoff.efficiency(curve.over.all.weights(metric = "CURSE_RES"))),
+        "line to 5.0 6.72x | boundary 5.0 6.72x>0.62x | line to 28.4 0.62x | jump 28.5 | flat to 52.5")
+})
+
 ## Every step belongs to exactly one piece: the jumps, lines, flats and boundary points between two
 ## flats run end to end from the curve's first weight to its last, their gains adding up to the whole
 test_that("the pieces cover the curve end to end", {

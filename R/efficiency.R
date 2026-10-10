@@ -20,7 +20,7 @@
 #'
 #' \strong{Jumps.} A step is a jump if it rises at least a share of the range, and is worth at least
 #' an amount of weight at the rate around it: its rise divided by the rate of the rest of the gain
-#' within 3 weight either side of it, leaving out any jumps already chosen. So a big step in a steep
+#' within 4.5 weight either side of it, leaving out any jumps already chosen. So a big step in a steep
 #' stretch, whose neighbours rise as fast, isn't a jump; the stretch is a steep line. Jumps are
 #' chosen biggest first, up to a maximum; equal steps are taken together or not at all (a group that
 #' would go past the maximum is left out, along with everything smaller).
@@ -49,8 +49,8 @@
 #'
 #' @param
 #' jumps How many jumps to look for: \code{"few"} (at most 3, each rising at least 10\% of the range
-#' and worth at least 1.5 weight), \code{"some"} (at most 6, 5\%, 1.25 weight) or \code{"many"} (at
-#' most 8, 3\%, 0.75 weight). Defaults to \code{"some"}.
+#' and worth at least 1.6 weight), \code{"some"} (at most 6, 6\%, 1.375 weight) or \code{"many"} (at
+#' most 8, 3\%, 0.85 weight). Defaults to \code{"some"}.
 #'
 #' @param
 #' flats How many flats to look for: \code{"few"} (at most 2, each at least 15\% of the width),
@@ -198,9 +198,9 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
 ## (a jump's rise as a share of the range, a flat's length as a share of the width), and how much
 ## weight a jump must be worth at the rate around it
 JUMP.LEVELS <- list(
-    few = list(max = 3, size = 0.10, worth = 1.5),
-    some = list(max = 6, size = 0.05, worth = 1.25),
-    many = list(max = 8, size = 0.03, worth = 0.75)
+    few = list(max = 3, size = 0.10, worth = 1.6),
+    some = list(max = 6, size = 0.06, worth = 1.375),
+    many = list(max = 8, size = 0.03, worth = 0.85)
 )
 FLAT.LEVELS <- list(
     few = list(max = 2, width = 0.15),
@@ -211,7 +211,7 @@ FLAT.LEVELS <- list(
 ## The fixed rules: the weight either side of a step its worth is judged over; at most how many lines
 ## a stretch is fitted with, how much each added line must cut the error (to at most this share), and
 ## how narrow a line can be; and how far a boundary point between two lines may move to a big step
-WORTH.WINDOW <- 3
+WORTH.WINDOW <- 4.5
 MAX.LINES <- 4
 LINE.CUT <- 0.5
 LINE.WIDTH <- 2.5
