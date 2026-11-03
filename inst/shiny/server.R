@@ -661,9 +661,7 @@ server <- function(input, output, session){
                 title = "Score Inputs",
                 footer = shiny::fluidRow(shiny::column(8, shiny::actionButton(inputId = "normalize_weights", label = "Normalize to 100%")), shiny::column(4, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))),
                 shiny::radioButtons(inputId = "stat_scale", label = "Stat Scale", choices = c("Std Dev" = "sd", "Max" = "max", "Raw" = "raw"), selected = weight.values$stat.scale, inline = TRUE),
-                shiny::helpText("What one unit of each stat counts as before it is weighted: its standard deviation across every armor combination (Std Dev), its highest value across every armor combination (Max), or one unit with no adjustment (Raw)."),
                 shiny::radioButtons(inputId = "weights_mode", label = "Weights Mode", choices = c("Individual" = "individual", "Grouped" = "grouped"), selected = weight.values$weights.mode, inline = TRUE),
-                shiny::helpText("Individual weights each stat. Grouped weights physical defenses, elemental defenses and resistances, each as the average of its stats. Switching carries the weights over: a group gets the sum of its stats' weights, and a group's weight is split evenly across its stats."),
                 ## Both sets of boxes, the mode showing one
                 shiny::conditionalPanel(
                     condition = "input.weights_mode == 'individual'",
