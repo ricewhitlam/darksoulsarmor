@@ -126,3 +126,52 @@ test_that("get.optimal.armor.combos ranks combos in the direction its weights im
     expect_equal(phys.result$HEAD[1], "Guardian Helm")
     expect_equal(mag.result$HEAD[1], "Big Hat")
 })
+
+## stat.scale: under "sd" the multipliers are the original formula, bit for bit; under every scale
+## the score keeps population mean 0 and standard deviation 1 (checked on the real population,
+## as above)
+test_that("every stat.scale gives scores with population mean 0 and standard deviation 1", {
+    means <- darksoulsarmor:::means
+    stddevs <- darksoulsarmor:::stddevs
+    corrs <- darksoulsarmor:::corrs
+    set.seed(20261103)
+    for(trial in 1:3){
+        w <- runif(10)
+        w <- w/sum(w)
+        expect_identical(darksoulsarmor:::score.scalars.for(w, "sd"), w/(stddevs*sqrt((t(w) %*% corrs %*% w)[1, 1])))
+        for(stat.scale in c("sd", "max", "raw")){
+            score.scalars <- darksoulsarmor:::score.scalars.for(w, stat.scale)
+            slot.scores <- lapply(list(pooled.head, pooled.chest, pooled.hands, pooled.legs), function(d){ drop(sweep(as.matrix(d[, ..scored.cols]), 2, 0.25*means) %*% score.scalars) })
+            expect_equal(sum(sapply(slot.scores, mean)), 0, tolerance = 1e-10, info = stat.scale)
+            expect_equal(sqrt(sum(sapply(slot.scores, function(s){ mean((s - mean(s))^2) }))), 1, tolerance = 1e-10, info = stat.scale)
+        }
+    }
+})
+
+## What each scale means: weights w on raw points rank exactly like w times each stat's standard
+## deviation on standard deviations, and weights w on best possible totals exactly like w divided
+## by each stat's best total on raw points - the same sets, in the same order, with the same scores
+test_that("stat.scale weights are weights per standard deviation, per best total, or per point", {
+    stddevs <- darksoulsarmor:::stddevs
+    stat.maxes <- darksoulsarmor:::stat.maxes
+    search <- function(w, stat.scale){
+        get.optimal.armor.combos(max.table.size = 50, endurance.level = 40, movement = "Fat", regular.level = "+5", weights = w, stat.scale = stat.scale)
+    }
+    same <- function(a, b){
+        expect_identical(a$data[, .(HEAD, CHEST, HANDS, LEGS)], b$data[, .(HEAD, CHEST, HANDS, LEGS)])
+        expect_equal(a$data$SCORE, b$data$SCORE, tolerance = 1e-10)
+        expect_identical(a$data$SCORE_QUALITY, b$data$SCORE_QUALITY)
+    }
+    set.seed(31)
+    for(trial in 1:3){
+        w <- runif(10)
+        same(search(w, "raw"), search(w*stddevs, "sd"))
+        same(search(w, "max"), search(w/stat.maxes, "raw"))
+    }
+    ## The scale is recorded with the other arguments, "sd" by default
+    expect_identical(search(w, "max")$args$stat.scale, "max")
+    expect_identical(get.optimal.armor.combos(max.table.size = 1, weights = default.weights)$args$stat.scale, "sd")
+    ## ...and passed through by get.armor.tradeoffs
+    curve <- get.armor.tradeoffs(max.armor.weight = 3, weights = w, stat.scale = "raw")$data
+    expect_equal(curve$SCORE, get.armor.tradeoffs(max.armor.weight = 3, weights = w*stddevs, stat.scale = "sd")$data$SCORE, tolerance = 1e-10)
+})

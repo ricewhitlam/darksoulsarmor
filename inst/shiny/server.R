@@ -707,7 +707,8 @@ server <- function(input, output, session){
                         favor.ring = FALSE,
                         wolf.ring = FALSE,
                         minima = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-                        weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
+                        weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04),
+                        stat.scale = "sd"
                     ),
                 data = 
                     data.table::data.table(

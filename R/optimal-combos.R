@@ -162,7 +162,12 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 #' Increasing the weight on a metric increases its importance to the final score.
 #' The weights do not need to sum to 1, but should all be nonnegative with positive sum.
-#' 
+#'
+#' @param
+#' stat.scale A length 1 \code{character}: what one unit of each stat counts as before it is weighted.
+#' \code{"sd"} (the default) is its standard deviation across every armor combination, \code{"max"}
+#' its best possible set total, and \code{"raw"} one point.
+#'
 #' @return
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
 #'
@@ -190,7 +195,8 @@ get.optimal.armor.combos <- function(
     favor.ring = FALSE,
     wolf.ring = FALSE,
     minima = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-    weights
+    weights,
+    stat.scale = "sd"
 ){
 
     ## Check regular.level
@@ -436,6 +442,17 @@ get.optimal.armor.combos <- function(
         weights <- weights/sum(weights)
     }
 
+    ## Check stat.scale
+    if(!is.character(stat.scale)){
+        stop("Invalid argument 'stat.scale'")
+    } else if(length(stat.scale) != 1){
+        stop("Invalid argument 'stat.scale'")
+    } else if(is.na(stat.scale)){
+        stop("Invalid argument 'stat.scale'")
+    } else if(!(stat.scale %in% c("sd", "max", "raw"))){
+        stop("Invalid argument 'stat.scale': must be one of sd, max, raw")
+    }
+
     ## Check max.table.size
     if(!is.numeric(max.table.size)){
         stop("Invalid argument 'max.table.size'")
@@ -469,7 +486,8 @@ get.optimal.armor.combos <- function(
                     favor.ring = favor.ring,
                     wolf.ring = wolf.ring,
                     minima = minima,
-                    weights = weights
+                    weights = weights,
+                    stat.scale = stat.scale
                 ),
             data = data.table::data.table()
         )
@@ -490,6 +508,18 @@ find.armor.combos <- function(args, rank.metric = "SCORE", armor.cap = Inf, curv
     return(run.armor.search(prepare.armor.search(args, rank.metric), armor.cap, curve.point))
 }
 
+## Each scored stat's multiplier in the score: its weight per unit of the stat - a standard
+## deviation across every armor combination, its best possible set total, or a point (stat.scale) -
+## scaled so that the score as a whole has standard deviation 1 across every combination. per.sd is
+## the weights put per standard deviation, which gives the score's variance as
+## t(per.sd) %*% corrs %*% per.sd; under "sd" it is the weights themselves, so the default is the
+## score formula exactly as before stat.scale existed (bit for bit).
+score.scalars.for <- function(weights, stat.scale){
+    unit <- switch(stat.scale, sd = stddevs, max = stat.maxes, raw = rep(1, length(weights)))
+    per.sd <- switch(stat.scale, sd = weights, max = weights*stddevs/stat.maxes, raw = weights*stddevs)
+    return((weights)/(unit*sqrt((t(per.sd) %*% corrs %*% per.sd)[1, 1])))
+}
+
 ## Everything about a search that doesn't depend on the gear weight: each slot's pieces at the
 ## upgrade levels, scored (or ranked by rank.metric), filtered by piece, upgrade type, area and
 ## starting class, and sorted by that ranking. Also every piece's score at the level, unfiltered,
@@ -508,6 +538,7 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     regular.level <- args$regular.level
     twinkling.level <- args$twinkling.level
     weights <- args$weights
+    stat.scale <- args$stat.scale
 
     ## Get data at specified upgrade levels
     working.head.data <- get.interp.data(head.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
@@ -516,7 +547,7 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     working.legs.data <- get.interp.data(legs.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
 
     ## Calc scores for each dataset (sorted on further below, once filtered)
-    score.scalars <- (weights)/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
+    score.scalars <- score.scalars.for(weights, stat.scale)
     scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
     metric.cols <- scored.metrics$metric
 

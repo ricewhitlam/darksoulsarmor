@@ -22,7 +22,8 @@ get.optimal.armor.combos(
   favor.ring = FALSE,
   wolf.ring = FALSE,
   minima = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-  weights
+  weights,
+  stat.scale = "sd"
 )
 }
 \arguments{
@@ -110,6 +111,10 @@ Required: there is no default.
 These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 Increasing the weight on a metric increases its importance to the final score.
 The weights do not need to sum to 1, but should all be nonnegative with positive sum.}
+
+\item{stat.scale}{A length 1 \code{character}: what one unit of each stat counts as before it is weighted.
+\code{"sd"} (the default) is its standard deviation across every armor combination, \code{"max"}
+its best possible set total, and \code{"raw"} one point.}
 }
 \value{
 A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
