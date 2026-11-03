@@ -5,6 +5,12 @@ An R package for finding optimized armor combinations in *Dark Souls Remastered*
 ## Installation
 
 ```r
+install.packages("darksoulsarmor", repos = c("https://ricewhitlam.r-universe.dev", "https://cloud.r-project.org"))
+```
+
+or, to build from source (needs build tools for the C++ code):
+
+```r
 devtools::install_github("ricewhitlam/darksoulsarmor", build_vignettes = TRUE)
 ```
 
@@ -13,6 +19,8 @@ Requires R 4.3 or later.
 `build_vignettes = TRUE` installs the "scoring" vignette referenced below; without it, the same content is readable on GitHub at [`vignettes/scoring.Rmd`](vignettes/scoring.Rmd).
 
 ## Quick start
+
+The app also runs entirely in your browser, with nothing to install, at **https://ricewhitlam.github.io/darksoulsarmor/**. The first visit downloads R itself and takes a little while; later visits are faster.
 
 The easiest way to use the package is the Shiny app:
 
@@ -103,7 +111,7 @@ Here curse resistance pays off steeply up to 5.0 armor weight, at 6.7 times the 
 
 ## What the score means
 
-Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance), each standardized to mean 0 and variance 1 so that stats on very different natural scales (a 40-point armor rating vs. a 2-point resistance) contribute comparably. The `weights` argument controls how much each stat counts toward the total. The resulting `SCORE` is itself standardized, and `SCORE_QUALITY` converts that into an exact rarity among every combination at the selected upgrade levels, like `"Top 1 in 40"` or `"Bottom 1 in 40"` — see `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter/constraint choices as long as the weights are the same.
+Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance). `weights` sets how much each counts: either one weight per stat, or, with `weights.mode = "grouped"`, one per group (physical defenses, elemental defenses and resistances, each counting as the average of its stats). `stat.scale` sets what one unit of each stat counts as before it's weighted: its standard deviation across every armor combination (`"sd"`, the default, so that stats that vary more between sets don't dominate), its highest value (`"max"`), or one point (`"raw"`). The resulting `SCORE` is standardized to mean 0 and variance 1 across every combination, and `SCORE_QUALITY` converts it into an exact rarity among every combination at the selected upgrade levels, like `"Top 1 in 40"` or `"Bottom 1 in 40"`. See `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter and constraint choices as long as the weights, `stat.scale` and `weights.mode` are the same.
 
 ## Where the data comes from
 
