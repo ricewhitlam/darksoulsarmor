@@ -238,6 +238,7 @@ test_that("the User Guide describes the current app", {
                   "'Movement' is used to specify", "Poop (no limit", "Score Inputs:", "Fat | Poop", "A minimum on the charted stat itself is ignored",
                   "or on a point or row in the Trade-offs tab", "with the game's own upgrade rates, exactly as the game computes them", "The download holds the exact values", "Right Hand Weapon 1' through 'Left Hand Weapon 2' are the weapons", "given your equip load and weapons", "install_github(\"ricewhitlam/darksoulsarmor\")",
                   "Each weapon's weight is shown beside its name, and the weapons' total weight under the dropdowns",
+                  "'Stat Scale' sets what one unit of each stat counts as", "one per group of stats (Grouped)", "SCORE is global within the same weights, Stat Scale and Weights Mode",
                   "The chart splits the curve into pieces", "Lines (shaded bands)", "Flats (grey hatching)", "Jumps (dark blue rises", "Boundary points (diamonds)",
                   "'Jumps' and 'Flats' set the sensitivity", "its hover box takes the piece's color", "These descriptions are heuristic")){
         expect_match(guide, text, fixed = TRUE)

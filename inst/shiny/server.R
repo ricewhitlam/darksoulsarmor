@@ -64,11 +64,13 @@ server <- function(input, output, session){
                     Here, minima may be specified for a set of relevant metrics. Only combinations which achieve or exceed the specified minima will be considered. <br> <br>
 
                     Score Inputs: <br>
-                    Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
-                    (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
-                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
+                    Here, weights may be specified for a set of relevant metrics. 'Stat Scale' sets what one unit of each stat counts as before it is weighted: its standard deviation across every armor combination (Std Dev),
+                    its highest value across every armor combination (Max), or one unit with no adjustment (Raw). 'Weights Mode' sets whether there is one weight per stat (Individual) or one per group of stats (Grouped):
+                    physical defenses, elemental defenses and resistances, each counting as the average of its stats. Switching modes carries the weights over: a group gets the sum of its stats' weights, and a group's weight is split evenly across its stats. <br>
+                    A score for each armor combination is calculated as c_1*x_1+...+c_n*x_n, where each x_i is a stat and each c_i is its weight per unit of that stat.
+                    It is then shifted and scaled so that it has mean 0 and variance 1 across every possible armor combination. This value is presented as 'SCORE'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
                     It is an exact count, not an estimate: 'Top 1 in 40' means 1 in every 40 combinations at those upgrade levels scores at least as well (ties included), regardless of the filters chosen. Combinations in the bottom half read 'Bottom 1 in N' instead, counting those that score at most as well.
-                    SCORE is global within the same set of weights: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
+                    SCORE is global within the same weights, Stat Scale and Weights Mode: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
 
                     Trade-offs Tab: <br>
                     For every armor weight, from 0 up to the heaviest possible armor, every 0.1, the chart shows the most of the chosen stat ('Maximize': the score, Poise, or a single defense or resistance)
