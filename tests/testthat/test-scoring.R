@@ -138,9 +138,9 @@ test_that("every stat.scale gives scores with population mean 0 and standard dev
     for(trial in 1:3){
         w <- runif(10)
         w <- w/sum(w)
-        expect_identical(darksoulsarmor:::score.scalars.for(w, "sd"), w/(stddevs*sqrt((t(w) %*% corrs %*% w)[1, 1])))
+        expect_identical(darksoulsarmor:::score.scalars.for(w, "sd", "individual"), w/(stddevs*sqrt((t(w) %*% corrs %*% w)[1, 1])))
         for(stat.scale in c("sd", "max", "raw")){
-            score.scalars <- darksoulsarmor:::score.scalars.for(w, stat.scale)
+            score.scalars <- darksoulsarmor:::score.scalars.for(w, stat.scale, "individual")
             slot.scores <- lapply(list(pooled.head, pooled.chest, pooled.hands, pooled.legs), function(d){ drop(sweep(as.matrix(d[, ..scored.cols]), 2, 0.25*means) %*% score.scalars) })
             expect_equal(sum(sapply(slot.scores, mean)), 0, tolerance = 1e-10, info = stat.scale)
             expect_equal(sqrt(sum(sapply(slot.scores, function(s){ mean((s - mean(s))^2) }))), 1, tolerance = 1e-10, info = stat.scale)
@@ -174,4 +174,65 @@ test_that("stat.scale weights are weights per standard deviation, per best total
     ## ...and passed through by get.armor.tradeoffs
     curve <- get.armor.tradeoffs(max.armor.weight = 3, weights = w, stat.scale = "raw")$data
     expect_equal(curve$SCORE, get.armor.tradeoffs(max.armor.weight = 3, weights = w*stddevs, stat.scale = "sd")$data$SCORE, tolerance = 1e-10)
+})
+
+## weights.mode = "grouped": each group counts as the average of its stats, in units of that
+## average - its standard deviation over every combination (here computed straight from the real
+## population, slot by slot), its best possible total, or a point. So group weights W rank exactly
+## like individual raw weights of W/(k x unit) on each of a group's k stats.
+test_that("grouped weights weight each group's average stat, in units of that average", {
+    stat.groups <- darksoulsarmor:::stat.groups
+    group.maxes <- darksoulsarmor:::group.maxes
+    population.sd <- function(stats){
+        slot.vars <- sapply(list(pooled.head, pooled.chest, pooled.hands, pooled.legs), function(d){ a <- rowMeans(as.matrix(d[, stats, with = FALSE])); mean((a - mean(a))^2) })
+        sqrt(sum(slot.vars))
+    }
+    search <- function(w, stat.scale, weights.mode){
+        get.optimal.armor.combos(max.table.size = 50, endurance.level = 40, movement = "Fat", regular.level = "+5", weights = w, stat.scale = stat.scale, weights.mode = weights.mode)
+    }
+    set.seed(47)
+    for(stat.scale in c("sd", "max", "raw")){
+        W <- setNames(runif(3), names(stat.groups))
+        per.point <- setNames(rep(0, length(scored.cols)), scored.cols)
+        for(g in names(stat.groups)){
+            unit <- switch(stat.scale, sd = population.sd(stat.groups[[g]]), max = group.maxes[[g]], raw = 1)
+            per.point[stat.groups[[g]]] <- W[[g]]/(length(stat.groups[[g]])*unit)
+        }
+        grouped <- search(W, stat.scale, "grouped")
+        individual <- search(per.point, "raw", "individual")
+        ## Grouping makes exact ties common (e.g. magic 135 + fire 159 = 129 + 165, the same
+        ## elemental average), and tied sets fall back to their pieces' order, which the two
+        ## derivations can settle differently in the last bit: so compare the sets within each tie,
+        ## leaving out a tie the table's last row may cut short
+        sets <- function(d){
+            d <- d[, .(TIE = round(SCORE, 8), HEAD, CHEST, HANDS, LEGS)]
+            d <- d[TIE != TIE[.N]]
+            d[order(-TIE, HEAD, CHEST, HANDS, LEGS)]
+        }
+        expect_identical(sets(grouped$data), sets(individual$data), info = stat.scale)
+        expect_equal(grouped$data$SCORE, individual$data$SCORE, tolerance = 1e-8, info = stat.scale)
+        expect_identical(grouped$data$SCORE_QUALITY, individual$data$SCORE_QUALITY, info = stat.scale)
+        expect_identical(grouped$args$weights.mode, "grouped")
+        expect_equal(grouped$args$weights, unname(W/sum(W)))
+    }
+    ## Named in any order, or unnamed in the groups' order; individual by default
+    expect_identical(search(c(RESISTANCES = 1, PHYSICAL_DEFENSES = 2), "sd", "grouped")$data, search(c(2, 0, 1), "sd", "grouped")$data)
+    expect_identical(get.optimal.armor.combos(max.table.size = 1, weights = default.weights)$args$weights.mode, "individual")
+    ## ...and passed through by get.armor.tradeoffs
+    curve <- get.armor.tradeoffs(max.armor.weight = 3, weights = c(1, 2, 3), weights.mode = "grouped")$data
+    expect_equal(curve$BEST_VALUE, curve$SCORE)
+    expect_false(isTRUE(all.equal(curve$SCORE, get.armor.tradeoffs(max.armor.weight = 3, weights = default.weights)$data$SCORE)))
+})
+
+## Grouped scores keep population mean 0 and standard deviation 1 under every scale
+test_that("grouped weights give scores with population mean 0 and standard deviation 1", {
+    means <- darksoulsarmor:::means
+    set.seed(53)
+    for(stat.scale in c("sd", "max", "raw")){
+        W <- runif(3)
+        score.scalars <- darksoulsarmor:::score.scalars.for(W/sum(W), stat.scale, "grouped")
+        slot.scores <- lapply(list(pooled.head, pooled.chest, pooled.hands, pooled.legs), function(d){ drop(sweep(as.matrix(d[, ..scored.cols]), 2, 0.25*means) %*% score.scalars) })
+        expect_equal(sum(sapply(slot.scores, mean)), 0, tolerance = 1e-10, info = stat.scale)
+        expect_equal(sqrt(sum(sapply(slot.scores, function(s){ mean((s - mean(s))^2) }))), 1, tolerance = 1e-10, info = stat.scale)
+    }
 })

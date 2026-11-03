@@ -158,15 +158,25 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' POIS_RES, CURSE_RES, in any order - e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)} - or an unnamed
 #' length 10 vector in exactly that order. Note that with a named vector, omitted metrics get weight
 #' 0 (they don't count toward the score at all) rather than their default weights.
+#' With \code{weights.mode = "grouped"}, the names are instead PHYSICAL_DEFENSES, ELEMENTAL_DEFENSES
+#' and RESISTANCES, and an unnamed vector has length 3, in that order.
 #' Required: there is no default.
 #' These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 #' Increasing the weight on a metric increases its importance to the final score.
 #' The weights do not need to sum to 1, but should all be nonnegative with positive sum.
 #'
 #' @param
-#' stat.scale A length 1 \code{character}: what one unit of each stat counts as before it is weighted.
-#' \code{"sd"} (the default) is its standard deviation across every armor combination, \code{"max"}
-#' its best possible set total, and \code{"raw"} one point.
+#' stat.scale A length 1 \code{character} indicating what one unit of each stat counts as before it
+#' is weighted. \code{"sd"} (the default) indicates the stat's standard deviation across every armor
+#' combination, \code{"max"} indicates the stat's highest value across every armor combination, and
+#' \code{"raw"} indicates one unit of the stat with no adjustment.
+#'
+#' @param
+#' weights.mode A length 1 \code{character} indicating what the weights apply to. \code{"individual"}
+#' (the default) weights each scored stat. \code{"grouped"} weights three groups of stats -
+#' PHYSICAL_DEFENSES (PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF), ELEMENTAL_DEFENSES (MAG_DEF,
+#' FIRE_DEF, LITNG_DEF) and RESISTANCES (BLEED_RES, POIS_RES, CURSE_RES) - each counting as the
+#' average of its stats, scaled by \code{stat.scale} as a whole.
 #'
 #' @return
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
@@ -196,7 +206,8 @@ get.optimal.armor.combos <- function(
     wolf.ring = FALSE,
     minima = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     weights,
-    stat.scale = "sd"
+    stat.scale = "sd",
+    weights.mode = "individual"
 ){
 
     ## Check regular.level
@@ -423,14 +434,39 @@ get.optimal.armor.combos <- function(
         minima <- pmin(999, pmax(0, minima))
     }
 
-    ## Check weights
+    ## Check weights.mode (before weights, since it decides what weights must look like)
+    if(!is.character(weights.mode)){
+        stop("Invalid argument 'weights.mode'")
+    } else if(length(weights.mode) != 1){
+        stop("Invalid argument 'weights.mode'")
+    } else if(is.na(weights.mode)){
+        stop("Invalid argument 'weights.mode'")
+    } else if(!(weights.mode %in% c("individual", "grouped"))){
+        stop("Invalid argument 'weights.mode': must be one of individual, grouped")
+    }
+
+    ## Check weights: one per scored stat, or one per group of them (stat.groups), by weights.mode -
+    ## with the other mode's names called out as such rather than as merely unknown
     if(missing(weights)){
         stop("weights is required")
     }
-    weights <- expand.named.metrics(weights, METRICS[!is.na(weight.index)][order(weight.index), metric], "weights")
+    stat.names <- METRICS[!is.na(weight.index)][order(weight.index), metric]
+    weight.names <- if(weights.mode == "individual") stat.names else names(stat.groups)
+    other.names <- if(weights.mode == "individual") names(stat.groups) else stat.names
+    if(is.numeric(weights) && !is.null(names(weights))){
+        wrong <- intersect(names(weights), other.names)
+        if(length(wrong) > 0){
+            stop(sprintf(
+                "Invalid argument 'weights': %s %s %s name%s, but weights.mode is \"%s\". Use %s, or set weights.mode = \"%s\".",
+                paste(wrong, collapse = ", "), if(length(wrong) == 1) "is a" else "are", if(weights.mode == "individual") "group" else "stat", if(length(wrong) == 1) "" else "s",
+                weights.mode, paste(weight.names, collapse = ", "), if(weights.mode == "individual") "grouped" else "individual"
+            ))
+        }
+    }
+    weights <- expand.named.metrics(weights, weight.names, "weights")
     if(!is.numeric(weights)){
         stop("Invalid argument 'weights'")
-    } else if(length(weights) != 10){
+    } else if(length(weights) != length(weight.names)){
         stop("Invalid argument 'weights'")
     } else if(any(is.na(weights) | is.nan(weights) | is.infinite(weights))){
         stop("Invalid argument 'weights'")
@@ -487,7 +523,8 @@ get.optimal.armor.combos <- function(
                     wolf.ring = wolf.ring,
                     minima = minima,
                     weights = weights,
-                    stat.scale = stat.scale
+                    stat.scale = stat.scale,
+                    weights.mode = weights.mode
                 ),
             data = data.table::data.table()
         )
@@ -514,8 +551,26 @@ find.armor.combos <- function(args, rank.metric = "SCORE", armor.cap = Inf, curv
 ## the weights put per standard deviation, which gives the score's variance as
 ## t(per.sd) %*% corrs %*% per.sd; under "sd" it is the weights themselves, so the default is the
 ## score formula exactly as before stat.scale existed (bit for bit).
-score.scalars.for <- function(weights, stat.scale){
-    unit <- switch(stat.scale, sd = stddevs, max = stat.maxes, raw = rep(1, length(weights)))
+##
+## With weights.mode = "grouped", weights holds one weight per group (stat.groups, in order). Each
+## group counts as the average of its stats, in units of that average: its own standard deviation
+## (from the stats' standard deviations and correlations), its best possible set total
+## (group.maxes), or a point. So per point, each of a group's k stats counts the group's weight over
+## k times that unit - and those per-point weights are then scaled exactly as raw ones.
+score.scalars.for <- function(weights, stat.scale, weights.mode){
+    if(weights.mode == "grouped"){
+        per.point <- rep(0, length(stddevs))
+        for(g in seq_along(stat.groups)){
+            members <- match(stat.groups[[g]], names(stddevs))
+            k <- length(members)
+            average.per.sd <- rep(0, length(stddevs))
+            average.per.sd[members] <- stddevs[members]/k
+            unit <- switch(stat.scale, sd = sqrt((t(average.per.sd) %*% corrs %*% average.per.sd)[1, 1]), max = group.maxes[[g]], raw = 1)
+            per.point[members] <- weights[g]/(k*unit)
+        }
+        return(score.scalars.for(per.point, "raw", "individual"))
+    }
+    unit <-switch(stat.scale, sd = stddevs, max = stat.maxes, raw = rep(1, length(weights)))
     per.sd <- switch(stat.scale, sd = weights, max = weights*stddevs/stat.maxes, raw = weights*stddevs)
     return((weights)/(unit*sqrt((t(per.sd) %*% corrs %*% per.sd)[1, 1])))
 }
@@ -539,6 +594,7 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     twinkling.level <- args$twinkling.level
     weights <- args$weights
     stat.scale <- args$stat.scale
+    weights.mode <- args$weights.mode
 
     ## Get data at specified upgrade levels
     working.head.data <- get.interp.data(head.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
@@ -547,7 +603,7 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     working.legs.data <- get.interp.data(legs.data.unupgraded, as.numeric(regular.level), as.numeric(twinkling.level))
 
     ## Calc scores for each dataset (sorted on further below, once filtered)
-    score.scalars <- score.scalars.for(weights, stat.scale)
+    score.scalars <- score.scalars.for(weights, stat.scale, weights.mode)
     scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
     metric.cols <- scored.metrics$metric
 

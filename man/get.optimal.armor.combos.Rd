@@ -23,7 +23,8 @@ get.optimal.armor.combos(
   wolf.ring = FALSE,
   minima = c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
   weights,
-  stat.scale = "sd"
+  stat.scale = "sd",
+  weights.mode = "individual"
 )
 }
 \arguments{
@@ -107,14 +108,23 @@ of the names PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LIT
 POIS_RES, CURSE_RES, in any order - e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)} - or an unnamed
 length 10 vector in exactly that order. Note that with a named vector, omitted metrics get weight
 0 (they don't count toward the score at all) rather than their default weights.
+With \code{weights.mode = "grouped"}, the names are instead PHYSICAL_DEFENSES, ELEMENTAL_DEFENSES
+and RESISTANCES, and an unnamed vector has length 3, in that order.
 Required: there is no default.
 These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 Increasing the weight on a metric increases its importance to the final score.
 The weights do not need to sum to 1, but should all be nonnegative with positive sum.}
 
-\item{stat.scale}{A length 1 \code{character}: what one unit of each stat counts as before it is weighted.
-\code{"sd"} (the default) is its standard deviation across every armor combination, \code{"max"}
-its best possible set total, and \code{"raw"} one point.}
+\item{stat.scale}{A length 1 \code{character} indicating what one unit of each stat counts as before it
+is weighted. \code{"sd"} (the default) indicates the stat's standard deviation across every armor
+combination, \code{"max"} indicates the stat's highest value across every armor combination, and
+\code{"raw"} indicates one unit of the stat with no adjustment.}
+
+\item{weights.mode}{A length 1 \code{character} indicating what the weights apply to. \code{"individual"}
+(the default) weights each scored stat. \code{"grouped"} weights three groups of stats -
+PHYSICAL_DEFENSES (PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF), ELEMENTAL_DEFENSES (MAG_DEF,
+FIRE_DEF, LITNG_DEF) and RESISTANCES (BLEED_RES, POIS_RES, CURSE_RES) - each counting as the
+average of its stats, scaled by \code{stat.scale} as a whole.}
 }
 \value{
 A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations

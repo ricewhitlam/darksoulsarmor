@@ -103,3 +103,22 @@ test_that("weights is required", {
     expect_error(get.armor.tradeoffs(), "weights is required")
     expect_error(get.armor.tradeoffs(metric = "POISE", max.armor.weight = 3), "weights is required")
 })
+
+## weights.mode decides what weights must look like, and names from the other mode say so
+test_that("weights.mode is checked, and weights against it", {
+    expect_error(get.optimal.armor.combos(weights = default.weights, weights.mode = "groups"), "weights.mode.*individual, grouped")
+    expect_error(get.optimal.armor.combos(weights = default.weights, weights.mode = c("individual", "grouped")), "weights.mode")
+    expect_error(get.optimal.armor.combos(weights = default.weights, weights.mode = NA_character_), "weights.mode")
+    expect_error(get.optimal.armor.combos(weights = default.weights, weights.mode = TRUE), "weights.mode")
+    expect_error(get.optimal.armor.combos(weights = c(PHYS_DEF = 1), weights.mode = "grouped"),
+                 "PHYS_DEF is a stat name, but weights.mode is \"grouped\". Use PHYSICAL_DEFENSES, ELEMENTAL_DEFENSES, RESISTANCES, or set weights.mode = \"individual\".", fixed = TRUE)
+    expect_error(get.optimal.armor.combos(weights = c(PHYSICAL_DEFENSES = 1, RESISTANCES = 2)),
+                 "PHYSICAL_DEFENSES, RESISTANCES are group names, but weights.mode is \"individual\".", fixed = TRUE)
+    expect_error(get.optimal.armor.combos(weights = c(PHYSICAL_DEFENSES = 1, MAG_DEF = 2), weights.mode = "grouped"), "MAG_DEF is a stat name")
+    expect_error(get.optimal.armor.combos(weights = c(PHYSICAL = 1), weights.mode = "grouped"), "weights.*unknown names: PHYSICAL")
+    expect_error(get.optimal.armor.combos(weights = c(1, 2), weights.mode = "grouped"), "weights")
+    expect_error(get.optimal.armor.combos(weights = default.weights, weights.mode = "grouped"), "weights")
+    expect_error(get.optimal.armor.combos(weights = c(1, 2, 3)), "weights")
+    expect_error(get.optimal.armor.combos(weights = c(0, 0, 0), weights.mode = "grouped"), "weights")
+    expect_error(get.armor.tradeoffs(weights = c(1, 2, 3), weights.mode = "grouping"), "weights.mode")
+})
