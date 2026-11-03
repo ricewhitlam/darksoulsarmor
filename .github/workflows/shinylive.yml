@@ -1,0 +1,50 @@
+## Publishes the app to GitHub Pages, running in the browser through Shinylive, on every push to
+## main (or by hand) - once r-universe has built the WebAssembly package for that same commit, so
+## the site never pairs new app files with an older package
+name: Deploy the app to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+## A newer push cancels a run still waiting on an older commit
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Wait for r-universe's WebAssembly build of this commit
+        run: |
+          for i in $(seq 1 120); do
+            built=$(curl -sfL https://ricewhitlam.r-universe.dev/api/packages/darksoulsarmor \
+              | jq -r '._binaries[] | select(.os == "wasm" and .status == "success") | .commit' | head -1)
+            if [ "$built" = "$GITHUB_SHA" ]; then exit 0; fi
+            sleep 60
+          done
+          echo "r-universe hasn't built $GITHUB_SHA after 2 hours"; exit 1
+      - name: Install shinylive and the package
+        run: Rscript -e 'install.packages(c("shinylive", "darksoulsarmor"), repos = c("https://ricewhitlam.r-universe.dev", getOption("repos")))'
+      - name: Export the app
+        run: Rscript -e 'shinylive::export("inst/shiny", "_site")'
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
