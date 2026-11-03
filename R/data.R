@@ -85,6 +85,11 @@ NULL
 ## \code{"3_2"}), plus one keyed "overall" holding the same values as means/stddevs/corrs. Not
 ## currently used by any exported function - kept for potential future use (e.g. an
 ## upgrade-level-aware scoring model).
+## stat.groups (R/sysdata.rda) names the three groups of scored stats - PHYSICAL_DEFENSES,
+## ELEMENTAL_DEFENSES and RESISTANCES - and lists each group's stats, for weights.mode = "grouped".
+## stat.maxes and group.maxes (R/sysdata.rda) are the best total any armor combination reaches for
+## each scored stat, and for each group's average stat, at any upgrade level (i.e. at full upgrade):
+## the units of stat.scale = "max". See create_rda/create_rda.R for how all three are derived.
 
 #' Table of all unupgraded head armor pieces
 #'

@@ -116,6 +116,30 @@ for(reg in 0:10){
 mean.stddev.corr.list[["overall"]] <- pooled.stats
 rm(list = c("level.key", "level.head.data", "level.chest.data", "level.hands.data", "level.legs.data"))
 
+## stat.groups: the three groups of scored stats that weights.mode = "grouped" weights as a whole
+## (see get.optimal.armor.combos). Defined once here and saved as internal data, so the package
+## code reads this same membership rather than repeating it.
+stat.groups <-
+    list(
+        PHYSICAL_DEFENSES = c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF"),
+        ELEMENTAL_DEFENSES = c("MAG_DEF", "FIRE_DEF", "LITNG_DEF"),
+        RESISTANCES = c("BLEED_RES", "POIS_RES", "CURSE_RES")
+    )
+
+## stat.maxes and group.maxes: the best total any armor combination reaches for each scored stat,
+## and for each group's average stat, at any upgrade level (so at full upgrade, since upgrading
+## never lowers a stat) - the units of stat.scale = "max". A combination's total is the sum of its
+## four pieces' values, with each slot's piece chosen independently, so the best total is the sum
+## of each slot's best piece; a combination's group average is likewise the sum of its pieces'
+## group averages, so the same holds for groups. Every piece counts, whatever its class, area or
+## upgrade type, as for means/stddevs/corrs.
+best.total <- function(value){
+    max(value(total.head.data))+max(value(total.chest.data))+max(value(total.hands.data))+max(value(total.legs.data))
+}
+stat.maxes <- vapply(metric.cols, function(stat){ best.total(function(d){ d[[stat]] }) }, numeric(1))
+group.maxes <- vapply(stat.groups, function(stats){ best.total(function(d){ rowMeans(as.matrix(d[, stats, with = FALSE])) }) }, numeric(1))
+rm(list = c("best.total"))
+
 
 ## Function to check behavior given set of weights - mean should always be 0 and sd should always be 1
 test.meansd <- function(weights = runif(10)){
@@ -190,8 +214,8 @@ classes <- c("Warrior", "Knight", "Wanderer", "Thief", "Bandit", "Hunter", "Sorc
 weapon.data <- fread("create_rda/weapons.csv")
 
 ## Save out to rda files. head.data.unupgraded etc., areas, and classes are the package's public,
-## documented data (data/*.rda). means/stddevs/corrs exist only to normalize the score formula
-## in get.optimal.armor.combos and are not meant to be used directly, so they are saved
+## documented data (data/*.rda). means/stddevs/corrs, stat.groups and stat.maxes/group.maxes exist
+## only for the score formula in get.optimal.armor.combos and are not meant to be used directly, so they are saved
 ## separately as internal data (R/sysdata.rda) rather than exported alongside the public data.
 use_data(
     head.data.unupgraded,
@@ -209,6 +233,9 @@ use_data(
     corrs,
     total.combo.count,
     mean.stddev.corr.list,
+    stat.groups,
+    stat.maxes,
+    group.maxes,
     internal = TRUE,
     overwrite = TRUE
 )
