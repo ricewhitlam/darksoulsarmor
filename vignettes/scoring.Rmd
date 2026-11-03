@@ -72,11 +72,61 @@ weights were chosen. It doesn't make scores under *different* weights interchang
 see "What this does and doesn't let you compare" below. `tests/testthat/test-scoring.R` checks
 this algebraic identity directly, for a battery of random weight vectors.
 
+## Other scales: Max and Raw
+
+The standard deviation is one choice of unit for each stat. `stat.scale` offers two others:
+
+- `"max"`: each stat in units of its highest value across every armor combination (`stat.maxes`,
+  the best set total at full upgrade). A weight then covers a stat's whole range, from nothing to
+  the best any set can reach.
+- `"raw"`: no adjustment, so one point of any stat counts the same. With equal weights, stats that
+  vary more between sets count for more: slash defense (standard deviation 33) counts about two
+  and a half times as much as bleed resistance (13).
+
+Whatever the scale, the weights become per-point multipliers $c_i = w_i / u_i$, where $u_i$ is the
+stat's unit (its standard deviation, its highest value, or 1). The score is then scaled exactly as
+above: its variance is $c^\top \Sigma c$, so `score.scalars` $= c / \sqrt{c^\top \Sigma c}$. Under
+`"sd"` this is the formula above. So `SCORE` means "standard deviations above the average
+combination" under every scale. The scale changes how the weights trade stats off against each
+other, not what `SCORE`'s numbers mean. Equivalently, weights $w$ under `"raw"` give exactly the
+same scores as $w \cdot \sigma$ under `"sd"`, and $w$ under `"max"` the same as $w$ divided by each
+stat's highest value under `"raw"`.
+
+## Weighting groups of stats
+
+The ten stats fall into three groups whose stats move together: almost perfectly for the four
+physical defenses (average correlation 0.98), partly for the elemental defenses (0.54), and less
+for the resistances (0.31). So with equal weights on standardized stats, the physical defenses,
+nearly one stat counted four times, drive about half of what separates scores:
+
+| Group              | Share with equal stat weights | Share with equal group weights |
+|--------------------|-------------------------------|--------------------------------|
+| Physical defenses  | 48%                           | 30%                            |
+| Elemental defenses | 32%                           | 39%                            |
+| Resistances        | 20%                           | 31%                            |
+
+`weights.mode = "grouped"` takes one weight per group instead (`PHYSICAL_DEFENSES`,
+`ELEMENTAL_DEFENSES`, `RESISTANCES`). Each group counts as the average of its stats, and
+`stat.scale` applies to that average:
+
+- under `"sd"`, its own standard deviation, which follows from the stats' standard deviations and
+  correlations;
+- under `"max"`, its highest value across every combination (`group.maxes`);
+- under `"raw"`, one point.
+
+Equal group weights then give each group close to a third, as in the right-hand column above (on
+the Std Dev scale).
+
+A grouped score is still a weighted sum of the ten stats: a group's weight $W$ becomes
+$W / (k \cdot u)$ per point on each of its $k$ stats, where $u$ is the group average's unit. So the
+search, `SCORE_QUALITY` and the trade-off curves all work exactly as before.
+
 ## Why each armor slot subtracts a quarter of the mean
 
 The four armor slots (head, chest, hands, legs) are scored independently and then added
-together - `optimal_armor_combinations()` sums `curr_head_SCORE + curr_chest_SCORE +
-curr_hands_SCORE + curr_legs_SCORE`; see `R/optimal-combos.R`, where each slot's contribution
+together - `optimal_armor_combinations()` sums `curr_head_OBJECTIVE + curr_chest_OBJECTIVE +
+curr_hands_OBJECTIVE + curr_legs_OBJECTIVE` (each piece's objective, which is its score when
+ranking by score); see `R/optimal-combos.R`, where each slot's contribution
 is computed as `score.scalars[i] * (metric_i - 0.25 * means[i])`.
 
 `means[i]` is the population mean of the *combined* metric across a full four-piece
@@ -140,7 +190,7 @@ from.
 
 Because `Var(SCORE) = 1` holds for any weights, `SCORE` is directly comparable across
 different filter and constraint choices, including different upgrade levels, *as long as the
-weights are held fixed*. `SCORE_QUALITY` is comparable across filter and constraint choices at
+weights, `stat.scale` and `weights.mode` are held fixed*. `SCORE_QUALITY` is comparable across filter and constraint choices at
 the *same* upgrade levels - `"Top 1 in 1,000"` under one set of filters really is better than
 `"Top 1 in 20"` under another - but is always relative to the selected upgrade levels. Scores
 computed with *different* weights are not directly comparable to each other in the same way,
