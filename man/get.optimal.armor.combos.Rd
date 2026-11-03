@@ -103,13 +103,13 @@ exactly that order.
 Defaults to \code{c(0,0,0,0,0,0,0,0,0,0,0,0)}.
 Passed values are clamped between 0 and 999.}
 
-\item{weights}{A \code{numeric} indicating weights for the scored metrics. Either a named vector with any
-of the names PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES,
-POIS_RES, CURSE_RES, in any order - e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)} - or an unnamed
-length 10 vector in exactly that order. Note that with a named vector, omitted metrics get weight
-0 (they don't count toward the score at all) rather than their default weights.
-With \code{weights.mode = "grouped"}, the names are instead PHYSICAL_DEFENSES, ELEMENTAL_DEFENSES
-and RESISTANCES, and an unnamed vector has length 3, in that order.
+\item{weights}{A \code{numeric} indicating weights for the scored metrics. With
+\code{weights.mode = "individual"}, either a named vector with any of the names PHYS_DEF,
+STRIKE_DEF, SLASH_DEF, THRUST_DEF, MAG_DEF, FIRE_DEF, LITNG_DEF, BLEED_RES, POIS_RES, CURSE_RES,
+in any order (e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)}), or an unnamed length 10 vector in
+exactly that order. With \code{weights.mode = "grouped"}, either a named vector with any of the
+names PHYSICAL_DEFENSES, ELEMENTAL_DEFENSES, RESISTANCES, or an unnamed length 3 vector in that
+order. With a named vector, omitted names get weight 0: they don't count toward the score at all.
 Required: there is no default.
 These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 Increasing the weight on a metric increases its importance to the final score.
@@ -121,10 +121,11 @@ combination, \code{"max"} indicates the stat's highest value across every armor 
 \code{"raw"} indicates one unit of the stat with no adjustment.}
 
 \item{weights.mode}{A length 1 \code{character} indicating what the weights apply to. \code{"individual"}
-(the default) weights each scored stat. \code{"grouped"} weights three groups of stats -
-PHYSICAL_DEFENSES (PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF), ELEMENTAL_DEFENSES (MAG_DEF,
-FIRE_DEF, LITNG_DEF) and RESISTANCES (BLEED_RES, POIS_RES, CURSE_RES) - each counting as the
-average of its stats, scaled by \code{stat.scale} as a whole.}
+(the default) indicates one weight per scored stat. \code{"grouped"} indicates one weight per
+group of stats: PHYSICAL_DEFENSES (PHYS_DEF, STRIKE_DEF, SLASH_DEF, THRUST_DEF),
+ELEMENTAL_DEFENSES (MAG_DEF, FIRE_DEF, LITNG_DEF) and RESISTANCES (BLEED_RES, POIS_RES,
+CURSE_RES). Each group counts as the average of its stats, and \code{stat.scale} applies to that
+average.}
 }
 \value{
 A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
@@ -148,5 +149,8 @@ optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, weapons =
 
 ## At least 30 poise, scored only on physical and magic defense (physical counting double)
 poise.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
+
+## Physical defenses, elemental defenses and resistances weighted equally, each against its best possible total
+grouped.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", weights = c(PHYSICAL_DEFENSES = 1, ELEMENTAL_DEFENSES = 1, RESISTANCES = 1), weights.mode = "grouped", stat.scale = "max")
 
 }
