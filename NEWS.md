@@ -1,4 +1,4 @@
-# darksoulsarmor 2.0
+# darksoulsarmor 2.0.1
 
 ## Breaking changes
 
