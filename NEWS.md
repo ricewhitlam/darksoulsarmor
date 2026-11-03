@@ -48,6 +48,13 @@
   `minima = c(POISE = 30)` or `weights = c(PHYS_DEF = 2, MAG_DEF = 1)`; stats
   left out are 0. Unnamed vectors work as before.
 * `weapon.data`: every weapon, shield, bow and catalyst, with its weight.
+* `stat.scale` sets what one unit of each stat counts as before it is
+  weighted: its standard deviation across every armor combination (`"sd"`,
+  the default, as before), its highest value across every armor combination
+  (`"max"`), or one unit with no adjustment (`"raw"`).
+* `weights.mode = "grouped"` takes one weight per group of stats
+  (`PHYSICAL_DEFENSES`, `ELEMENTAL_DEFENSES` and `RESISTANCES`), each group
+  counting as the average of its stats.
 
 ## The app
 
@@ -68,6 +75,12 @@
   point, so weapons entered separately give the true movement type at an
   exact movement cutoff. Each weapon's weight is shown beside its name, and
   the weapons' total under the dropdowns.
+* Score Inputs adds Stat Scale and Weights Mode choices. Switching modes
+  carries the weights over: a group gets the sum of its stats' weights, and a
+  group's weight is split evenly across its stats. The download's Settings
+  sheet records both.
+* The app also runs entirely in the browser, with nothing to install, at
+  https://ricewhitlam.github.io/darksoulsarmor/.
 * Fixed:
   * submitting all-zero score weights no longer ends the session;
   * a warning during a refresh no longer aborts it;
@@ -83,6 +96,8 @@
   `armor.application()` runs.
 * The scoring vignette no longer contradicts itself about comparing scores
   across different weights, and the README's install command now builds it.
+* Pre-built binaries, including a WebAssembly build for webR, are available
+  from https://ricewhitlam.r-universe.dev.
 
 # darksoulsarmor 1.0
 
