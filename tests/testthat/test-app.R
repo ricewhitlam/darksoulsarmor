@@ -316,13 +316,15 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         expect_equal(setting("Minimum PHYS_DEF"), "0")
         expect_equal(setting("Score Weight PHYS_DEF"), "16%")
         expect_equal(setting("Score Weight CURSE_RES"), "4%")
+        expect_equal(setting("Stat Scale"), "Std Dev")
+        expect_equal(setting("Weights Mode"), "Individual")
         expect_equal(setting("Head"), paste(armordata()$args$head.filter, collapse = "; "))
         ## Movement, Endurance, then the weapons right hand first, as Load Inputs shows them
         first <- match("Movement", settings$SETTING)
         expect_equal(settings$SETTING[first + 0:5], c("Movement", "Endurance Level", "Right Hand Weapon 1", "Right Hand Weapon 2", "Left Hand Weapon 1", "Left Hand Weapon 2"))
         expect_equal(settings$VALUE[first + 1:5], c("40", "Claymore", "None", "Talisman", "Dagger"))
         ## Only the settings of the search itself: the rest is in the data
-        expect_equal(nrow(settings), 19 + 12 + 10)
+        expect_equal(nrow(settings), 19 + 12 + 2 + 10)
 
         ## A curve the tab already holds is reused, and the score's table has its own columns
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
@@ -353,6 +355,119 @@ test_that("'Normalize to 100%' rescales the weights to sum to exactly 100.0 at o
         expect_equal(sum(normalized), 100)
         expect_equal(normalized, round(normalized, 1))
         expect_true(all(abs(normalized - 100*raw/sum(raw)) <= 0.1 + 1e-9))
+    })
+})
+
+## Score Inputs' Weights Mode: switching fills the newly shown boxes from the ones just hidden - a
+## group gets the sum of its stats' weights, and a group's weight is split evenly across its stats
+## in whole tenths, the leftover tenths going to its stats in order - so each group's total is kept
+test_that("switching Weights Mode carries the weights over", {
+    updates <- list()
+    local_mocked_bindings(
+        updateAutonumericInput = function(session = NULL, inputId, label = NULL, value = NULL, options = NULL){
+            updates[[inputId]] <<- value
+        },
+        .package = "shinyWidgets"
+    )
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        ## The browser opening the dialog: its boxes and radio buttons as the app filled them
+        session$setInputs(weights = 1)
+        do.call(session$setInputs, weight.inputs(weight.values, weight.ids))
+        session$setInputs(weights_mode = "individual", stat_scale = "sd")
+        expect_length(updates, 0)
+
+        ## Individual to grouped: the defaults' sums
+        session$setInputs(weights_mode = "grouped")
+        expect_equal(unname(unlist(updates[group.ids])), c(64, 24, 12))
+
+        ## Grouped to individual, split in whole tenths: 33.4 over four stats is 8.4, 8.4, 8.3, 8.3
+        updates <<- list()
+        do.call(session$setInputs, setNames(list(33.4, 33.3, 33.3), group.ids))
+        session$setInputs(weights_mode = "individual")
+        split <- unname(unlist(updates[weight.ids]))
+        expect_equal(split, c(8.4, 8.4, 8.3, 8.3, 11.1, 11.1, 11.1, 11.1, 11.1, 11.1))
+        expect_equal(sum(split), 100)
+
+        ## ...and back again exactly
+        updates <<- list()
+        do.call(session$setInputs, setNames(as.list(split), weight.ids))
+        session$setInputs(weights_mode = "grouped")
+        expect_equal(unname(unlist(updates[group.ids])), c(33.4, 33.3, 33.3))
+
+        ## Uneven weights within a group keep the group's total, evened out
+        updates <<- list()
+        session$setInputs(weights_mode = "individual")
+        do.call(session$setInputs, setNames(as.list(c(20, 12, 16, 16, 8, 8, 8, 4, 4, 4)), weight.ids))
+        session$setInputs(weights_mode = "grouped")
+        expect_equal(unname(unlist(updates[group.ids])), c(64, 24, 12))
+        do.call(session$setInputs, setNames(list(64, 24, 12), group.ids))
+        session$setInputs(weights_mode = "individual")
+        expect_equal(unname(unlist(updates[weight.ids])), c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
+
+        ## Normalize works on the boxes showing
+        updates <<- list()
+        session$setInputs(weights_mode = "grouped")
+        do.call(session$setInputs, setNames(list(1, 1, 1), group.ids))
+        session$setInputs(normalize_weights = 1)
+        expect_equal(unname(unlist(updates[group.ids])), c(33.4, 33.3, 33.3))
+        expect_null(updates[[weight.ids[1]]])
+    })
+})
+
+## Score Inputs' Stat Scale and Weights Mode are saved with the weights on Done, reach the search on
+## refresh, count toward the settings having changed, and are recorded in the download
+test_that("Stat Scale and Weights Mode reach the search, the refresh message and the download", {
+    skip_if_not_installed("readxl")
+    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
+        ## The app starts at Std Dev, Individual and 16/8/4
+        expect_identical(c(weight.values$stat.scale, weight.values$weights.mode), c("sd", "individual"))
+        session$setInputs(go = 1)
+        expect_identical(armordata()$args$stat.scale, "sd")
+        expect_identical(armordata()$args$weights.mode, "individual")
+
+        ## Grouped weights on the Max scale
+        session$setInputs(weights = 1)
+        session$setInputs(stat_scale = "max", weights_mode = "grouped")
+        do.call(session$setInputs, setNames(list(50, 30, 20), group.ids))
+        session$setInputs(dismiss_weight_modal = 1)
+        expect_identical(c(weight.values$stat.scale, weight.values$weights.mode), c("max", "grouped"))
+        expect_equal(weight.values$weights, c(50, 30, 20))
+        expect_false(inputs.unchanged$weight.values)
+        expect_match(output$refreshmessage, ".")
+
+        session$setInputs(go = 2)
+        args <- armordata()$args
+        expect_identical(c(args$stat.scale, args$weights.mode), c("max", "grouped"))
+        expect_equal(args$weights, c(0.5, 0.3, 0.2))
+        expected <- do.call(get.optimal.armor.combos, args)$data
+        expect_identical(armordata()$data$SCORE, expected$SCORE)
+        expect_identical(as.character(armordata()$data$HEAD), expected$HEAD)
+        expect_identical(as.character(armordata()$data$LEGS), expected$LEGS)
+        expect_equal(output$refreshmessage, "")
+
+        ## Submitting them unchanged keeps the results current; another scale, or the same shares in
+        ## the other mode, doesn't
+        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "max", weights_mode = "grouped"), setNames(list(50, 30, 20), group.ids)), 2)
+        expect_true(inputs.unchanged$weight.values)
+        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "raw"), setNames(list(50, 30, 20), group.ids)), 3)
+        expect_false(inputs.unchanged$weight.values)
+        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "max", weights_mode = "individual"), setNames(as.list(c(12.5, 12.5, 12.5, 12.5, 10, 10, 10, 20/3, 20/3, 20/3)), weight.ids)), 4)
+        expect_identical(weight.values$weights.mode, "individual")
+        expect_false(inputs.unchanged$weight.values)
+        ## A scale or mode the dialog doesn't offer keeps what was saved
+        submit.modal(session, "weights", "dismiss_weight_modal", list(stat_scale = "points", weights_mode = "both"), 5)
+        expect_identical(c(weight.values$stat.scale, weight.values$weights.mode), c("max", "individual"))
+
+        ## The download records the last refresh's choices, with one weight per group
+        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "max", weights_mode = "grouped"), setNames(list(50, 30, 20), group.ids)), 6)
+        session$setInputs(tradeoff_metric = "POISE", main_tabs = "Results")
+        settings <- readxl::read_xlsx(output$download, sheet = "Settings")
+        setting <- function(name){ settings$VALUE[settings$SETTING == name] }
+        expect_equal(setting("Stat Scale"), "Max")
+        expect_equal(setting("Weights Mode"), "Grouped")
+        expect_equal(setting("Score Weight PHYSICAL_DEFENSES"), "50%")
+        expect_equal(setting("Score Weight RESISTANCES"), "20%")
+        expect_length(setting("Score Weight PHYS_DEF"), 0)
     })
 })
 

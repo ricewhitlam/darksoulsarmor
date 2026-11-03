@@ -529,6 +529,7 @@ server <- function(input, output, session){
     ## this package's history. metric.input.id() reproduces the existing widget ids exactly
     ## (e.g. "PHYS_DEF" -> "minphysdef"/"physdefweight") so this is a pure refactor.
     ## The game's equip-load rule (R/equip-load.R) gives each Trade-offs point its movement type.
+    ## The stat groups (R/sysdata.rda) are the Score Inputs' Grouped weights.
     METRICS <- darksoulsarmor:::METRICS
     MOVEMENT.SHARES <- darksoulsarmor:::MOVEMENT.SHARES
     weapons.weight <- darksoulsarmor:::weapons.weight
@@ -536,6 +537,7 @@ server <- function(input, output, session){
     movement.line <- darksoulsarmor:::movement.line
     total.weight <- darksoulsarmor:::total.weight
     movement.type <- darksoulsarmor:::movement.type
+    stat.groups <- darksoulsarmor:::stat.groups
 
     metric.input.id <- function(stat, kind){
         base <- tolower(gsub("_", "", stat))
@@ -602,13 +604,43 @@ server <- function(input, output, session){
     }, ignoreInit = TRUE)
 
 
-    weight.values <- shiny::reactiveValues(weights = c(16.0, 16.0, 16.0, 16.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0))
+    ## The score settings: the scale each stat is weighted in (stat.scale), whether the weights are
+    ## per stat or per group of stats (weights.mode), and the weights themselves - ten, or three
+    weight.values <- shiny::reactiveValues(weights = c(16.0, 16.0, 16.0, 16.0, 8.0, 8.0, 8.0, 4.0, 4.0, 4.0), stat.scale = "sd", weights.mode = "individual")
+    group.metrics <- names(stat.groups)
+    group.ids <- unname(vapply(group.metrics, metric.input.id, character(1), kind = "weight"))
+
+    ## Carrying weights across a mode switch, in tenths (the boxes' precision): a group gets the sum
+    ## of its stats' weights; a group's weight is split evenly across its stats, in whole tenths,
+    ## with any tenths left over going to its stats in order (33.4 -> 8.4, 8.4, 8.3, 8.3) - so each
+    ## group's total, and with it the overall sum, is kept exactly either way
+    grouped.from.individual <- function(weights){
+        unname(vapply(stat.groups, function(stats){ round(sum(weights[match(stats, weight.metrics)]), 1) }, numeric(1)))
+    }
+    individual.from.grouped <- function(weights){
+        out <- rep(0, length(weight.metrics))
+        for(g in seq_along(stat.groups)){
+            members <- match(stat.groups[[g]], weight.metrics)
+            tenths <- round(10*weights[g])
+            share <- rep(tenths %/% length(members), length(members))
+            extra <- tenths %% length(members)
+            share[seq_len(extra)] <- share[seq_len(extra)]+1
+            out[members] <- share/10
+        }
+        out
+    }
+    ## Both sets of boxes as the dialog opens: the saved weights in their own mode, converted into
+    ## the other
+    individual.weights <- function(){ if(weight.values$weights.mode == "individual") weight.values$weights else individual.from.grouped(weight.values$weights) }
+    grouped.weights <- function(){ if(weight.values$weights.mode == "grouped") weight.values$weights else grouped.from.individual(weight.values$weights) }
+    ## The mode the dialog's boxes were last filled for, so that a switch converts from the other set
+    shown.mode <- shiny::reactiveVal("individual")
 
     weight.input <- function(stat){
         shinyWidgets::autonumericInput(
             inputId = metric.input.id(stat, "weight"),
             label = stat,
-            value = weight.values$weights[weight.index.of(stat)],
+            value = if(stat %in% group.metrics) grouped.weights()[match(stat, group.metrics)] else individual.weights()[weight.index.of(stat)],
             align = "right",
             currencySymbol = "%",
             currencySymbolPlacement = "s",
@@ -621,23 +653,60 @@ server <- function(input, output, session){
     }
 
     shiny::observeEvent(input$weights, {
+        shown.mode(weight.values$weights.mode)
         shiny::showModal(
             shiny::modalDialog(
                 title = "Score Inputs",
                 footer = shiny::fluidRow(shiny::column(8, shiny::actionButton(inputId = "normalize_weights", label = "Normalize to 100%")), shiny::column(4, shiny::actionButton(inputId = "dismiss_weight_modal", label = "Done"))),
-                shiny::fluidRow(
-                    shiny::column(width = 3, weight.input("PHYS_DEF"), weight.input("MAG_DEF"), weight.input("BLEED_RES")),
-                    shiny::column(width = 3, weight.input("STRIKE_DEF"), weight.input("FIRE_DEF"), weight.input("POIS_RES")),
-                    shiny::column(width = 3, weight.input("SLASH_DEF"), weight.input("LITNG_DEF"), weight.input("CURSE_RES")),
-                    shiny::column(width = 3, weight.input("THRUST_DEF"))
+                shiny::radioButtons(inputId = "stat_scale", label = "Stat Scale", choices = c("Std Dev" = "sd", "Max" = "max", "Raw" = "raw"), selected = weight.values$stat.scale, inline = TRUE),
+                shiny::helpText("What one unit of each stat counts as before it is weighted: its standard deviation across every armor combination (Std Dev), its highest value across every armor combination (Max), or one unit with no adjustment (Raw)."),
+                shiny::radioButtons(inputId = "weights_mode", label = "Weights Mode", choices = c("Individual" = "individual", "Grouped" = "grouped"), selected = weight.values$weights.mode, inline = TRUE),
+                shiny::helpText("Individual weights each stat. Grouped weights physical defenses, elemental defenses and resistances, each as the average of its stats. Switching carries the weights over: a group gets the sum of its stats' weights, and a group's weight is split evenly across its stats."),
+                ## Both sets of boxes, the mode showing one
+                shiny::conditionalPanel(
+                    condition = "input.weights_mode == 'individual'",
+                    shiny::fluidRow(
+                        shiny::column(width = 3, weight.input("PHYS_DEF"), weight.input("MAG_DEF"), weight.input("BLEED_RES")),
+                        shiny::column(width = 3, weight.input("STRIKE_DEF"), weight.input("FIRE_DEF"), weight.input("POIS_RES")),
+                        shiny::column(width = 3, weight.input("SLASH_DEF"), weight.input("LITNG_DEF"), weight.input("CURSE_RES")),
+                        shiny::column(width = 3, weight.input("THRUST_DEF"))
+                    )
+                ),
+                shiny::conditionalPanel(
+                    condition = "input.weights_mode == 'grouped'",
+                    ## One column: the group names are too long to sit side by side
+                    shiny::fluidRow(
+                        shiny::column(width = 6, weight.input("PHYSICAL_DEFENSES"), weight.input("ELEMENTAL_DEFENSES"), weight.input("RESISTANCES"))
+                    )
                 )
             )
         )
     })
 
+    ## A mode switch in the dialog fills the newly shown boxes from the ones just hidden
+    shiny::observeEvent(input$weights_mode, {
+        mode <- input$weights_mode
+        if(!(mode %in% c("individual", "grouped")) || identical(mode, shown.mode())){
+            return(invisible(NULL))
+        }
+        from.ids <- if(mode == "grouped") weight.ids else group.ids
+        from <- lapply(from.ids, function(id){ input[[id]] })
+        if(all(vapply(from, shiny::isTruthy, logical(1)))){
+            to <- if(mode == "grouped") grouped.from.individual(unlist(from)) else individual.from.grouped(unlist(from))
+            to.ids <- if(mode == "grouped") group.ids else weight.ids
+            for(i in seq_along(to.ids)){
+                shinyWidgets::updateAutonumericInput(inputId = to.ids[i], value = to[i])
+            }
+        }
+        shown.mode(mode)
+    }, ignoreInit = TRUE)
+
+    ## The boxes the dialog is showing: the ten stats' or the three groups'
+    shown.weight.ids <- function(){ if(identical(shown.mode(), "grouped")) group.ids else weight.ids }
+
     shiny::observeEvent(input$normalize_weights, {
 
-        weight.inputs <- lapply(weight.ids, function(id){ input[[id]] })
+        weight.inputs <- lapply(shown.weight.ids(), function(id){ input[[id]] })
         ## sum(weights) > 1e-15 mirrors get.optimal.armor.combos' own weights validation - without
         ## it, all-zero (or otherwise ~0-sum) inputs divide by ~0 below, producing NaN that later
         ## crashes on if(diff > 0) with "missing value where TRUE/FALSE needed".
@@ -657,19 +726,26 @@ server <- function(input, output, session){
             weights <- 0.1*weights
 
             ## Update inputs
-            for(i in seq_along(weight.ids)){
-                shinyWidgets::updateAutonumericInput(inputId = weight.ids[i], value = weights[i])
+            ids <- shown.weight.ids()
+            for(i in seq_along(ids)){
+                shinyWidgets::updateAutonumericInput(inputId = ids[i], value = weights[i])
             }
 
         }
 
     }, ignoreInit = TRUE)
 
+    ## Done saves the scale, the mode and the boxes showing (a client sending anything else for the
+    ## scale or mode keeps what was saved)
     shiny::observeEvent(input$dismiss_weight_modal, {
 
-        weight.inputs <- lapply(weight.ids, function(id){ input[[id]] })
+        weight.inputs <- lapply(shown.weight.ids(), function(id){ input[[id]] })
         if(all(vapply(weight.inputs, shiny::isTruthy, logical(1)))){
             weight.values$weights <- unlist(weight.inputs)
+            weight.values$weights.mode <- shown.mode()
+        }
+        if(isTRUE(input$stat_scale %in% c("sd", "max", "raw")) && length(input$stat_scale) == 1){
+            weight.values$stat.scale <- input$stat_scale
         }
 
         if(been.refreshed()){
@@ -677,7 +753,13 @@ server <- function(input, output, session){
             ## this a single TRUE/FALSE like every other inputs.unchanged entry - all-zero weights
             ## normalize to 0/0 = NaN, and an NA here would reach the if(all(...)) in the
             ## refresh-message observer above, erroring inside an observer and ending the session.
-            inputs.unchanged$weight.values <- isTRUE(all(abs(weight.values$weights/sum(weight.values$weights)-armordata()$args$weights) < 1e-10))
+            ## Weights in the other mode differ by count alone.
+            args <- armordata()$args
+            inputs.unchanged$weight.values <-
+                identical(weight.values$stat.scale, args$stat.scale) &&
+                identical(weight.values$weights.mode, args$weights.mode) &&
+                length(weight.values$weights) == length(args$weights) &&
+                isTRUE(all(abs(weight.values$weights/sum(weight.values$weights)-args$weights) < 1e-10))
         }
 
         shiny::removeModal()
@@ -844,7 +926,9 @@ server <- function(input, output, session){
             favor.ring = ring.values$favor.ring,
             wolf.ring = ring.values$wolf.ring,
             minima = minimum.values$minima,
-            weights = weight.values$weights
+            weights = weight.values$weights,
+            stat.scale = weight.values$stat.scale,
+            weights.mode = weight.values$weights.mode
         )
     }
 
@@ -1305,7 +1389,8 @@ server <- function(input, output, session){
                 "Havel's Ring", "Ring of Favor", "Wolf Ring",
                 "Movement", "Endurance Level", "Right Hand Weapon 1", "Right Hand Weapon 2", "Left Hand Weapon 1", "Left Hand Weapon 2",
                 paste("Minimum", minima.metrics),
-                paste("Score Weight", weight.metrics)
+                "Stat Scale", "Weights Mode",
+                paste("Score Weight", if(args$weights.mode == "grouped") group.metrics else weight.metrics)
             ),
             VALUE = c(
                 format(args$max.table.size, scientific = FALSE), args$starting.class, listed(args$areas.completed), listed(args$upgrade.types),
@@ -1314,6 +1399,7 @@ server <- function(input, output, session){
                 yes.no(args$havel.ring), yes.no(args$favor.ring), yes.no(args$wolf.ring),
                 args$movement, as.character(args$endurance.level), unname(args$weapons[c("right.1", "right.2", "left.1", "left.2")]),
                 as.character(args$minima),
+                c(sd = "Std Dev", max = "Max", raw = "Raw")[[args$stat.scale]], c(individual = "Individual", grouped = "Grouped")[[args$weights.mode]],
                 paste0(as.character(round(100*args$weights, 6)), "%")
             )
         )
