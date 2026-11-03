@@ -58,6 +58,6 @@ line, a combination within the limit can still be ruled out. Among combinations 
 stat, the best-scoring one is returned.
 }
 \examples{
-poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))
+poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 
 }

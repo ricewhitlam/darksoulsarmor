@@ -26,7 +26,8 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
             movement = movement,
             weapons = weapons,
             endurance.level = endurance.level,
-            minima = minima
+            minima = minima,
+            weights = default.weights
         )$data
 
     ## True brute force: every (head, chest, hands, legs) combination in the filtered subset.
@@ -121,7 +122,7 @@ test_that("score.quality matches a brute-force count over every combination", {
 ## SCORE_QUALITY regardless of filters, so the best combination at +10/+5 with no load limit -
 ## which no other combination ties or beats - is exactly "Top 1 in 11,930,328".
 test_that("SCORE_QUALITY ranks the best combination at a level against every combination there", {
-    result <- get.optimal.armor.combos(max.table.size = 20, movement = "Poop", regular.level = "+10", twinkling.level = "+5")$data
+    result <- get.optimal.armor.combos(weights = default.weights, max.table.size = 20, movement = "Poop", regular.level = "+10", twinkling.level = "+5")$data
     expect_equal(names(result)[1:2], c("SCORE", "SCORE_QUALITY"))
     expect_equal(result$SCORE_QUALITY[1], "Top 1 in 11,930,328")
     expect_true(all(grepl("^Top 1 in ", result$SCORE_QUALITY)))
@@ -131,7 +132,7 @@ test_that("SCORE_QUALITY reads 'Bottom 1 in N' when even the best feasible combi
     ## The default endurance.level = 10 and movement = "Light", carrying a Zweihander (10), leave
     ## only 2.5 units of equip load for armor, so even the best feasible combination is a
     ## below-median one.
-    result <- get.optimal.armor.combos(max.table.size = 20, weapons = c(right.1 = "Zweihander"))$data
+    result <- get.optimal.armor.combos(weights = default.weights, max.table.size = 20, weapons = c(right.1 = "Zweihander"))$data
     expect_true(all(grepl("^Bottom 1 in ", result$SCORE_QUALITY)))
 })
 
@@ -141,7 +142,7 @@ test_that("SCORE_QUALITY reads 'Bottom 1 in N' when even the best feasible combi
 ## set's PCT_LOAD is at most exactly 25%.
 test_that("EQUIP_LOAD and TOTAL_WEIGHT are the game's exact 32-bit values", {
     f32 <- darksoulsarmor:::float32
-    result <- get.optimal.armor.combos(max.table.size = 200, endurance.level = 1, favor.ring = TRUE, movement = "Light")$data
+    result <- get.optimal.armor.combos(weights = default.weights, max.table.size = 200, endurance.level = 1, favor.ring = TRUE, movement = "Light")$data
     non.motf <- result[HEAD != "Mask of the Father"]
     expect_true(nrow(non.motf) > 0)
     expect_equal(unique(non.motf$EQUIP_LOAD), f32(41*f32(1.2)), tolerance = 0)
@@ -161,7 +162,8 @@ test_that("a max.table.size far above the possible combinations returns exactly 
         max.table.size = 1e8,
         head.filter = head.data.unupgraded$ARMOR[1:2], chest.filter = chest.data.unupgraded$ARMOR[1:2],
         hands.filter = hands.data.unupgraded$ARMOR[1:2], legs.filter = legs.data.unupgraded$ARMOR[1:2],
-        movement = "Poop"
+        movement = "Poop",
+        weights = default.weights
     )$data
     expect_equal(nrow(result), 16)
     expect_equal(nrow(unique(result[, .(HEAD, CHEST, HANDS, LEGS)])), 16)
@@ -312,13 +314,13 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
 ## columns, order, and types of a normal one.
 test_that("empty results and the app's initial table match a normal result's columns", {
     column.types <- function(dt){ vapply(dt, function(x) class(x)[1], character(1)) }
-    normal <- get.optimal.armor.combos(max.table.size = 5)$data
+    normal <- get.optimal.armor.combos(weights = default.weights, max.table.size = 5)$data
     expect_gt(nrow(normal), 0)
 
     ## No head piece left after filtering: Mask of the Father needs areas that aren't completed
-    no.pieces <- get.optimal.armor.combos(head.filter = "Mask of the Father", areas.completed = character(0))$data
+    no.pieces <- get.optimal.armor.combos(weights = default.weights, head.filter = "Mask of the Father", areas.completed = character(0))$data
     ## Pieces left, but no combination can meet the minima
-    no.combos <- get.optimal.armor.combos(minima = c(999, rep(0, 11)))$data
+    no.combos <- get.optimal.armor.combos(weights = default.weights, minima = c(999, rep(0, 11)))$data
     for(empty in list(no.pieces, no.combos)){
         expect_equal(nrow(empty), 0)
         expect_identical(column.types(empty), column.types(normal))
@@ -350,5 +352,5 @@ test_that("named minima/weights match their positional equivalents in any order"
 
     ## A full named vector in shuffled order
     w <- c(PHYS_DEF = 0.16, STRIKE_DEF = 0.16, SLASH_DEF = 0.16, THRUST_DEF = 0.16, MAG_DEF = 0.08, FIRE_DEF = 0.08, LITNG_DEF = 0.08, BLEED_RES = 0.04, POIS_RES = 0.04, CURSE_RES = 0.04)
-    expect_identical(get.optimal.armor.combos(max.table.size = 50, weights = rev(w))$data, get.optimal.armor.combos(max.table.size = 50)$data)
+    expect_identical(get.optimal.armor.combos(max.table.size = 50, weights = rev(w))$data, get.optimal.armor.combos(max.table.size = 50, weights = default.weights)$data)
 })

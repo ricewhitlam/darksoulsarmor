@@ -102,8 +102,8 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
 })
 
 test_that("the SCORE curve's top point is get.optimal.armor.combos' best result", {
-    curve <- get.armor.tradeoffs(endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))$data
-    best <- get.optimal.armor.combos(max.table.size = 1, endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))$data
+    curve <- get.armor.tradeoffs(weights = default.weights, endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))$data
+    best <- get.optimal.armor.combos(weights = default.weights, max.table.size = 1, endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))$data
     top <- curve[.N]
     ## The Mask of the Father's line (42) less the Great Club (12)
     expect_equal(top$ARMOR_WEIGHT_LIMIT, 30)
@@ -115,20 +115,20 @@ test_that("the SCORE curve's top point is get.optimal.armor.combos' best result"
 })
 
 test_that("get.armor.tradeoffs validates its own arguments", {
-    expect_error(get.armor.tradeoffs(metric = "DURABILITY"), "metric")
-    expect_error(get.armor.tradeoffs(metric = c("SCORE", "POISE")), "metric")
-    expect_error(get.armor.tradeoffs(weight.step = 0), "weight.step")
-    expect_error(get.armor.tradeoffs(weight.step = -1), "weight.step")
-    expect_error(get.armor.tradeoffs(max.armor.weight = -5), "max.armor.weight")
-    expect_error(get.armor.tradeoffs(max.table.size = 10), "max.table.size")
-    expect_error(get.armor.tradeoffs(movement = "Sprint"), "movement")
+    expect_error(get.armor.tradeoffs(weights = default.weights, metric = "DURABILITY"), "metric")
+    expect_error(get.armor.tradeoffs(weights = default.weights, metric = c("SCORE", "POISE")), "metric")
+    expect_error(get.armor.tradeoffs(weights = default.weights, weight.step = 0), "weight.step")
+    expect_error(get.armor.tradeoffs(weights = default.weights, weight.step = -1), "weight.step")
+    expect_error(get.armor.tradeoffs(weights = default.weights, max.armor.weight = -5), "max.armor.weight")
+    expect_error(get.armor.tradeoffs(weights = default.weights, max.table.size = 10), "max.table.size")
+    expect_error(get.armor.tradeoffs(weights = default.weights, movement = "Sprint"), "movement")
     ## An explicit max.armor.weight and an arbitrary step
-    curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.25, max.armor.weight = 3)$data
+    curve <- get.armor.tradeoffs(weights = default.weights, metric = "POISE", weight.step = 0.25, max.armor.weight = 3)$data
     expect_equal(curve$ARMOR_WEIGHT_LIMIT, seq(0, 3, by = 0.25))
 })
 
 test_that("a curve over part of the weight range matches the full curve there", {
-    settings <- list(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), wolf.ring = TRUE)
+    settings <- list(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), wolf.ring = TRUE, weights = default.weights)
     full <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.1, max.armor.weight = 12)))$data
     part <- do.call(get.armor.tradeoffs, c(settings, list(weight.step = 0.5, min.armor.weight = 3.2, max.armor.weight = 12)))$data
     ## Both ends plus the multiples of the step between them
@@ -140,7 +140,7 @@ test_that("a curve over part of the weight range matches the full curve there", 
     one <- do.call(get.armor.tradeoffs, c(settings, list(min.armor.weight = 7.3, max.armor.weight = 7.3)))$data
     expect_equal(one, full[round(ARMOR_WEIGHT_LIMIT, 9) == 7.3])
 
-    expect_error(get.armor.tradeoffs(min.armor.weight = -1), "min.armor.weight")
-    expect_error(get.armor.tradeoffs(min.armor.weight = c(1, 2)), "min.armor.weight")
-    expect_error(get.armor.tradeoffs(min.armor.weight = 5, max.armor.weight = 4), "min.armor.weight.*larger than max.armor.weight")
+    expect_error(get.armor.tradeoffs(weights = default.weights, min.armor.weight = -1), "min.armor.weight")
+    expect_error(get.armor.tradeoffs(weights = default.weights, min.armor.weight = c(1, 2)), "min.armor.weight")
+    expect_error(get.armor.tradeoffs(weights = default.weights, min.armor.weight = 5, max.armor.weight = 4), "min.armor.weight.*larger than max.armor.weight")
 })

@@ -16,8 +16,8 @@ described <- function(e){
 }
 
 ## Curves over every armor weight (no movement limit), every 0.1
-curve.over.all.weights <- function(...){
-    get.armor.tradeoffs(..., weight.step = 0.1, movement = "Poop")
+curve.over.all.weights <- function(..., weights = default.weights){
+    get.armor.tradeoffs(..., weights = weights, weight.step = 0.1, movement = "Poop")
 }
 weights.16.12 <- c(PHYS_DEF = 16, STRIKE_DEF = 16, SLASH_DEF = 16, THRUST_DEF = 16, MAG_DEF = 12, FIRE_DEF = 12, LITNG_DEF = 12)
 

@@ -54,7 +54,7 @@
 #' \code{\link{get.optimal.armor.combos}}.
 #'
 #' @examples
-#' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"))
+#' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 #'
 get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.weight = 0, max.armor.weight = NULL, ...){
 

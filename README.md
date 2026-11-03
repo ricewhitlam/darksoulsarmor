@@ -33,7 +33,8 @@ result <- get.optimal.armor.combos(
     endurance.level = 40,
     weapons = c(right.1 = "Great Club"),  # weight 12
     movement = "Mid",
-    minima = c(POISE = 30)  # require at least 30 poise
+    minima = c(POISE = 30),  # require at least 30 poise
+    weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4)
 )
 result$data[, .(SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS, ARMOR_POISE, PCT_LOAD)]
 #>    SCORE_QUALITY                    HEAD          CHEST              HANDS
@@ -59,7 +60,7 @@ See `?get.optimal.armor.combos` for the full set of settings (which areas/classe
 `get.armor.tradeoffs()` finds the best value of one stat at each armor-weight limit, with the same settings as `get.optimal.armor.combos()`. For example, the lightest armor that reaches each PVE poise breakpoint with Mid movement:
 
 ```r
-curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.1, endurance.level = 40, weapons = c(right.1 = "Great Club"), movement = "Mid")
+curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.1, endurance.level = 40, weapons = c(right.1 = "Great Club"), movement = "Mid", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 first <- sapply(c(21, 31, 46), function(poise) which(curve$data$BEST_VALUE >= poise)[1])
 curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 #>    ARMOR_WEIGHT_LIMIT BEST_VALUE         HEAD    CHEST            HANDS
@@ -84,7 +85,7 @@ curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 - **boundary points:** the steps where one line or flat gives way to the next.
 
 ```r
-curve <- get.armor.tradeoffs(metric = "CURSE_RES", weight.step = 0.1, endurance.level = 40, movement = "Fat")
+curve <- get.armor.tradeoffs(metric = "CURSE_RES", weight.step = 0.1, endurance.level = 40, movement = "Fat", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 efficiency <- get.tradeoff.efficiency(curve)
 efficiency$data[, .(TYPE, FROM, TO, GAIN, RATIO_TO_AVERAGE)]
 #>        TYPE  FROM    TO  GAIN RATIO_TO_AVERAGE

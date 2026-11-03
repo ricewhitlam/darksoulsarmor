@@ -46,7 +46,8 @@ test_that("a Light search finds exactly the in-game sets that rolled Light", {
         found <- get.optimal.armor.combos(
             max.table.size = 5, movement = "Light", endurance.level = reading$endurance, havel.ring = reading$havel, favor.ring = reading$favor,
             weapons = if(length(reading$weapons)) reading$weapons else c(left.1 = "None"),
-            head.filter = only(reading$armor[1]), chest.filter = only(reading$armor[2]), hands.filter = only(reading$armor[3]), legs.filter = only(reading$armor[4])
+            head.filter = only(reading$armor[1]), chest.filter = only(reading$armor[2]), hands.filter = only(reading$armor[3]), legs.filter = only(reading$armor[4]),
+            weights = default.weights
         )$data
         expect_equal(nrow(found), if(reading$rolled == "Light") 1 else 0, info = reading$name)
     }
@@ -64,14 +65,14 @@ test_that("the equip load doesn't depend on the order the effects are combined i
 })
 
 test_that("weapons named by slot or given in slot order mean the same", {
-    named <- get.optimal.armor.combos(max.table.size = 1, weapons = c(right.2 = "Talisman", left.1 = "Claymore"))$args$weapons
-    ordered <- get.optimal.armor.combos(max.table.size = 1, weapons = c("Claymore", "None", "None", "Talisman"))$args$weapons
+    named <- get.optimal.armor.combos(weights = default.weights, max.table.size = 1, weapons = c(right.2 = "Talisman", left.1 = "Claymore"))$args$weapons
+    ordered <- get.optimal.armor.combos(weights = default.weights, max.table.size = 1, weapons = c("Claymore", "None", "None", "Talisman"))$args$weapons
     expect_identical(named, c(left.1 = "Claymore", right.1 = "None", left.2 = "None", right.2 = "Talisman"))
     expect_identical(ordered, named)
-    expect_identical(get.optimal.armor.combos(max.table.size = 1)$args$weapons, c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"))
+    expect_identical(get.optimal.armor.combos(weights = default.weights, max.table.size = 1)$args$weapons, c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"))
 })
 
 test_that("an empty weapons vector means no weapons", {
-    expect_identical(get.optimal.armor.combos(max.table.size = 1, weapons = character(0))$args$weapons, c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"))
-    expect_identical(get.optimal.armor.combos(max.table.size = 1, weapons = stats::setNames(character(0), character(0)))$args$weapons, c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"))
+    expect_identical(get.optimal.armor.combos(weights = default.weights, max.table.size = 1, weapons = character(0))$args$weapons, c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"))
+    expect_identical(get.optimal.armor.combos(weights = default.weights, max.table.size = 1, weapons = stats::setNames(character(0), character(0)))$args$weapons, c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"))
 })

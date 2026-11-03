@@ -443,7 +443,7 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
         expect_true(all(c(8, 28) %in% round(result$data$ARMOR_WEIGHT_LIMIT, 9)))
 
         ## Each segment is exactly get.armor.tradeoffs under that segment's movement type
-        settings <- list(metric = "POISE", endurance.level = 40, weapons = c(right.1 = "Great Club"), wolf.ring = TRUE)
+        settings <- list(metric = "POISE", endurance.level = 40, weapons = c(right.1 = "Great Club"), wolf.ring = TRUE, weights = default.weights)
         segment <- function(movement, from, to){ do.call(get.armor.tradeoffs, c(settings, list(movement = movement, weight.step = 0.1, min.armor.weight = from, max.armor.weight = to)))$data }
         expected <- rbind(segment("Light", 0, 8), segment("Mid", 8, 28)[ARMOR_WEIGHT_LIMIT > 8], segment("Fat", 28, 52.5)[ARMOR_WEIGHT_LIMIT > 28])
         cols <- names(expected)
@@ -504,7 +504,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
         ## Opening the tab computes it from the refresh's settings (the defaults)
         session$setInputs(main_tabs = "Trade-offs")
         expect_equal(tradeoff.computations(), 1)
-        defaults <- get.armor.tradeoffs(metric = "POISE", max.armor.weight = 0)$data
+        defaults <- get.armor.tradeoffs(weights = default.weights, metric = "POISE", max.armor.weight = 0)$data
         expect_equal(tradeoffdata()$data[1, names(defaults), with = FALSE], defaults)
 
         ## Switching tabs back and forth reuses it
@@ -526,7 +526,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
         expect_equal(output$refreshmessage, "")
         expect_equal(tradeoff.computations(), 4)
         expect_true(tradeoffdata()$key$settings$wolf.ring)
-        expect_equal(tradeoffdata()$data$BEST_VALUE[1], get.armor.tradeoffs(metric = "POISE", max.armor.weight = 0, wolf.ring = TRUE)$data$BEST_VALUE)
+        expect_equal(tradeoffdata()$data$BEST_VALUE[1], get.armor.tradeoffs(weights = default.weights, metric = "POISE", max.armor.weight = 0, wolf.ring = TRUE)$data$BEST_VALUE)
 
         ## A refresh changing only the movement type and the table size keeps the curve
         curve <- tradeoffdata()$data
@@ -571,7 +571,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 30)
         expect_equal(result$lines[["Light"]], 2.5)
-        light <- get.armor.tradeoffs(metric = "POISE", minima = c(BLEED_RES = 20), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
+        light <- get.armor.tradeoffs(weights = default.weights, metric = "POISE", minima = c(BLEED_RES = 20), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(light)), names(light), with = FALSE], light)
         expect_true(any(result$data$BEST_VALUE < 30, na.rm = TRUE))
         expect_true(grepl("Your minimum: 30", output$tradeoff_plot, fixed = TRUE))
@@ -580,7 +580,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         session$setInputs(tradeoff_metric = "BLEED_RES")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 20)
-        light <- get.armor.tradeoffs(metric = "BLEED_RES", minima = c(POISE = 30), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
+        light <- get.armor.tradeoffs(weights = default.weights, metric = "BLEED_RES", minima = c(POISE = 30), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(light)), names(light), with = FALSE], light)
         expect_true(grepl("Your minimum: 20", output$tradeoff_plot, fixed = TRUE))
 
@@ -588,7 +588,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         session$setInputs(tradeoff_metric = "SCORE")
         result <- tradeoffdata()
         expect_equal(result$stat.minimum, 0)
-        light <- get.armor.tradeoffs(metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
+        light <- get.armor.tradeoffs(weights = default.weights, metric = "SCORE", minima = c(POISE = 30, BLEED_RES = 20), weapons = zweihander, weight.step = 0.1, max.armor.weight = 2.5)$data
         expect_equal(result$data[seq_len(nrow(light)), names(light), with = FALSE], light)
         expect_false(grepl("Your minimum", output$tradeoff_plot, fixed = TRUE))
     })

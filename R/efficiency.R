@@ -69,7 +69,7 @@
 #' line beside it, except for one between two flats.
 #'
 #' @examples
-#' score.curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat")
+#' score.curve <- get.armor.tradeoffs(weight.step = 0.1, endurance.level = 40, movement = "Fat", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 #' efficiency <- get.tradeoff.efficiency(score.curve)
 #' fewer.jumps <- get.tradeoff.efficiency(score.curve, jumps = "few")
 #'

@@ -158,7 +158,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' POIS_RES, CURSE_RES, in any order - e.g. \code{c(PHYS_DEF = 2, MAG_DEF = 1)} - or an unnamed
 #' length 10 vector in exactly that order. Note that with a named vector, omitted metrics get weight
 #' 0 (they don't count toward the score at all) rather than their default weights.
-#' Defaults to \code{c(0.16,0.16,0.16,0.16,0.08,0.08,0.08,0.04,0.04,0.04)}.
+#' Required: there is no default.
 #' These weights are used in the calculation of a score. This score is then optimized across all possible armor combinations.
 #' Increasing the weight on a metric increases its importance to the final score.
 #' The weights do not need to sum to 1, but should all be nonnegative with positive sum.
@@ -167,7 +167,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
 #'
 #' @examples
-#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, weapons = c(left.1 = "Grass Crest Shield", right.1 = "Longsword"), favor.ring = TRUE, movement = "Light")
+#' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, weapons = c(left.1 = "Grass Crest Shield", right.1 = "Longsword"), favor.ring = TRUE, movement = "Light", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 #'
 #' ## At least 30 poise, scored only on physical and magic defense (physical counting double)
 #' poise.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", minima = c(POISE = 30), weights = c(PHYS_DEF = 2, MAG_DEF = 1))
@@ -190,7 +190,7 @@ get.optimal.armor.combos <- function(
     favor.ring = FALSE,
     wolf.ring = FALSE,
     minima = c(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-    weights = c(0.16, 0.16, 0.16, 0.16, 0.08, 0.08, 0.08, 0.04, 0.04, 0.04)
+    weights
 ){
 
     ## Check regular.level
@@ -418,6 +418,9 @@ get.optimal.armor.combos <- function(
     }
 
     ## Check weights
+    if(missing(weights)){
+        stop("weights is required")
+    }
     weights <- expand.named.metrics(weights, METRICS[!is.na(weight.index)][order(weight.index), metric], "weights")
     if(!is.numeric(weights)){
         stop("Invalid argument 'weights'")
