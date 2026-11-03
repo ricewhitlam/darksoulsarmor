@@ -48,7 +48,7 @@
 #' @return
 #' A \code{list} holding (1) the arguments that defined the curve and (2) a \code{data.table} with
 #' one row per armor-weight limit (\code{ARMOR_WEIGHT_LIMIT}): the best achievable value of the
-#' metric (\code{BEST_VALUE}), and the combination achieving it - its \code{SCORE_RAW},
+#' metric (\code{BEST_VALUE}), and the combination achieving it - its \code{SCORE},
 #' \code{SCORE_QUALITY}, \code{ARMOR_WEIGHT}, \code{TOTAL_POISE}, and pieces. Limits at which no
 #' combination satisfies the other settings have \code{NA} values. Values are exact, as in
 #' \code{\link{get.optimal.armor.combos}}.
@@ -152,25 +152,25 @@ get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.wei
                 hands.data.unupgraded$WEIGHT[match(best$HANDS, hands.data.unupgraded$ARMOR)]+
                 legs.data.unupgraded$WEIGHT[match(best$LEGS, legs.data.unupgraded$ARMOR)]
         }
-        rows[[length(rows)+1]] <- data.table::data.table(ARMOR_WEIGHT_LIMIT = limit, best[, .(SCORE_RAW, SCORE_QUALITY, ARMOR_WEIGHT, TOTAL_POISE, HEAD, CHEST, HANDS, LEGS)])
+        rows[[length(rows)+1]] <- data.table::data.table(ARMOR_WEIGHT_LIMIT = limit, best[, .(SCORE, SCORE_QUALITY, ARMOR_WEIGHT, TOTAL_POISE, HEAD, CHEST, HANDS, LEGS)])
     }
     ## Limits below the lightest feasible combination: no result
     missing <- setdiff(limits, vapply(rows, function(r){ r$ARMOR_WEIGHT_LIMIT }, numeric(1)))
     if(length(missing) > 0){
         rows[[length(rows)+1]] <-
             data.table::data.table(
-                ARMOR_WEIGHT_LIMIT = missing, SCORE_RAW = NA_real_, SCORE_QUALITY = NA_character_, ARMOR_WEIGHT = NA_real_, TOTAL_POISE = NA_real_,
+                ARMOR_WEIGHT_LIMIT = missing, SCORE = NA_real_, SCORE_QUALITY = NA_character_, ARMOR_WEIGHT = NA_real_, TOTAL_POISE = NA_real_,
                 HEAD = NA_character_, CHEST = NA_character_, HANDS = NA_character_, LEGS = NA_character_
             )
     }
     curve <- data.table::rbindlist(rows)
     ## SCORE_QUALITY for every point at once (the searches left it out)
     if(!is.null(level.scores)){
-        found <- !is.na(curve$SCORE_RAW)
-        curve[found, SCORE_QUALITY := score.quality(SCORE_RAW, level.scores[[1]], level.scores[[2]], level.scores[[3]], level.scores[[4]])]
+        found <- !is.na(curve$SCORE)
+        curve[found, SCORE_QUALITY := score.quality(SCORE, level.scores[[1]], level.scores[[2]], level.scores[[3]], level.scores[[4]])]
     }
     if(metric == "SCORE"){
-        curve[, BEST_VALUE := SCORE_RAW]
+        curve[, BEST_VALUE := SCORE]
     } else if(metric == "POISE"){
         curve[, BEST_VALUE := TOTAL_POISE]
     } else{

@@ -11,7 +11,7 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
-`get.optimal.armor.combos()` ranks armor combinations using a single number, `SCORE_RAW`
+`get.optimal.armor.combos()` ranks armor combinations using a single number, `SCORE`
 (and its human-readable form, `SCORE_QUALITY`). This vignette explains where that number comes
 from.
 
@@ -66,7 +66,7 @@ $$
 = \frac{1}{k^2} w^\top \text{corr} \, w = \frac{1}{k^2} \cdot k^2 = 1
 $$
 
-This puts every choice of weights on the same scale: a `SCORE_RAW` of 1.5 always means "one and
+This puts every choice of weights on the same scale: a `SCORE` of 1.5 always means "one and
 a half standard deviations above the average combination, as judged by these weights", whichever
 weights were chosen. It doesn't make scores under *different* weights interchangeable, though -
 see "What this does and doesn't let you compare" below. `tests/testthat/test-scoring.R` checks
@@ -87,9 +87,9 @@ easiest way to divide that single subtraction across four separately-computed sl
 doesn't require (and isn't affected by) whether any individual slot's own average metric value
 happens to be exactly a quarter of the combo-level mean.
 
-## From SCORE_RAW to SCORE_QUALITY
+## From SCORE to SCORE_QUALITY
 
-`SCORE_RAW` is a number of standard deviations, which isn't very intuitive on its own.
+`SCORE` is a number of standard deviations, which isn't very intuitive on its own.
 `SCORE_QUALITY` turns it into a rarity: how many of all the possible combinations at the selected
 upgrade levels score at least as well. A combination that 1 in every 40 combinations matches or
 beats reads `"Top 1 in 40"`; the single best combination at a level reads
@@ -126,7 +126,7 @@ sorted list of the other three slots' sums is built once per call.
 
 ### Why not a normal approximation?
 
-An earlier version of `SCORE_QUALITY` assumed `SCORE_RAW` was normally distributed across every
+An earlier version of `SCORE_QUALITY` assumed `SCORE` was normally distributed across every
 combination at every upgrade level pooled together, and converted it with `pnorm()`. That turned
 out to be off by large factors in both directions. The score is a sum of only four independent
 terms (one per slot), not of many, and its tails aren't normal: the README example's top result
@@ -138,7 +138,7 @@ from.
 
 ## What this does and doesn't let you compare
 
-Because `Var(SCORE) = 1` holds for any weights, `SCORE_RAW` is directly comparable across
+Because `Var(SCORE) = 1` holds for any weights, `SCORE` is directly comparable across
 different filter and constraint choices, including different upgrade levels, *as long as the
 weights are held fixed*. `SCORE_QUALITY` is comparable across filter and constraint choices at
 the *same* upgrade levels - `"Top 1 in 1,000"` under one set of filters really is better than

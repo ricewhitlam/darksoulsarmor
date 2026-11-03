@@ -8,25 +8,30 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
-// Scores are compared as whole numbers of 1e-9 rather than as raw doubles. Different pieces whose
-// stats add up to the same totals (e.g. one set's gloves+boots vs. another's) can produce sums
-// that differ in the last bits (~1e-15), while genuinely different scores differ by ~1e-6 or more.
-// Rounding to an integer key puts float-noise ties together while keeping the comparison a valid
-// (transitive) ordering, which an "equal within epsilon" test is not. Two near-equal scores
-// straddling a rounding boundary would just be ordered by score, as without a tie-break.
-inline long long score_key(const double score){
-    return std::llround(score*1.0e9);
+// Each piece's OBJECTIVE is what the search maximizes: its score, or - for a trade-off curve of
+// a single stat - that stat plus a tiny share of its score (see prepare.armor.search). A combo's
+// objective is the sum of its four pieces'.
+//
+// Objectives are compared as whole numbers of 1e-9 rather than as raw doubles. Different pieces
+// whose stats add up to the same totals (e.g. one set's gloves+boots vs. another's) can produce
+// sums that differ in the last bits (~1e-15), while genuinely different objectives differ by ~1e-6
+// or more. Rounding to an integer key puts float-noise ties together while keeping the comparison
+// a valid (transitive) ordering, which an "equal within epsilon" test is not. Two near-equal
+// objectives straddling a rounding boundary would just be ordered by objective, as without a
+// tie-break.
+inline long long objective_key(const double objective){
+    return std::llround(objective*1.0e9);
 }
 
-// Per candidate, the score plus the tie-break metrics and the four per-slot row indices are
+// Per candidate, the objective plus the tie-break metrics and the four per-slot row indices are
 // cached: every other metric can be recomputed from the indices, and only needs to be for the
 // (at most max_output_size) combos that survive to the output loop, rather than for every
 // candidate that touches the heap.
 struct armor_combo {
-    double score; long long key;
+    double objective; long long key;
     double weight; double poise; double durability;
     int32_t h; int32_t c; int32_t g; int32_t l;
-    // "Better than": higher score; among equal scores, lighter, then more poise, then more
+    // "Better than": higher objective; among equal objectives, lighter, then more poise, then more
     // durability, then the earlier row indices, so that which tied combos are kept - and their
     // order - never depends on the order candidates were visited in. Reversed on purpose: the
     // results heap below is a max-heap by operator< (std::push_heap/std::pop_heap's convention),
@@ -72,11 +77,11 @@ inline void heap_replace_top(std::vector<armor_combo>& heap, const armor_combo& 
 // own/protect the underlying SEXPs; .begin() on a numeric column is already a plain double*,
 // so indexing through the raw pointer is identical in behavior to indexing the vector directly.
 struct Slot {
-    NumericVector SCORE_vec, PHYS_DEF_vec, STRIKE_DEF_vec, SLASH_DEF_vec, THRUST_DEF_vec,
+    NumericVector OBJECTIVE_vec, PHYS_DEF_vec, STRIKE_DEF_vec, SLASH_DEF_vec, THRUST_DEF_vec,
                   MAG_DEF_vec, FIRE_DEF_vec, LITNG_DEF_vec, POISE_vec, BLEED_RES_vec,
                   POIS_RES_vec, CURSE_RES_vec, DURABILITY_vec, WEIGHT_vec;
     CharacterVector ARMOR;
-    const double *SCORE, *PHYS_DEF, *STRIKE_DEF, *SLASH_DEF, *THRUST_DEF,
+    const double *OBJECTIVE, *PHYS_DEF, *STRIKE_DEF, *SLASH_DEF, *THRUST_DEF,
                  *MAG_DEF, *FIRE_DEF, *LITNG_DEF, *POISE, *BLEED_RES,
                  *POIS_RES, *CURSE_RES, *DURABILITY, *WEIGHT;
     int n;
@@ -84,7 +89,7 @@ struct Slot {
 
 Slot make_slot(const DataFrame& df){
     Slot s;
-    s.SCORE_vec = df["SCORE"]; s.SCORE = s.SCORE_vec.begin();
+    s.OBJECTIVE_vec = df["OBJECTIVE"]; s.OBJECTIVE = s.OBJECTIVE_vec.begin();
     s.ARMOR = df["ARMOR"];
     s.PHYS_DEF_vec = df["PHYS_DEF"]; s.PHYS_DEF = s.PHYS_DEF_vec.begin();
     s.STRIKE_DEF_vec = df["STRIKE_DEF"]; s.STRIKE_DEF = s.STRIKE_DEF_vec.begin();
@@ -132,18 +137,19 @@ DataFrame optimal_armor_combinations(
     Slot hands = make_slot(hands_df);
     Slot legs = make_slot(legs_df);
 
-    // All four tables arrive sorted descending by SCORE (see setorder() in get.optimal.armor.combos),
-    // so element 0 of each is the best score achievable from that slot alone. Once the output heap is
-    // full, curr_head_SCORE/curr_chest_SCORE/curr_hands_SCORE plus these bounds give the best possible
-    // score reachable from the remaining, not-yet-fixed slots at each nesting level. If that best case
-    // scores strictly below the heap's current worst kept score (compared as score_key()s, the same
-    // way the heap compares them), neither this candidate nor any later one in the same
-    // (descending-sorted) loop can be kept, since the loop only ever advances forward - so it is safe
-    // to break out of that level entirely rather than merely skip the current candidate. It must be
-    // strictly below: a candidate tying the worst kept score can still win on the tie-break metrics.
-    double best_chest_SCORE = chest.SCORE[0];
-    double best_hands_SCORE = hands.SCORE[0];
-    double best_legs_SCORE = legs.SCORE[0];
+    // All four tables arrive sorted descending by OBJECTIVE (see setorder() in prepare.armor.search),
+    // so element 0 of each is the best objective achievable from that slot alone. Once the output
+    // heap is full, curr_head_OBJECTIVE/curr_chest_OBJECTIVE/curr_hands_OBJECTIVE plus these bounds
+    // give the best possible objective reachable from the remaining, not-yet-fixed slots at each
+    // nesting level. If that best case falls strictly below the heap's current worst kept objective
+    // (compared as objective_key()s, the same way the heap compares them), neither this candidate
+    // nor any later one in the same (descending-sorted) loop can be kept, since the loop only ever
+    // advances forward - so it is safe to break out of that level entirely rather than merely skip
+    // the current candidate. It must be strictly below: a candidate tying the worst kept objective
+    // can still win on the tie-break metrics.
+    double best_chest_OBJECTIVE = chest.OBJECTIVE[0];
+    double best_hands_OBJECTIVE = hands.OBJECTIVE[0];
+    double best_legs_OBJECTIVE = legs.OBJECTIVE[0];
 
     int I = head.n; int J = chest.n; int K = hands.n; int L = legs.n;
 
@@ -168,7 +174,7 @@ DataFrame optimal_armor_combinations(
     double extra_poise = 0.0;
     if(wolf){extra_poise = 40.0;};
 
-    double curr_head_SCORE; double curr_chest_SCORE; double curr_hands_SCORE; double curr_legs_SCORE;
+    double curr_head_OBJECTIVE; double curr_chest_OBJECTIVE; double curr_hands_OBJECTIVE; double curr_legs_OBJECTIVE;
     double curr_PHYS_DEF; double curr_head_PHYS_DEF; double curr_chest_PHYS_DEF; double curr_hands_PHYS_DEF; double curr_legs_PHYS_DEF;
     double curr_STRIKE_DEF; double curr_head_STRIKE_DEF; double curr_chest_STRIKE_DEF; double curr_hands_STRIKE_DEF; double curr_legs_STRIKE_DEF;
     double curr_SLASH_DEF; double curr_head_SLASH_DEF; double curr_chest_SLASH_DEF; double curr_hands_SLASH_DEF; double curr_legs_SLASH_DEF;
@@ -186,10 +192,10 @@ DataFrame optimal_armor_combinations(
     // The shell-iteration scheme below visits combos in increasing "shell size" rather than
     // simply looping i in 0..I-1, j in 0..J-1, etc. A combo (i,j,k,l) belongs to shell
     // max(i,j,k,l)+1: the smallest N for which all four indices fit inside 0..N-1. Since all
-    // four tables are sorted descending by SCORE, shell N is exactly the set of combos reachable
+    // four tables are sorted descending by OBJECTIVE, shell N is exactly the set of combos reachable
     // using only the top N pieces from every slot - so visiting shells in increasing order visits
-    // increasingly lower-scoring combos, in an order the caller can rely on for pruning (see the
-    // score-bound checks below).
+    // combos with increasingly lower objectives, in an order the caller can rely on for pruning (see
+    // the objective-bound checks below).
     //
     // starting_loop_size (init.size, computed in R) is the smallest shell that COULD contain a
     // feasible combo, given the weight and minima constraints - R already proved every smaller
@@ -249,21 +255,21 @@ DataFrame optimal_armor_combinations(
         }
 
         // Shell-level bound: every combo in this shell uses the (loop_size-1)th piece of at least
-        // one slot that isn't capped (a capped slot has no piece that deep), so none can score more
-        // than the best of [that slot's (loop_size-1)th score + every other slot's best score].
-        // Each slot is sorted descending, so the bound can only fall as loop_size grows. Once the
-        // heap is full and it's strictly below the worst kept score (compared as score_key()s, as
-        // the heap does - a tie could still win on the tie-break), nothing in this shell or any
-        // later one can be kept, so the search is over. The sums keep the candidates' own
-        // head+chest+hands+legs order with each term at least as large, so they can't round below
-        // any candidate's score.
+        // one slot that isn't capped (a capped slot has no piece that deep), so none can have an
+        // objective above the best of [that slot's (loop_size-1)th objective + every other slot's
+        // best objective]. Each slot is sorted descending, so the bound can only fall as loop_size
+        // grows. Once the heap is full and it's strictly below the worst kept objective (compared as
+        // objective_key()s, as the heap does - a tie could still win on the tie-break), nothing in
+        // this shell or any later one can be kept, so the search is over. The sums keep the
+        // candidates' own head+chest+hands+legs order with each term at least as large, so they
+        // can't round below any candidate's objective.
         if(at_max_queue_size){
             double shell_bound = -std::numeric_limits<double>::infinity();
-            if(!I_capped){ shell_bound = std::max(shell_bound, head.SCORE[loop_size_1]+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE); }
-            if(!J_capped){ shell_bound = std::max(shell_bound, head.SCORE[0]+chest.SCORE[loop_size_1]+best_hands_SCORE+best_legs_SCORE); }
-            if(!K_capped){ shell_bound = std::max(shell_bound, head.SCORE[0]+best_chest_SCORE+hands.SCORE[loop_size_1]+best_legs_SCORE); }
-            if(!L_capped){ shell_bound = std::max(shell_bound, head.SCORE[0]+best_chest_SCORE+best_hands_SCORE+legs.SCORE[loop_size_1]); }
-            if(score_key(shell_bound) < armor_combos.front().key){
+            if(!I_capped){ shell_bound = std::max(shell_bound, head.OBJECTIVE[loop_size_1]+best_chest_OBJECTIVE+best_hands_OBJECTIVE+best_legs_OBJECTIVE); }
+            if(!J_capped){ shell_bound = std::max(shell_bound, head.OBJECTIVE[0]+chest.OBJECTIVE[loop_size_1]+best_hands_OBJECTIVE+best_legs_OBJECTIVE); }
+            if(!K_capped){ shell_bound = std::max(shell_bound, head.OBJECTIVE[0]+best_chest_OBJECTIVE+hands.OBJECTIVE[loop_size_1]+best_legs_OBJECTIVE); }
+            if(!L_capped){ shell_bound = std::max(shell_bound, head.OBJECTIVE[0]+best_chest_OBJECTIVE+best_hands_OBJECTIVE+legs.OBJECTIVE[loop_size_1]); }
+            if(objective_key(shell_bound) < armor_combos.front().key){
                 break;
             }
         }
@@ -284,9 +290,9 @@ DataFrame optimal_armor_combinations(
                 curr_line_f = line_f;
             }
 
-            curr_head_SCORE = head.SCORE[i];
+            curr_head_OBJECTIVE = head.OBJECTIVE[i];
 
-            if(at_max_queue_size && score_key(curr_head_SCORE+best_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.front().key){
+            if(at_max_queue_size && objective_key(curr_head_OBJECTIVE+best_chest_OBJECTIVE+best_hands_OBJECTIVE+best_legs_OBJECTIVE) < armor_combos.front().key){
                 break;
             }
 
@@ -311,9 +317,9 @@ DataFrame optimal_armor_combinations(
                     j = loop_size_1;
                 }
 
-                curr_chest_SCORE = chest.SCORE[j];
+                curr_chest_OBJECTIVE = chest.OBJECTIVE[j];
 
-                if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+best_hands_SCORE+best_legs_SCORE) < armor_combos.front().key){
+                if(at_max_queue_size && objective_key(curr_head_OBJECTIVE+curr_chest_OBJECTIVE+best_hands_OBJECTIVE+best_legs_OBJECTIVE) < armor_combos.front().key){
                     break;
                 }
 
@@ -338,9 +344,9 @@ DataFrame optimal_armor_combinations(
                         k = loop_size_1;
                     }
 
-                    curr_hands_SCORE = hands.SCORE[k];
+                    curr_hands_OBJECTIVE = hands.OBJECTIVE[k];
 
-                    if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+best_legs_SCORE) < armor_combos.front().key){
+                    if(at_max_queue_size && objective_key(curr_head_OBJECTIVE+curr_chest_OBJECTIVE+curr_hands_OBJECTIVE+best_legs_OBJECTIVE) < armor_combos.front().key){
                         break;
                     }
 
@@ -365,9 +371,9 @@ DataFrame optimal_armor_combinations(
                             l = loop_size_1;
                         }
 
-                        curr_legs_SCORE = legs.SCORE[l];
+                        curr_legs_OBJECTIVE = legs.OBJECTIVE[l];
 
-                        if(at_max_queue_size && score_key(curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE) < armor_combos.front().key){
+                        if(at_max_queue_size && objective_key(curr_head_OBJECTIVE+curr_chest_OBJECTIVE+curr_hands_OBJECTIVE+curr_legs_OBJECTIVE) < armor_combos.front().key){
                             break;
                         }
 
@@ -447,8 +453,8 @@ DataFrame optimal_armor_combinations(
                             continue;
                         }
 
-                        curr_combo.score = curr_head_SCORE+curr_chest_SCORE+curr_hands_SCORE+curr_legs_SCORE;
-                        curr_combo.key = score_key(curr_combo.score);
+                        curr_combo.objective = curr_head_OBJECTIVE+curr_chest_OBJECTIVE+curr_hands_OBJECTIVE+curr_legs_OBJECTIVE;
+                        curr_combo.key = objective_key(curr_combo.objective);
                         curr_combo.weight = curr_WEIGHT; curr_combo.poise = curr_POISE; curr_combo.durability = curr_DURABILITY;
                         curr_combo.h = i; curr_combo.c = j; curr_combo.g = k; curr_combo.l = l;
 
@@ -476,7 +482,7 @@ DataFrame optimal_armor_combinations(
     }
 
     int out_size = armor_combos.size();
-    NumericVector SCORE_RAW(out_size);
+    NumericVector OBJECTIVE(out_size);
     CharacterVector HEAD(out_size); CharacterVector CHEST(out_size); CharacterVector HANDS(out_size); CharacterVector LEGS(out_size);
     NumericVector PHYS_DEF(out_size); NumericVector STRIKE_DEF(out_size); NumericVector SLASH_DEF(out_size); NumericVector THRUST_DEF(out_size);
     NumericVector MAG_DEF(out_size); NumericVector FIRE_DEF(out_size); NumericVector LITNG_DEF(out_size);
@@ -485,7 +491,7 @@ DataFrame optimal_armor_combinations(
     NumericVector ARMOR_WEIGHT(out_size); NumericVector TOTAL_WEIGHT(out_size); NumericVector EQUIP_LOAD(out_size); NumericVector PCT_LOAD(out_size);
 
     DataFrame out = DataFrame::create(
-        Named("SCORE_RAW") = SCORE_RAW ,
+        Named("OBJECTIVE") = OBJECTIVE ,
         _["HEAD"] = HEAD , _["CHEST"] = CHEST , _["HANDS"] = HANDS , _["LEGS"] = LEGS ,
         _["PHYS_DEF"] = PHYS_DEF , _["STRIKE_DEF"] = STRIKE_DEF , _["SLASH_DEF"] = SLASH_DEF , _["THRUST_DEF"] = THRUST_DEF ,
         _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF ,
@@ -513,7 +519,7 @@ DataFrame optimal_armor_combinations(
         curr_combo = armor_combos.back();
         out_h = curr_combo.h; out_c = curr_combo.c; out_g = curr_combo.g; out_l = curr_combo.l;
 
-        SCORE_RAW[n] = curr_combo.score;
+        OBJECTIVE[n] = curr_combo.objective;
         HEAD[n] = head.ARMOR[out_h]; CHEST[n] = chest.ARMOR[out_c]; HANDS[n] = hands.ARMOR[out_g]; LEGS[n] = legs.ARMOR[out_l];
         PHYS_DEF[n] = head.PHYS_DEF[out_h]+chest.PHYS_DEF[out_c]+hands.PHYS_DEF[out_g]+legs.PHYS_DEF[out_l];
         STRIKE_DEF[n] = head.STRIKE_DEF[out_h]+chest.STRIKE_DEF[out_c]+hands.STRIKE_DEF[out_g]+legs.STRIKE_DEF[out_l];

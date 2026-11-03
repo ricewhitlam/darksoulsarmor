@@ -116,7 +116,7 @@ A \code{list} holding (1) the list of arguments which defined the table and (2) 
 }
 \description{
 Produces a table of optimized armor combinations in Dark Souls.
-All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
+All relevant metrics are included, along with two score columns: \code{SCORE}, an
 unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
 and \code{SCORE_QUALITY}, that score's exact rarity among every possible combination at the
 selected upgrade levels (regardless of the other filters) - e.g. \code{"Top 1 in 40"} when 1 in

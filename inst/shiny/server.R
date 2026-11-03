@@ -66,9 +66,9 @@ server <- function(input, output, session){
                     Score Inputs: <br>
                     Here, weights may be specified for a set of relevant metrics. A score for each armor combination is calculated as
                     (w_1*x_1+...+w_n*x_n)/(w_1+...+w_n), where each x_i is the standardized value of the relevant metric (standardized means that all metrics have been shifted and scaled to mean 0 and variance 1). 
-                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE_RAW'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
+                    This overall score is then transformed so that it also has mean 0 and variance 1. This value is presented as 'SCORE'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
                     It is an exact count, not an estimate: 'Top 1 in 40' means 1 in every 40 combinations at those upgrade levels scores at least as well (ties included), regardless of the filters chosen. Combinations in the bottom half read 'Bottom 1 in N' instead, counting those that score at most as well.
-                    SCORE_RAW is global within the same set of weights: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
+                    SCORE is global within the same set of weights: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
 
                     Trade-offs Tab: <br>
                     For every armor weight, from 0 up to the heaviest possible armor, every 0.1, the chart shows the most of the chosen stat ('Maximize': the score, Poise, or a single defense or resistance)
@@ -711,7 +711,7 @@ server <- function(input, output, session){
                     ),
                 data = 
                     data.table::data.table(
-                        SCORE_RAW = numeric(0),
+                        SCORE = numeric(0),
                         SCORE_QUALITY = character(0),
                         HEAD = factor(0),
                         CHEST = factor(0),
@@ -747,7 +747,7 @@ server <- function(input, output, session){
             ## take their ranges from the data, so they then show the same precision as the cells
             one.decimal <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES", "ARMOR_WEIGHT", "TOTAL_WEIGHT", "EQUIP_LOAD")
             whole <- c("DURABILITY", "ARMOR_POISE", "TOTAL_POISE")
-            three.decimals <- c("SCORE_RAW", "POISE_TIMER")
+            three.decimals <- c("SCORE", "POISE_TIMER")
             shown <- data.table::copy(armordata()$data)
             shown[, (one.decimal) := lapply(.SD, round, 1), .SDcols = one.decimal]
             shown[, (whole) := lapply(.SD, round, 0), .SDcols = whole]
@@ -1096,7 +1096,7 @@ server <- function(input, output, session){
                     "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - Movement: %s<br>Score %.3f (%s)",
                     d$ARMOR_WEIGHT_LIMIT, metric.label, formatC(round(d$BEST_VALUE, value.digits), format = "f", digits = value.digits),
                     ## The Mask of the Father abbreviated, to keep the hover box narrow
-                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, sub("Mask of the Father bonus", "MotF bonus", d$MOVEMENT, fixed = TRUE), d$SCORE_RAW, d$SCORE_QUALITY
+                    d$HEAD, d$CHEST, d$HANDS, d$LEGS, d$ARMOR_WEIGHT, sub("Mask of the Father bonus", "MotF bonus", d$MOVEMENT, fixed = TRUE), d$SCORE, d$SCORE_QUALITY
                 )
             )
         d$point <- seq_len(nrow(d))
@@ -1258,9 +1258,9 @@ server <- function(input, output, session){
     ## chart's hover.
     tradeoff.table <- function(result){
         if(result$metric == "SCORE"){
-            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE_RAW, SCORE_QUALITY, MOVEMENT, HEAD, CHEST, HANDS, LEGS)])
+            return(result$data[, .(ARMOR_WEIGHT_LIMIT, SCORE, SCORE_QUALITY, MOVEMENT, HEAD, CHEST, HANDS, LEGS)])
         }
-        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, MOVEMENT, SCORE_RAW, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)]
+        table <- result$data[, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, MOVEMENT, SCORE, SCORE_QUALITY, HEAD, CHEST, HANDS, LEGS)]
         data.table::setnames(table, "BEST_VALUE", result$metric)
         return(table)
     }
@@ -1276,7 +1276,7 @@ server <- function(input, output, session){
                 options = list(scrollX = TRUE, paging = FALSE, scrollY = "400px", scrollCollapse = TRUE)
             ) |>
             DT::formatCurrency("ARMOR_WEIGHT_LIMIT", currency = "", interval = 3, mark = ",", digits = 1) |>
-            DT::formatCurrency("SCORE_RAW", currency = "", interval = 3, mark = ",", digits = 3)
+            DT::formatCurrency("SCORE", currency = "", interval = 3, mark = ",", digits = 3)
         if(result$metric != "SCORE"){
             table <- DT::formatCurrency(table, result$metric, currency = "", interval = 3, mark = ",", digits = value.digits)
         }

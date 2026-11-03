@@ -102,7 +102,7 @@ Here curse resistance pays off steeply up to 5.0 armor weight, at 6.7 times the 
 
 ## What the score means
 
-Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance), each standardized to mean 0 and variance 1 so that stats on very different natural scales (a 40-point armor rating vs. a 2-point resistance) contribute comparably. The `weights` argument controls how much each stat counts toward the total. The resulting `SCORE_RAW` is itself standardized, and `SCORE_QUALITY` converts that into an exact rarity among every combination at the selected upgrade levels, like `"Top 1 in 40"` or `"Bottom 1 in 40"` — see `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter/constraint choices as long as the weights are the same.
+Every combination gets a score built from ten stats (physical/strike/slash/thrust/magic/fire/lightning defense, and bleed/poison/curse resistance), each standardized to mean 0 and variance 1 so that stats on very different natural scales (a 40-point armor rating vs. a 2-point resistance) contribute comparably. The `weights` argument controls how much each stat counts toward the total. The resulting `SCORE` is itself standardized, and `SCORE_QUALITY` converts that into an exact rarity among every combination at the selected upgrade levels, like `"Top 1 in 40"` or `"Bottom 1 in 40"` — see `vignette("scoring")` for exactly how that's computed. Scores are directly comparable across different filter/constraint choices as long as the weights are the same.
 
 ## Where the data comes from
 

@@ -10,7 +10,8 @@
   "unused argument".
 * `SCORE_QUALITY` is now an exact count among every combination at the
   selected upgrade levels, rather than a normal approximation, so its values
-  change. `SCORE_RAW` is unchanged.
+  change. `SCORE` is unchanged.
+* `SCORE_RAW` is renamed `SCORE`.
 * Stats are now exact. Every upgrade level is computed from each piece's +0
   values with the game's own upgrade rates, in 32-bit floating point as the
   game does, and strike, slash and thrust defense hold their exact values

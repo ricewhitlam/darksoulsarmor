@@ -84,7 +84,7 @@ test_that("get.armor.tradeoffs matches brute force for every metric", {
         })
         info <- paste("trial", trial, metric)
         expect_equal(actual$BEST_VALUE, expected, tolerance = 1e-9, info = info)
-        expect_equal(actual$SCORE_RAW, expected.score, tolerance = 1e-6, info = info)
+        expect_equal(actual$SCORE, expected.score, tolerance = 1e-6, info = info)
 
         ## Limits run from 0 to the most armor weight the movement type could allow (its line, with
         ## the Mask of the Father's bonus, less the weapons, on the 0.1 grid) in the requested steps
@@ -107,7 +107,7 @@ test_that("the SCORE curve's top point is get.optimal.armor.combos' best result"
     top <- curve[.N]
     ## The Mask of the Father's line (42) less the Great Club (12)
     expect_equal(top$ARMOR_WEIGHT_LIMIT, 30)
-    expect_equal(top$BEST_VALUE, best$SCORE_RAW)
+    expect_equal(top$BEST_VALUE, best$SCORE)
     expect_equal(c(top$HEAD, top$CHEST, top$HANDS, top$LEGS), c(best$HEAD, best$CHEST, best$HANDS, best$LEGS))
     expect_equal(top$SCORE_QUALITY, best$SCORE_QUALITY)
     ## Never worse with more weight allowed

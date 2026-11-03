@@ -48,7 +48,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #'
 #' @description
 #' Produces a table of optimized armor combinations in Dark Souls.
-#' All relevant metrics are included, along with two score columns: \code{SCORE_RAW}, an
+#' All relevant metrics are included, along with two score columns: \code{SCORE}, an
 #' unbounded standardized score (the one the table is sorted on - see \code{vignette("scoring")}),
 #' and \code{SCORE_QUALITY}, that score's exact rarity among every possible combination at the
 #' selected upgrade levels (regardless of the other filters) - e.g. \code{"Top 1 in 40"} when 1 in
@@ -479,7 +479,7 @@ get.optimal.armor.combos <- function(
 ## Ranks combinations by score, or - for get.armor.tradeoffs - by a single summed stat
 ## (rank.metric: POISE or one defense/resistance), optionally under a limit on the armor's listed
 ## weight (armor.cap, which get.armor.tradeoffs sets at each point of its curves). Whatever it ranks
-## by, the output reports each combination's real SCORE_RAW and SCORE_QUALITY - except for one point
+## by, the output reports each combination's real SCORE and SCORE_QUALITY - except for one point
 ## of a trade-off curve (curve.point = TRUE), which leaves SCORE_QUALITY and garbage collection to
 ## the curve as a whole. Split in two so a curve can prepare once and run once per weight limit: see
 ## prepare.armor.search and run.armor.search below.
@@ -517,8 +517,10 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     scored.metrics <- METRICS[!is.na(weight.index)][order(weight.index)]
     metric.cols <- scored.metrics$metric
 
-    ## Accumulated in plain vectors rather than as 40 data.table SCORE := ... calls: the same
-    ## arithmetic in the same order (so bit-identical scores), without each call's overhead
+    ## Each piece's OBJECTIVE - the value the search maximizes (see src/optimal_combos.cpp) - is its
+    ## score, unless ranked by a single stat below. Accumulated in plain vectors rather than as 40
+    ## data.table := calls: the same arithmetic in the same order (so bit-identical scores), without
+    ## each call's overhead
     head.score <- rep(0, nrow(working.head.data))
     chest.score <- rep(0, nrow(working.chest.data))
     hands.score <- rep(0, nrow(working.hands.data))
@@ -529,32 +531,32 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
         hands.score <- hands.score+score.scalars[i]*(working.hands.data[[metric.cols[i]]]-0.25*means[i])
         legs.score <- legs.score+score.scalars[i]*(working.legs.data[[metric.cols[i]]]-0.25*means[i])
     }
-    data.table::set(working.head.data, j = "SCORE", value = unname(head.score))
-    data.table::set(working.chest.data, j = "SCORE", value = unname(chest.score))
-    data.table::set(working.hands.data, j = "SCORE", value = unname(hands.score))
-    data.table::set(working.legs.data, j = "SCORE", value = unname(legs.score))
+    data.table::set(working.head.data, j = "OBJECTIVE", value = unname(head.score))
+    data.table::set(working.chest.data, j = "OBJECTIVE", value = unname(chest.score))
+    data.table::set(working.hands.data, j = "OBJECTIVE", value = unname(hands.score))
+    data.table::set(working.legs.data, j = "OBJECTIVE", value = unname(legs.score))
     rm(list = c("head.score", "chest.score", "hands.score", "legs.score"))
 
     ## Every piece's score at this upgrade level, kept from before any filtering below:
     ## SCORE_QUALITY ranks each result against every combination at this level (see
     ## score.quality() in R/score-quality.R), not just the ones the filters allow.
-    level.head.scores <- stats::setNames(working.head.data$SCORE, working.head.data$ARMOR)
-    level.chest.scores <- stats::setNames(working.chest.data$SCORE, working.chest.data$ARMOR)
-    level.hands.scores <- stats::setNames(working.hands.data$SCORE, working.hands.data$ARMOR)
-    level.legs.scores <- stats::setNames(working.legs.data$SCORE, working.legs.data$ARMOR)
+    level.head.scores <- stats::setNames(working.head.data$OBJECTIVE, working.head.data$ARMOR)
+    level.chest.scores <- stats::setNames(working.chest.data$OBJECTIVE, working.chest.data$ARMOR)
+    level.hands.scores <- stats::setNames(working.hands.data$OBJECTIVE, working.hands.data$ARMOR)
+    level.legs.scores <- stats::setNames(working.legs.data$OBJECTIVE, working.legs.data$ARMOR)
 
     ## Ranking by a single stat instead of the score: the search only needs each piece's value in
-    ## SCORE (any stat summed across the four slots works the same way), so swap that stat in -
+    ## OBJECTIVE (any stat summed across the four slots works the same way), so swap that stat in -
     ## plus the piece's score times a factor small enough never to outweigh a real difference in
     ## the stat (Poise totals differ by at least 1, defenses/resistances by at least 0.1, and a
     ## combination's score is within about +-15), so that among combinations tied on the stat, the
     ## best-scoring one wins.
     if(rank.metric != "SCORE"){
         tie.break.factor <- if(rank.metric == "POISE") 1e-4 else 1e-5
-        working.head.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
-        working.chest.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
-        working.hands.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
-        working.legs.data[, SCORE := get(rank.metric)+tie.break.factor*SCORE]
+        working.head.data[, OBJECTIVE := get(rank.metric)+tie.break.factor*OBJECTIVE]
+        working.chest.data[, OBJECTIVE := get(rank.metric)+tie.break.factor*OBJECTIVE]
+        working.hands.data[, OBJECTIVE := get(rank.metric)+tie.break.factor*OBJECTIVE]
+        working.legs.data[, OBJECTIVE := get(rank.metric)+tie.break.factor*OBJECTIVE]
     }
 
     ## Filter datasets based on inputs (all but weight - see run.armor.search)
@@ -597,10 +599,10 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
     working.legs.data[, c("UPGRADE_TYPE", "STARTING_CLASS", "AREA_MATCH_TYPE", "AREA_LIST", "AREAFILTER") := NULL]
 
     ## Sort each dataset on its scores
-    data.table::setorder(working.head.data, -SCORE, WEIGHT)
-    data.table::setorder(working.chest.data, -SCORE, WEIGHT)
-    data.table::setorder(working.hands.data, -SCORE, WEIGHT)
-    data.table::setorder(working.legs.data, -SCORE, WEIGHT)
+    data.table::setorder(working.head.data, -OBJECTIVE, WEIGHT)
+    data.table::setorder(working.chest.data, -OBJECTIVE, WEIGHT)
+    data.table::setorder(working.hands.data, -OBJECTIVE, WEIGHT)
+    data.table::setorder(working.legs.data, -OBJECTIVE, WEIGHT)
 
     return(
         list(
@@ -667,7 +669,7 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
     n.hands <- nrow(working.hands.data)
     n.legs <- nrow(working.legs.data)
     if(n.head == 0 || n.chest == 0 || n.hands == 0 || n.legs == 0){
-        out$data[, "SCORE_RAW" := numeric(0)]
+        out$data[, "SCORE" := numeric(0)]
         out$data[, "SCORE_QUALITY" := character(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[,
@@ -753,7 +755,7 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
 
     ## If there are no allowable combos, return empty data
     if(is.na(init.size)){
-        out$data[, "SCORE_RAW" := numeric(0)]
+        out$data[, "SCORE" := numeric(0)]
         out$data[, "SCORE_QUALITY" := character(0)]
         out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
         out$data[, 
@@ -803,10 +805,14 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
             )
         )
 
-    ## When ranked by another stat, the search's SCORE_RAW holds that stat's total - report the
-    ## combinations' real scores instead (each piece's score, summed in the search's own order)
-    if(prepared$rank.metric != "SCORE"){
-        out$data[, SCORE_RAW := unname(level.head.scores[HEAD]+level.chest.scores[CHEST]+level.hands.scores[HANDS]+level.legs.scores[LEGS])]
+    ## The search's OBJECTIVE is each combination's score - or, when ranked by another stat, that
+    ## stat's total plus the tie-break, so report the combinations' real scores instead (each
+    ## piece's score, summed in the search's own order)
+    if(prepared$rank.metric == "SCORE"){
+        data.table::setnames(out$data, "OBJECTIVE", "SCORE")
+    } else{
+        out$data[, SCORE := unname(level.head.scores[HEAD]+level.chest.scores[CHEST]+level.hands.scores[HANDS]+level.legs.scores[LEGS])]
+        out$data[, OBJECTIVE := NULL]
     }
 
     ## SCORE_QUALITY: each result's exact rarity among every combination at this upgrade level
@@ -816,9 +822,9 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
     if(curve.point){
         out$data[, SCORE_QUALITY := NA_character_]
     } else{
-        out$data[, SCORE_QUALITY := score.quality(SCORE_RAW, level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)]
+        out$data[, SCORE_QUALITY := score.quality(SCORE, level.head.scores, level.chest.scores, level.hands.scores, level.legs.scores)]
     }
-    data.table::setcolorder(out$data, c("SCORE_RAW", "SCORE_QUALITY"))
+    data.table::setcolorder(out$data, c("SCORE", "SCORE_QUALITY"))
 
     rm(list = c("working.head.data", "working.chest.data", "working.hands.data", "working.legs.data"))
     rm(list = c("carried", "load", "load.father.mask", "line", "line.father.mask", "room", "room.father.mask", "father.mask.weight"))

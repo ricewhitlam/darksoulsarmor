@@ -39,7 +39,7 @@ with the same meaning and defaults.}
 \value{
 A \code{list} holding (1) the arguments that defined the curve and (2) a \code{data.table} with
 one row per armor-weight limit (\code{ARMOR_WEIGHT_LIMIT}): the best achievable value of the
-metric (\code{BEST_VALUE}), and the combination achieving it - its \code{SCORE_RAW},
+metric (\code{BEST_VALUE}), and the combination achieving it - its \code{SCORE},
 \code{SCORE_QUALITY}, \code{ARMOR_WEIGHT}, \code{TOTAL_POISE}, and pieces. Limits at which no
 combination satisfies the other settings have \code{NA} values. Values are exact, as in
 \code{\link{get.optimal.armor.combos}}.

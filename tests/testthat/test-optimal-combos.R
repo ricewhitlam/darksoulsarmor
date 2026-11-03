@@ -90,7 +90,7 @@ test_that("get.optimal.armor.combos matches a brute-force reference over a small
     expect_setequal(actual.key, expected$KEY)
 
     match.idx <- match(actual.key, expected$KEY)
-    expect_equal(actual$SCORE_RAW, expected$SCORE[match.idx], tolerance = 1e-6)
+    expect_equal(actual$SCORE, expected$SCORE[match.idx], tolerance = 1e-6)
 })
 
 ## score.quality() counts combinations scoring at least (or at most) as well via sorted sums and
@@ -103,7 +103,7 @@ test_that("score.quality matches a brute-force count over every combination", {
         h <- round(rnorm(sample(1:8, 1)), 1); c <- round(rnorm(sample(1:8, 1)), 1)
         g <- round(rnorm(sample(1:8, 1)), 1); l <- round(rnorm(sample(1:8, 1)), 1)
         all.totals <- as.vector(outer(outer(outer(h, c, `+`), g, `+`), l, `+`))
-        ## Real totals, summed in SCORE_RAW's order (head+chest+hands+legs), plus off-grid values
+        ## Real totals, summed in SCORE's order (head+chest+hands+legs), plus off-grid values
         targets <- c(sample(all.totals, 10, replace = TRUE), runif(5, min(all.totals), max(all.totals)))
         at.least <- sapply(targets, function(s) sum(all.totals >= s - 1e-9))
         at.most <- sapply(targets, function(s) sum(all.totals <= s + 1e-9))
@@ -122,7 +122,7 @@ test_that("score.quality matches a brute-force count over every combination", {
 ## which no other combination ties or beats - is exactly "Top 1 in 11,930,328".
 test_that("SCORE_QUALITY ranks the best combination at a level against every combination there", {
     result <- get.optimal.armor.combos(max.table.size = 20, movement = "Poop", regular.level = "+10", twinkling.level = "+5")$data
-    expect_equal(names(result)[1:2], c("SCORE_RAW", "SCORE_QUALITY"))
+    expect_equal(names(result)[1:2], c("SCORE", "SCORE_QUALITY"))
     expect_equal(result$SCORE_QUALITY[1], "Top 1 in 11,930,328")
     expect_true(all(grepl("^Top 1 in ", result$SCORE_QUALITY)))
 })
@@ -224,7 +224,7 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
         l <- darksoulsarmor:::get.interp.data(legs.data.unupgraded, reg, twink)[ARMOR %in% args$legs.filter]
 
         ## Each piece's score and each slot's order exactly as get.optimal.armor.combos computes
-        ## them, so totals are bit-identical to SCORE_RAW and row positions match the C++ search's
+        ## them, so totals are bit-identical to SCORE and row positions match the C++ search's
         ## indices (its last tie-break)
         weights <- args$weights/sum(args$weights)
         score.scalars <- weights/(stddevs*sqrt((t(weights) %*% corrs %*% weights)[1, 1]))
@@ -289,7 +289,7 @@ test_that("get.optimal.armor.combos matches brute force across randomized search
             ## including which tied combinations make the cut at max.table.size
             matched <- expected[seq_len(k)]
             expect_identical(paste(actual$HEAD, actual$CHEST, actual$HANDS, actual$LEGS, sep = "|"), matched$KEY, info = paste("trial", trial))
-            expect_identical(actual$SCORE_RAW, matched$SCORE, info = paste("trial", trial))
+            expect_identical(actual$SCORE, matched$SCORE, info = paste("trial", trial))
             expect_equal(actual$TOTAL_POISE, matched$POISE + 40*args$wolf.ring, info = paste("trial", trial))
             expect_equal(actual$DURABILITY, matched$DURABILITY, info = paste("trial", trial))
             expect_identical(actual$ARMOR_WEIGHT, matched$ARMOR32, info = paste("trial", trial))

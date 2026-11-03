@@ -7,7 +7,7 @@
 ## single best combination reads "Top 1 in <every combination at this level>".
 ##
 ## Takes each slot's per-piece scores for every piece at the level, unfiltered - the same values
-## get.optimal.armor.combos sums into SCORE_RAW. A combination's score is just the sum of its four
+## get.optimal.armor.combos sums into SCORE. A combination's score is just the sum of its four
 ## pieces' scores, so the count can be made without visiting the ~11.9 million combinations: every
 ## head+chest+legs sum is computed once and sorted (~221 thousand values), and then for each of the
 ## hands scores (~54 values) a binary search (findInterval) counts how many of those sums complete
@@ -17,8 +17,8 @@
 ## than pairing head+chest against hands+legs on 100,000 results, for the same exact counts). Materializing all ~11.9
 ## million sums instead would make each search cheaper still, but holds ~95 MB.
 ##
-## SCORE_RAW adds the four slot scores in a different order than the sums here, so a combination's
-## own total can differ from its SCORE_RAW in the last floating-point bits. The 1e-9 tolerance
+## SCORE adds the four slot scores in a different order than the sums here, so a combination's
+## own total can differ from its SCORE in the last floating-point bits. The 1e-9 tolerance
 ## makes every combination count itself (and its exact ties) - scores of genuinely different
 ## combinations are many orders of magnitude further apart than that.
 score.quality <- function(score.raw, head.scores, chest.scores, hands.scores, legs.scores){

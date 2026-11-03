@@ -330,7 +330,7 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         file <- output$download
         expect_equal(tradeoff.computations(), 2)
         trade.offs <- readxl::read_xlsx(file, sheet = "Trade-offs")
-        expect_equal(names(trade.offs), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "SCORE_QUALITY", "MOVEMENT", "HEAD", "CHEST", "HANDS", "LEGS"))
+        expect_equal(names(trade.offs), c("ARMOR_WEIGHT_LIMIT", "SCORE", "SCORE_QUALITY", "MOVEMENT", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_equal(as.data.frame(trade.offs), as.data.frame(tradeoff.table(tradeoffdata())))
     })
 })
@@ -455,7 +455,7 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
 
         ## The table: limit, best value named for the stat, movement, scores, pieces
         table <- tradeoff.table(result)
-        expect_identical(names(table), c("ARMOR_WEIGHT_LIMIT", "POISE", "MOVEMENT", "SCORE_RAW", "SCORE_QUALITY", "HEAD", "CHEST", "HANDS", "LEGS"))
+        expect_identical(names(table), c("ARMOR_WEIGHT_LIMIT", "POISE", "MOVEMENT", "SCORE", "SCORE_QUALITY", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_equal(table$POISE, result$data$BEST_VALUE)
 
         ## Every point's movement class is the game's check on its own set, with the Great Club
@@ -478,7 +478,7 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
 
         ## With the score as the stat, it's the value column and isn't repeated
         session$setInputs(tradeoff_metric = "SCORE")
-        expect_identical(names(tradeoff.table(tradeoffdata())), c("ARMOR_WEIGHT_LIMIT", "SCORE_RAW", "SCORE_QUALITY", "MOVEMENT", "HEAD", "CHEST", "HANDS", "LEGS"))
+        expect_identical(names(tradeoff.table(tradeoffdata())), c("ARMOR_WEIGHT_LIMIT", "SCORE", "SCORE_QUALITY", "MOVEMENT", "HEAD", "CHEST", "HANDS", "LEGS"))
         expect_no_error(output$tradeoff_table)
     })
 })

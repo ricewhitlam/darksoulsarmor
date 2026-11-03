@@ -3,7 +3,7 @@
 ## and head.data.unupgraded etc. are lazy-loaded package datasets referenced by bare name in
 ## default argument values and function bodies - neither is visible to R CMD check's static analysis.
 utils::globalVariables(c(
-    "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "SCORE_RAW", "SCORE_QUALITY",
+    "AREAFILTER", "AREA_MATCH_TYPE", "AREA_LIST", "ARMOR", "SCORE", "OBJECTIVE", "SCORE_QUALITY",
     "STARTING_CLASS", "UPGRADE_TYPE", "WEIGHT",
     "areas", "classes", "weapon.data", "WEAPON", "means", "stddevs", "corrs",
     "head.data.unupgraded", "chest.data.unupgraded", "hands.data.unupgraded", "legs.data.unupgraded",
