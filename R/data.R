@@ -71,20 +71,6 @@ NULL
 ## (including upgrades) - see create_rda/create_rda.R for how they're derived. They exist only
 ## to normalize the score formula in get.optimal.armor.combos and are not meant to be used
 ## directly, so unlike areas/classes they are internal (sysdata.rda) rather than exported data.
-## total.combo.count (R/sysdata.rda) is the exact count of armor combinations that population is
-## drawn from (~21.9 billion, across every upgrade level). Not currently used by any exported
-## function - SCORE_QUALITY counts combinations at the selected upgrade level only (see
-## R/score-quality.R) - but kept here as a documented, non-duplicated fact for anyone who wants it.
-## mean.stddev.corr.list (R/sysdata.rda) holds the same shape of data as means/stddevs/corrs, but
-## broken out WITHIN each individual (regular.level, twinkling.level) pair rather than pooled
-## across every level - i.e. the population where every armor slot is evaluated at the same
-## upgrade level simultaneously, matching how a player thinks of their loadout ("I'm using +5
-## regular titanite gear"), rather than each slot's own upgrade increment varying independently
-## of the others (which is what means/stddevs/corrs pool over). A named list of 67 entries: one
-## \code{list(means, stddevs, corrs)} per "{regular.level}_{twinkling.level}" combination (e.g.
-## \code{"3_2"}), plus one keyed "overall" holding the same values as means/stddevs/corrs. Not
-## currently used by any exported function - kept for potential future use (e.g. an
-## upgrade-level-aware scoring model).
 ## stat.groups (R/sysdata.rda) names the three groups of scored stats - PHYSICAL_DEFENSES,
 ## ELEMENTAL_DEFENSES and RESISTANCES - and lists each group's stats, for weights.mode = "grouped".
 ## stat.maxes and group.maxes (R/sysdata.rda) are the best total any armor combination reaches for

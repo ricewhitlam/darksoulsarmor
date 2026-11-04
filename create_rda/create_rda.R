@@ -47,19 +47,9 @@ sel.legs.data <- copy(total.legs.data)
 
 metric.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "BLEED_RES", "POIS_RES", "CURSE_RES")
 
-## Total number of possible armor combinations across every upgrade level (every regular level
-## 0-10 and twinkling level 0-5 stacked as separate rows per slot in total.*.data above). Not
-## currently used by any exported function (get.optimal.armor.combos' SCORE_QUALITY counts
-## combinations at the selected upgrade level only - see R/score-quality.R), but kept as a
-## documented, non-duplicated fact for anyone who wants it - see R/data.R. Computed
-## as an exact integer product since it is itself an exact count, not a probability.
-total.combo.count <- as.numeric(nrow(total.head.data)) * nrow(total.chest.data) * nrow(total.hands.data) * nrow(total.legs.data)
-
 ## Computes the population mean, sd, and correlation matrix (over the 10 scored metrics) for one
-## armor population, given as a head/chest/hands/legs table set. Used both for the population
-## pooled across every upgrade level (means/stddevs/corrs below) and, separately, for the
-## population within each individual (regular.level, twinkling.level) pair (mean.stddev.corr.list
-## below) - the only difference between the two is which tables are passed in.
+## armor population, given as a head/chest/hands/legs table set: here, every combination pooled
+## across every upgrade level (means/stddevs/corrs below).
 ##
 ## The population is every head x chest x hands x legs combination, each counted once, so the
 ## piece chosen in each slot is independent of the other slots' pieces. A combination's metric is
@@ -89,32 +79,6 @@ pooled.stats <- compute.mean.sd.corr(sel.head.data, sel.chest.data, sel.hands.da
 means <- pooled.stats$means
 stddevs <- pooled.stats$stddevs
 corrs <- pooled.stats$corrs
-
-## mean.stddev.corr.list: mean/sd/corr WITHIN each individual (regular.level, twinkling.level)
-## pair - the population where every armor slot is evaluated at that same level simultaneously
-## (matching how a player thinks of their loadout: "I'm using +5 regular titanite gear"), as
-## opposed to means/stddevs/corrs above, which pool across every upgrade level with each slot's
-## own upgrade increment varying independently of the others. Not currently used by any exported
-## function - kept for potential future use (e.g. an upgrade-level-aware scoring model). Each
-## population is built with a single get.interp.data() call per slot (matching exactly how
-## get.optimal.armor.combos/get.all.armor.combos build their own working data at one upgrade
-## level - non-upgradeable pieces are included automatically, at their fixed base stats, since
-## get.interp.data() keeps UPGRADE_TYPE == "None" pieces at their +0 values rather than excluding them),
-## not the reg/twink-stacking loop used for total.*.data above. "overall" holds the same values
-## as means/stddevs/corrs above, included here too for a single consistent access point.
-mean.stddev.corr.list <- list()
-for(reg in 0:10){
-    for(twink in 0:5){
-        level.key <- paste0(reg, "_", twink)
-        level.head.data <- get.interp.data(armor_00[TYPE == "Head"], reg, twink)
-        level.chest.data <- get.interp.data(armor_00[TYPE == "Chest"], reg, twink)
-        level.hands.data <- get.interp.data(armor_00[TYPE == "Hands"], reg, twink)
-        level.legs.data <- get.interp.data(armor_00[TYPE == "Legs"], reg, twink)
-        mean.stddev.corr.list[[level.key]] <- compute.mean.sd.corr(level.head.data, level.chest.data, level.hands.data, level.legs.data, metric.cols)
-    }
-}
-mean.stddev.corr.list[["overall"]] <- pooled.stats
-rm(list = c("level.key", "level.head.data", "level.chest.data", "level.hands.data", "level.legs.data"))
 
 ## stat.groups: the three groups of scored stats that weights.mode = "grouped" weights as a whole
 ## (see get.optimal.armor.combos). Defined once here and saved as internal data, so the package
@@ -233,8 +197,6 @@ use_data(
     means,
     stddevs,
     corrs,
-    total.combo.count,
-    mean.stddev.corr.list,
     stat.groups,
     stat.maxes,
     group.maxes,

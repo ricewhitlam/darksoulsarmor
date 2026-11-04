@@ -1,6 +1,5 @@
-## The internal statistics in R/sysdata.rda (means/stddevs/corrs, total.combo.count, and
-## mean.stddev.corr.list) are derived by create_rda.R from the same armor tables shipped as
-## data/*.rda. Every combination counts once in those populations, so each slot's piece is
+## The internal statistics in R/sysdata.rda (means/stddevs/corrs) are derived by create_rda.R from
+## the same armor tables shipped as data/*.rda. Every combination counts once in those populations, so each slot's piece is
 ## independent of the others and the statistics of a combination's summed metrics are just the
 ## sums of each slot table's own means and covariances - cheap to recompute here from the shipped
 ## tables, independently of create_rda.R, to catch the two files drifting apart. The remaining
@@ -42,25 +41,6 @@ test_that("the shipped pooled statistics match the shipped armor data", {
     expect_equal(darksoulsarmor:::means, expected$means, tolerance = 1e-10)
     expect_equal(darksoulsarmor:::stddevs, expected$stddevs, tolerance = 1e-10)
     expect_equal(darksoulsarmor:::corrs, expected$corrs, tolerance = 1e-10)
-    expect_identical(darksoulsarmor:::total.combo.count, as.numeric(nrow(pooled.head))*nrow(pooled.chest)*nrow(pooled.hands)*nrow(pooled.legs))
-})
-
-test_that("the shipped per-upgrade-level statistics match the shipped armor data", {
-    level.list <- darksoulsarmor:::mean.stddev.corr.list
-    expect_named(level.list, c(as.vector(t(outer(0:10, 0:5, paste, sep = "_"))), "overall"))
-    for(reg in 0:10){
-        for(twink in 0:5){
-            key <- paste0(reg, "_", twink)
-            expected <- closed.form.stats(
-                interp(head.data.unupgraded, reg, twink),
-                interp(chest.data.unupgraded, reg, twink),
-                interp(hands.data.unupgraded, reg, twink),
-                interp(legs.data.unupgraded, reg, twink)
-            )
-            expect_equal(level.list[[key]], expected, tolerance = 1e-10, info = key)
-        }
-    }
-    expect_identical(level.list[["overall"]], list(means = darksoulsarmor:::means, stddevs = darksoulsarmor:::stddevs, corrs = darksoulsarmor:::corrs))
 })
 
 ## The real-population version of create_rda.R's test.meansd(): with the shipped statistics, the
