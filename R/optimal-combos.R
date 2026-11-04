@@ -215,6 +215,7 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' ## Physical defenses, elemental defenses and resistances weighted equally, each against its best possible total
 #' grouped.combos <- get.optimal.armor.combos(endurance.level = 40, movement = "Mid", weights = c(PHYSICAL_DEFENSES = 1, ELEMENTAL_DEFENSES = 1, RESISTANCES = 1), weights.mode = "grouped", stat.scale = "max")
 #'
+#' @export
 get.optimal.armor.combos <- function(
     max.table.size = 1000,
     starting.class = classes[1],

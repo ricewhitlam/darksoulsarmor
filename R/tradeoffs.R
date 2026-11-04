@@ -57,6 +57,7 @@
 #' @examples
 #' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 #'
+#' @export
 get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 0.1,min.armor.weight = 0, max.armor.weight = NULL, ...){
 
     metric.options <- c("SCORE", "POISE", METRICS[!is.na(weight.index)][order(weight.index), metric])

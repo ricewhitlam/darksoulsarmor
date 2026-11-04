@@ -77,6 +77,7 @@
 #' efficiency <- get.tradeoff.efficiency(score.curve)
 #' fewer.jumps <- get.tradeoff.efficiency(score.curve, jumps = "few")
 #'
+#' @export
 get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
 
     ## Check curve

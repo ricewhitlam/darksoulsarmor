@@ -23,6 +23,7 @@
 #' armor.application()
 #' }
 #'
+#' @export
 armor.application <- function(...){
     appDir <- system.file("shiny", package = "darksoulsarmor")
     if(appDir == ""){
