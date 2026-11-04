@@ -41,7 +41,8 @@ that each step of the curve belongs to exactly one of them:
 with a \strong{boundary point} wherever two regions (lines or flats) meet.
 
 Points with no set (\code{NA}) are left out. The range is the curve's highest value less its
-lowest, and the width its last weight less its first.
+lowest, and the width its last weight less its first. A step smaller than a millionth of the
+range counts as no change: such steps are 32-bit rounding between near-identical sets.
 
 The rules were tuned on curves every 0.1 weight, \code{\link{get.armor.tradeoffs}}' default; on a
 coarser curve each step merges several, so more of them read as jumps.

@@ -16,7 +16,8 @@
 #' with a \strong{boundary point} wherever two regions (lines or flats) meet.
 #'
 #' Points with no set (\code{NA}) are left out. The range is the curve's highest value less its
-#' lowest, and the width its last weight less its first.
+#' lowest, and the width its last weight less its first. A step smaller than a millionth of the
+#' range counts as no change: such steps are 32-bit rounding between near-identical sets.
 #'
 #' The rules were tuned on curves every 0.1 weight, \code{\link{get.armor.tradeoffs}}' default; on a
 #' coarser curve each step merges several, so more of them read as jumps.
@@ -112,6 +113,9 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
     range <- max(y)-min(y)
     of.range <- if(range > 0) rise/range else rep(0, n)
     average.slope <- (y[n]-y[1])/(x[n]-x[1])
+    ## The smallest change that counts: a millionth of the range (smaller steps are 32-bit rounding
+    ## between near-identical sets)
+    no.change <- if(range > 0) 1e-6*range else 1e-9
 
     ## How much weight step i is worth at the rate around it: the rate of the gain within the window,
     ## less step i's own and any jump's already chosen
@@ -127,7 +131,7 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
 
     ## Jumps, biggest first: each group of equal steps (those worth enough) taken together, or not at
     ## all if it would go past the maximum
-    rising <- which(rise > 1e-9)
+    rising <- which(rise > no.change)
     candidates <- rising[of.range[rising] >= jump.level$size-1e-12]
     candidates <- candidates[order(-rise[candidates])]
     at <- 1
@@ -147,7 +151,7 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
 
     ## Flats: of the runs of steps with no gain (their first and last points), the longest
     flat.end <- rep(NA_integer_, n)
-    no.gain <- c(FALSE, abs(rise[-1]) < 1e-9)
+    no.gain <- c(FALSE, abs(rise[-1]) < no.change)
     runs <- rle(no.gain)
     run.last <- cumsum(runs$lengths)
     run.first <- run.last-runs$lengths+1
@@ -159,7 +163,7 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
     flat.end[run.first[chosen]] <- run.last[chosen]
 
     ## Describe the curve, then promote boundary points while there's room for more jumps
-    pieces <- describe.curve(x, y, rise, is.jump, flat.end)
+    pieces <- describe.curve(x, y, rise, is.jump, flat.end, no.change)
     top <- rising[largest(rise[rising], jump.level$max)]
     while(sum(is.jump) < jump.level$max){
         promotable <- vapply(pieces, function(p){
@@ -171,7 +175,7 @@ get.tradeoff.efficiency <- function(curve, jumps = "some", flats = "some"){
         }
         steps <- vapply(pieces[promotable], function(p) rise[p$at], numeric(1))
         is.jump[pieces[promotable][[which.max(steps)]]$at] <- TRUE
-        pieces <- describe.curve(x, y, rise, is.jump, flat.end)
+        pieces <- describe.curve(x, y, rise, is.jump, flat.end, no.change)
     }
 
     ## One row per piece; rates as multiples of the average
@@ -244,8 +248,8 @@ largest <- function(values, k){
 ## (is.jump: at each point, whether its step is a jump) and flats (flat.end: at a flat's first point,
 ## its last), in weight order. Each piece is a list: its type, its first and last points, and its base
 ## (the point before its first, where its gain is measured from); a boundary point also has the point
-## its step ends at and the pieces before and after it.
-describe.curve <- function(x, y, rise, is.jump, flat.end){
+## its step ends at and the pieces before and after it. A change smaller than no.change counts as none.
+describe.curve <- function(x, y, rise, is.jump, flat.end, no.change){
 
     n <- length(x)
 
@@ -275,7 +279,7 @@ describe.curve <- function(x, y, rise, is.jump, flat.end){
                     next
                 }
                 first <- if(s == 1) i else f+1
-                type <- if(abs(y[t]-y[f]) < 1e-9) "flat" else "line"
+                type <- if(abs(y[t]-y[f]) < no.change) "flat" else "line"
                 pieces[[length(pieces)+1]] <- list(type = type, first = first, last = t, base = f)
             }
         }
@@ -299,7 +303,7 @@ describe.curve <- function(x, y, rise, is.jump, flat.end){
             merged[[k-1]]$type == "flat" && merged[[k+1]]$type == "flat"
     }
     refit <- function(p){
-        p$type <- if(abs(y[p$last]-y[p$base]) < 1e-9) "flat" else "line"
+        p$type <- if(abs(y[p$last]-y[p$base]) < no.change) "flat" else "line"
         return(p)
     }
     out <- list()
@@ -318,7 +322,7 @@ describe.curve <- function(x, y, rise, is.jump, flat.end){
             if(p$type == "line" && q$type == "line"){
                 ## The biggest step within the window of the break, as the earlier line's last
                 near <- if(p$first+1 <= q$last-1) (p$first+1):(q$last-1) else integer(0)
-                near <- near[abs(x[near]-x[p$last]) <= BOUNDARY.WINDOW+1e-9 & rise[near] > 1e-9]
+                near <- near[abs(x[near]-x[p$last]) <= BOUNDARY.WINDOW+1e-9 & rise[near] > no.change]
                 if(length(near) > 0){
                     best <- near[which.max(rise[near])]
                     if(best != p$last){
