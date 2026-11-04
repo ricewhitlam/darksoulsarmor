@@ -43,7 +43,7 @@ bslib::page_sidebar(
                 #errormessage{
                     color: red;
                     font-size: 20px;
-                    font-style: bold;
+                    font-weight: bold;
                 }
             ")
         ),
@@ -53,7 +53,7 @@ bslib::page_sidebar(
                 #refreshmessage{
                     color: red;
                     font-size: 20px;
-                    font-style: bold;
+                    font-weight: bold;
                 }
             ")
         ),
