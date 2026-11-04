@@ -122,7 +122,7 @@ server <- function(input, output, session){
 
                     This app is also available as an R package - here is the link to the codebase on GitHub: ",
                     shiny::tags$a("https://github.com/ricewhitlam/darksoulsarmor", href = "https://github.com/ricewhitlam/darksoulsarmor", target = "_blank"),
-                    ". To install the R package, run the following command in the R terminal: devtools::install_github(", '"', "ricewhitlam/darksoulsarmor", '"', ")
+                    ". To install the R package, run the following command in the R terminal: install.packages(", '"', "darksoulsarmor", '"', ", repos = c(", '"', "https://ricewhitlam.r-universe.dev", '"', ", ", '"', "https://cloud.r-project.org", '"', "))
 
                 "))
             ) 

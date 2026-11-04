@@ -10,7 +10,7 @@
   "unused argument".
 * `SCORE_QUALITY` is now an exact count among every combination at the
   selected upgrade levels, rather than a normal approximation, so its values
-  change. `SCORE` is unchanged.
+  change; the score itself is unchanged.
 * `SCORE_RAW` is renamed `SCORE`.
 * `weights` no longer has a default and must be given.
 * Stats are now exact. Every upgrade level is computed from each piece's +0

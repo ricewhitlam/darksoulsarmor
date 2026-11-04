@@ -2,10 +2,10 @@
 
 This directory is a **dev-only data-build step**, not part of the installed `darksoulsarmor`
 package. It turns the raw armor CSVs into the `.rda` files under `data/` (the public datasets,
-e.g. `head.data.unupgraded`) and `R/sysdata.rda` (the internal `means`/`stddevs`/`corrs` used to score
-combinations - see `vignettes/scoring.Rmd`). Nothing in `R/` or `src/` reads from this directory
-at runtime; it only needs to be re-run when the source CSVs change (a new armor piece, a stat
-correction, etc.).
+e.g. `head.data.unupgraded`) and `R/sysdata.rda` (the internal data used to score combinations:
+`means`/`stddevs`/`corrs`, `stat.groups` and `stat.maxes`/`group.maxes` - see
+`vignettes/scoring.Rmd`). Nothing in `R/` or `src/` reads from this directory at runtime; it only
+needs to be re-run when the source CSVs change (a new armor piece, a stat correction, etc.).
 
 ## Contents
 
@@ -24,8 +24,8 @@ correction, etc.).
   (`None`/`Regular`/`Twinkling`), and the `AREA_MATCH_TYPE`/`AREA_LIST` columns used for
   area-of-origin filtering.
 - `create_rda.R` - the script that reads the CSVs above, builds every upgrade level via
-  `get.interp.data()`, computes population mean/sd/correlation across all combinations, and
-  writes the resulting `.rda` files with `usethis::use_data()`.
+  `get.interp.data()`, computes population mean/sd/correlation across all combinations and each
+  stat's best possible total, and writes the resulting `.rda` files with `usethis::use_data()`.
 
 The population statistics cover every possible four-piece combination (head x chest x hands x
 legs - ~21.9 billion across all upgrade levels), but are computed without visiting them: each
