@@ -61,6 +61,12 @@ jobs:
             sleep 300
           done
           echo "r-universe hasn't built version $version after 2 hours"; exit 1
+      ## Before publishing: in headless Chrome, the exported app must start, refresh, draw its chart
+      ## and offer its download (see the script)
+      - name: Smoke-test the exported app
+        run: |
+          Rscript -e 'install.packages(c("chromote", "httpuv", "later", "jsonlite"))'
+          Rscript .github/scripts/smoke-test.R _site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
