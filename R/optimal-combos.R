@@ -641,10 +641,12 @@ prepare.armor.search <- function(args, rank.metric = "SCORE"){
 
     ## Ranking by a single stat instead of the score: the search only needs each piece's value in
     ## OBJECTIVE (any stat summed across the four slots works the same way), so swap that stat in -
-    ## plus the piece's score times a factor small enough never to outweigh a real difference in
-    ## the stat (Poise totals differ by at least 1, defenses/resistances by at least 0.1, and a
-    ## combination's score is within about +-15), so that among combinations tied on the stat, the
-    ## best-scoring one wins.
+    ## plus the piece's score times a small factor, so that among combinations tied on the stat, the
+    ## best-scoring one wins. A combination's score lies within about +-15, so the factor moves its
+    ## objective by at most 0.003 for Poise, whose totals are whole numbers, and 0.0003 for the
+    ## others. Those can differ by less at upgrade levels (strike defense totals by as little as
+    ## 1e-6), so a combination with imperceptibly less of the stat can win on score - always by far
+    ## less than the 0.1 the stats are shown to.
     if(rank.metric != "SCORE"){
         tie.break.factor <- if(rank.metric == "POISE") 1e-4 else 1e-5
         working.head.data[, OBJECTIVE := get(rank.metric)+tie.break.factor*OBJECTIVE]
