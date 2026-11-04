@@ -2,7 +2,7 @@
 useDynLib(darksoulsarmor, .registration=TRUE)
 import(data.table)
 import(Rcpp)
-importFrom(stats, approxfun, median)
+importFrom(stats, median)
 
 export(get.all.armor.combos)
 export(get.optimal.armor.combos)

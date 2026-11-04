@@ -21,13 +21,13 @@
 ## own total can differ from its SCORE in the last floating-point bits. The 1e-9 tolerance
 ## makes every combination count itself (and its exact ties) - scores of genuinely different
 ## combinations are many orders of magnitude further apart than that.
-score.quality <- function(score.raw, head.scores, chest.scores, hands.scores, legs.scores){
+score.quality <- function(score, head.scores, chest.scores, hands.scores, legs.scores){
 
     other.sums <- sort(as.vector(outer(outer(head.scores, chest.scores, `+`), legs.scores, `+`)))
     total <- as.numeric(length(hands.scores))*length(other.sums)
 
     ## Count once per distinct score - tied results are common (cosmetic armor variants)
-    targets <- unique(score.raw)
+    targets <- unique(score)
     at.least <- numeric(length(targets))
     at.most <- numeric(length(targets))
     ## checkSorted/checkNA = FALSE: other.sums is sorted just above and holds sums of real piece
@@ -46,6 +46,6 @@ score.quality <- function(score.raw, head.scores, chest.scores, hands.scores, le
             paste0("Bottom 1 in ", format(round(total/at.most), big.mark = ",", scientific = FALSE, trim = TRUE))
         )
 
-    return(quality[match(score.raw, targets)])
+    return(quality[match(score, targets)])
 
 }

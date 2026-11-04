@@ -1175,10 +1175,12 @@ server <- function(input, output, session){
         ## The charted stat at its display precision: the score to 3 decimals, poise whole, a
         ## defense or resistance to 1 decimal
         value.digits <- if(result$metric == "SCORE") 3 else if(result$metric == "POISE") 0 else 1
+        ## (None for points with no set: those only ever come before a curve's first set, and are
+        ## trimmed off the chart below)
         d$hover <-
             ifelse(
                 is.na(d$BEST_VALUE),
-                sprintf("Armor weight up to %.1f<br>No armor set fits the other settings", d$ARMOR_WEIGHT_LIMIT),
+                NA_character_,
                 sprintf(
                     "Armor weight up to %.1f<br>%s: %s<br>%s<br>%s<br>%s<br>%s<br>Weighs %.1f - Movement: %s<br>Score %.3f (%s)",
                     d$ARMOR_WEIGHT_LIMIT, metric.label, formatC(round(d$BEST_VALUE, value.digits), format = "f", digits = value.digits),

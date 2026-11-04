@@ -173,6 +173,8 @@ test.meansd()
 
 
 ## Create other data files
+## Read again for the public tables: these join every piece's metadata (class, areas, link), where
+## the statistics above needed only its type and upgrade type
 armor_00 <- fread("create_rda/armor_00.csv")
 armor_00[, c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF") := lapply(.SD, float32), .SDcols = c("STRIKE_DEF", "SLASH_DEF", "THRUST_DEF")]
 armor_00 <- merge(armor_00, armor_metainfo, by = "ARMOR")

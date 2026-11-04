@@ -574,7 +574,7 @@ score.scalars.for <- function(weights, stat.scale, weights.mode){
         }
         return(score.scalars.for(per.point, "raw", "individual"))
     }
-    unit <-switch(stat.scale, sd = stddevs, max = stat.maxes, raw = rep(1, length(weights)))
+    unit <- switch(stat.scale, sd = stddevs, max = stat.maxes, raw = rep(1, length(weights)))
     per.sd <- switch(stat.scale, sd = weights, max = weights*stddevs/stat.maxes, raw = weights*stddevs)
     return((weights)/(unit*sqrt((t(per.sd) %*% corrs %*% per.sd)[1, 1])))
 }
@@ -759,37 +759,26 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
     working.hands.data <- prepared$hands[WEIGHT <= max(room, room.father.mask-father.mask.weight)]
     working.legs.data <- prepared$legs[WEIGHT <= max(room, room.father.mask-father.mask.weight)]
 
+    ## What's returned when no combination can fit (in either check below): a result's columns,
+    ## with no rows
+    empty <-
+        data.table::data.table(
+            SCORE = numeric(0), SCORE_QUALITY = character(0),
+            HEAD = character(0), CHEST = character(0), HANDS = character(0), LEGS = character(0),
+            PHYS_DEF = numeric(0), STRIKE_DEF = numeric(0), SLASH_DEF = numeric(0), THRUST_DEF = numeric(0),
+            MAG_DEF = numeric(0), FIRE_DEF = numeric(0), LITNG_DEF = numeric(0),
+            BLEED_RES = numeric(0), POIS_RES = numeric(0), CURSE_RES = numeric(0),
+            DURABILITY = numeric(0), ARMOR_POISE = numeric(0), TOTAL_POISE = numeric(0), POISE_TIMER = numeric(0),
+            ARMOR_WEIGHT = numeric(0), TOTAL_WEIGHT = numeric(0), EQUIP_LOAD = numeric(0), PCT_LOAD = numeric(0)
+        )
+
     ## If any tables empty, return empty data
     n.head <- nrow(working.head.data)
     n.chest<- nrow(working.chest.data)
     n.hands <- nrow(working.hands.data)
     n.legs <- nrow(working.legs.data)
     if(n.head == 0 || n.chest == 0 || n.hands == 0 || n.legs == 0){
-        out$data[, "SCORE" := numeric(0)]
-        out$data[, "SCORE_QUALITY" := character(0)]
-        out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
-        out$data[,
-            c(
-                "PHYS_DEF",
-                "STRIKE_DEF",
-                "SLASH_DEF",
-                "THRUST_DEF",
-                "MAG_DEF",
-                "FIRE_DEF",
-                "LITNG_DEF",
-                "BLEED_RES",
-                "POIS_RES",
-                "CURSE_RES",
-                "DURABILITY",
-                "ARMOR_POISE",
-                "TOTAL_POISE",
-                "POISE_TIMER",
-                "ARMOR_WEIGHT",
-                "TOTAL_WEIGHT",
-                "EQUIP_LOAD",
-                "PCT_LOAD"
-            ) := numeric(0)
-        ]
+        out$data <- empty
         return(out)
     }
   
@@ -851,31 +840,7 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
 
     ## If there are no allowable combos, return empty data
     if(is.na(init.size)){
-        out$data[, "SCORE" := numeric(0)]
-        out$data[, "SCORE_QUALITY" := character(0)]
-        out$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := character(0)]
-        out$data[, 
-            c(
-                "PHYS_DEF",
-                "STRIKE_DEF",
-                "SLASH_DEF",
-                "THRUST_DEF",
-                "MAG_DEF",
-                "FIRE_DEF",
-                "LITNG_DEF",
-                "BLEED_RES",
-                "POIS_RES",
-                "CURSE_RES",
-                "DURABILITY",
-                "ARMOR_POISE",
-                "TOTAL_POISE",
-                "POISE_TIMER",
-                "ARMOR_WEIGHT",
-                "TOTAL_WEIGHT",
-                "EQUIP_LOAD",
-                "PCT_LOAD"
-            ) := numeric(0)
-        ]
+        out$data <- empty
         return(out)
     }
 
@@ -927,7 +892,7 @@ run.armor.search <- function(prepared, armor.cap = Inf, curve.point = FALSE){
     rm(list = c("scored.metrics", "metric.cols", "prepared"))
     rm(list = c("level.head.scores", "level.chest.scores", "level.hands.scores", "level.legs.scores"))
     rm(list = c("n.head", "n.chest", "n.hands", "n.legs", "n.max"))
-    rm(list = c("weight.check", "minima.check", "init.size"))
+    rm(list = c("weight.check", "minima.check", "init.size", "empty"))
     rm(list = c("father.mask.index", "NO_FATHER_MASK_INDEX"))
     ## A get.armor.tradeoffs curve runs many searches in a row and collects once at its end
     if(!curve.point){
