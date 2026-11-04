@@ -323,6 +323,17 @@ DataFrame optimal_armor_combinations(
                     break;
                 }
 
+                // Weight only adds up: if the head and chest are already past the movement line or
+                // the armor cap, no hands and legs can bring the set back under, so go on to the next
+                // chest piece (the table is sorted by objective, not weight, so a later one may still
+                // fit). The 32-bit running total is a safe bound for the finished one: every piece
+                // weighs at least 0, and rounding a sum never makes it smaller than what was added to.
+                curr_chest_WEIGHT = chest.WEIGHT[j];
+                curr_chest_total_f = curr_head_total_f+static_cast<float>(curr_chest_WEIGHT);
+                if(curr_chest_total_f > curr_line_f || curr_head_WEIGHT+curr_chest_WEIGHT > armor_cap+epsilon){
+                    continue;
+                }
+
                 curr_chest_PHYS_DEF = chest.PHYS_DEF[j];
                 curr_chest_STRIKE_DEF = chest.STRIKE_DEF[j];
                 curr_chest_SLASH_DEF = chest.SLASH_DEF[j];
@@ -335,8 +346,6 @@ DataFrame optimal_armor_combinations(
                 curr_chest_POIS_RES = chest.POIS_RES[j];
                 curr_chest_CURSE_RES = chest.CURSE_RES[j];
                 curr_chest_DURABILITY = chest.DURABILITY[j];
-                curr_chest_WEIGHT = chest.WEIGHT[j];
-                curr_chest_total_f = curr_head_total_f+static_cast<float>(curr_chest_WEIGHT);
 
                 for(int k = 0; k < curr_K; ++k){
 
@@ -348,6 +357,13 @@ DataFrame optimal_armor_combinations(
 
                     if(at_max_queue_size && objective_key(curr_head_OBJECTIVE+curr_chest_OBJECTIVE+curr_hands_OBJECTIVE+best_legs_OBJECTIVE) < armor_combos.front().key){
                         break;
+                    }
+
+                    // As for the chest above: past the line or the cap already, no legs can help
+                    curr_hands_WEIGHT = hands.WEIGHT[k];
+                    curr_hands_total_f = curr_chest_total_f+static_cast<float>(curr_hands_WEIGHT);
+                    if(curr_hands_total_f > curr_line_f || curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT > armor_cap+epsilon){
+                        continue;
                     }
 
                     curr_hands_PHYS_DEF = hands.PHYS_DEF[k];
@@ -362,8 +378,6 @@ DataFrame optimal_armor_combinations(
                     curr_hands_POIS_RES = hands.POIS_RES[k];
                     curr_hands_CURSE_RES = hands.CURSE_RES[k];
                     curr_hands_DURABILITY = hands.DURABILITY[k];
-                    curr_hands_WEIGHT = hands.WEIGHT[k];
-                    curr_hands_total_f = curr_chest_total_f+static_cast<float>(curr_hands_WEIGHT);
 
                     for(int l = 0; l < curr_L; ++l){
 
