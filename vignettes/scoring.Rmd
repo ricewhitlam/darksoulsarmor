@@ -21,12 +21,13 @@ the tie-break when maximizing any other stat.
 ## The problem: metrics on different scales
 
 An armor combination is described by ten metrics: physical, strike, slash, and thrust defense;
-magic, fire, and lightning defense; and bleed, poison, and curse resistance. These aren't on
-comparable scales. Combined physical defense across a full set of gear typically runs from the
-teens up into the hundreds; combined curse resistance rarely gets past a few dozen. A weight of
-"1" on physical defense and "1" on curse resistance would not mean equal importance if the raw
-values were just added together - physical defense would dominate the total purely because its
-numbers are bigger, not because the `weights` argument said so.
+magic, fire, and lightning defense; and bleed, poison, and curse resistance. They vary between
+combinations by very different amounts: across every combination, slash defense has a standard
+deviation of about 33, and bleed resistance about 13. Added up raw with equal weights, a point of
+slash would count as much as a point of bleed, so slash's wider spread would decide far more of
+which combination comes out on top, not because the `weights` argument said so. (A stat's typical
+size doesn't matter on its own: adding the same amount to every combination's total changes no
+ranking. What matters is how far apart combinations are.)
 
 The fix is standardization: express each metric in units of "how unusual is this value", not
 its raw number. `get.optimal.armor.combos()` does this using the population mean and standard
