@@ -79,10 +79,11 @@ DataFrame all_armor_combinations(
     CharacterVector HEAD(N); CharacterVector CHEST(N); CharacterVector HANDS(N); CharacterVector LEGS(N);
     NumericVector PHYS_DEF(N); NumericVector STRIKE_DEF(N); NumericVector SLASH_DEF(N); NumericVector THRUST_DEF(N);
     NumericVector MAG_DEF(N); NumericVector FIRE_DEF(N); NumericVector LITNG_DEF(N);
-    NumericVector POISE(N); NumericVector BLEED_RES(N); NumericVector POIS_RES(N); NumericVector CURSE_RES(N);
-    NumericVector DURABILITY(N); NumericVector WEIGHT(N);
+    NumericVector ARMOR_POISE(N); NumericVector BLEED_RES(N); NumericVector POIS_RES(N); NumericVector CURSE_RES(N);
+    NumericVector DURABILITY(N); NumericVector ARMOR_WEIGHT(N);
 
     int index = -1;
+    float armor_f;
 
     double curr_head_PHYS_DEF; double curr_chest_PHYS_DEF; double curr_hands_PHYS_DEF; double curr_legs_PHYS_DEF;
     double curr_head_STRIKE_DEF; double curr_chest_STRIKE_DEF; double curr_hands_STRIKE_DEF; double curr_legs_STRIKE_DEF;
@@ -172,12 +173,18 @@ DataFrame all_armor_combinations(
                     MAG_DEF[index] = curr_head_MAG_DEF+curr_chest_MAG_DEF+curr_hands_MAG_DEF+curr_legs_MAG_DEF;
                     FIRE_DEF[index] = curr_head_FIRE_DEF+curr_chest_FIRE_DEF+curr_hands_FIRE_DEF+curr_legs_FIRE_DEF;
                     LITNG_DEF[index] = curr_head_LITNG_DEF+curr_chest_LITNG_DEF+curr_hands_LITNG_DEF+curr_legs_LITNG_DEF;
-                    POISE[index] = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
+                    ARMOR_POISE[index] = curr_head_POISE+curr_chest_POISE+curr_hands_POISE+curr_legs_POISE;
                     BLEED_RES[index] = curr_head_BLEED_RES+curr_chest_BLEED_RES+curr_hands_BLEED_RES+curr_legs_BLEED_RES;
                     POIS_RES[index] = curr_head_POIS_RES+curr_chest_POIS_RES+curr_hands_POIS_RES+curr_legs_POIS_RES;
                     CURSE_RES[index] = curr_head_CURSE_RES+curr_chest_CURSE_RES+curr_hands_CURSE_RES+curr_legs_CURSE_RES;
                     DURABILITY[index] = std::min(curr_head_DURABILITY, std::min(curr_chest_DURABILITY, std::min(curr_hands_DURABILITY, curr_legs_DURABILITY)));
-                    WEIGHT[index] = curr_head_WEIGHT+curr_chest_WEIGHT+curr_hands_WEIGHT+curr_legs_WEIGHT;
+                    // The armor's weight added up as the game does: in 32-bit floating point, head, chest,
+                    // hands then legs
+                    armor_f = static_cast<float>(curr_head_WEIGHT);
+                    armor_f = armor_f+static_cast<float>(curr_chest_WEIGHT);
+                    armor_f = armor_f+static_cast<float>(curr_hands_WEIGHT);
+                    armor_f = armor_f+static_cast<float>(curr_legs_WEIGHT);
+                    ARMOR_WEIGHT[index] = armor_f;
 
                 }
 
@@ -190,9 +197,9 @@ DataFrame all_armor_combinations(
     return DataFrame::create(
         _["HEAD"] = HEAD , _["CHEST"] = CHEST , _["HANDS"] = HANDS , _["LEGS"] = LEGS ,
         _["PHYS_DEF"] = PHYS_DEF , _["STRIKE_DEF"] = STRIKE_DEF , _["SLASH_DEF"] = SLASH_DEF , _["THRUST_DEF"] = THRUST_DEF ,
-        _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF , _["POISE"] = POISE ,
+        _["MAG_DEF"] = MAG_DEF , _["FIRE_DEF"] = FIRE_DEF , _["LITNG_DEF"] = LITNG_DEF , _["ARMOR_POISE"] = ARMOR_POISE ,
         _["BLEED_RES"] = BLEED_RES , _["POIS_RES"] = POIS_RES , _["CURSE_RES"] = CURSE_RES ,
-        _["DURABILITY"] = DURABILITY , _["WEIGHT"] = WEIGHT ,
+        _["DURABILITY"] = DURABILITY , _["ARMOR_WEIGHT"] = ARMOR_WEIGHT ,
         _["stringsAsFactors"] = false
     );
 

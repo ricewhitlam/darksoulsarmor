@@ -13,7 +13,7 @@ test_that("all_armor_combinations sums every combination's stats correctly", {
     actual <- data.table::setDT(darksoulsarmor:::all_armor_combinations(h, c, g, l))
 
     summed.cols <- c("PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "POISE", "BLEED_RES", "POIS_RES", "CURSE_RES")
-    expect_identical(names(actual), c("HEAD", "CHEST", "HANDS", "LEGS", summed.cols, "DURABILITY", "WEIGHT"))
+    expect_identical(names(actual), c("HEAD", "CHEST", "HANDS", "LEGS", "PHYS_DEF", "STRIKE_DEF", "SLASH_DEF", "THRUST_DEF", "MAG_DEF", "FIRE_DEF", "LITNG_DEF", "ARMOR_POISE", "BLEED_RES", "POIS_RES", "CURSE_RES", "DURABILITY", "ARMOR_WEIGHT"))
     expect_equal(nrow(actual), 3*4*2*5)
 
     ## The C++ loops head outermost and legs innermost, which is CJ's order too
@@ -22,8 +22,13 @@ test_that("all_armor_combinations sums every combination's stats correctly", {
     expect_identical(actual$CHEST, c$ARMOR[grid$C])
     expect_identical(actual$HANDS, g$ARMOR[grid$G])
     expect_identical(actual$LEGS, l$ARMOR[grid$L])
-    for(col in c(summed.cols, "WEIGHT")){
-        expect_equal(actual[[col]], h[[col]][grid$H] + c[[col]][grid$C] + g[[col]][grid$G] + l[[col]][grid$L], info = col)
+    for(col in summed.cols){
+        out.col <- if(col == "POISE") "ARMOR_POISE" else col
+        expect_equal(actual[[out.col]], h[[col]][grid$H] + c[[col]][grid$C] + g[[col]][grid$G] + l[[col]][grid$L], info = col)
     }
+    ## The armor's weight as the game adds it: 32-bit, head, chest, hands then legs
+    f32 <- darksoulsarmor:::float32
+    expected.weight <- f32(f32(f32(f32(h$WEIGHT[grid$H]) + f32(c$WEIGHT[grid$C])) + f32(g$WEIGHT[grid$G])) + f32(l$WEIGHT[grid$L]))
+    expect_identical(actual$ARMOR_WEIGHT, expected.weight)
     expect_equal(actual$DURABILITY, pmin(h$DURABILITY[grid$H], c$DURABILITY[grid$C], g$DURABILITY[grid$G], l$DURABILITY[grid$L]))
 })

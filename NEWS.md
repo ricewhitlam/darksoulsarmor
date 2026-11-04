@@ -13,6 +13,9 @@
   change; the score itself is unchanged.
 * `SCORE_RAW` is renamed `SCORE`.
 * `weights` no longer has a default and must be given.
+* In `get.all.armor.combos()`, `WEIGHT` is now `ARMOR_WEIGHT`, added up in
+  32-bit floating point as the game does, and `POISE` is now `ARMOR_POISE`,
+  matching `get.optimal.armor.combos()`.
 * Stats are now exact. Every upgrade level is computed from each piece's +0
   values with the game's own upgrade rates, in 32-bit floating point as the
   game does, and strike, slash and thrust defense hold their exact values

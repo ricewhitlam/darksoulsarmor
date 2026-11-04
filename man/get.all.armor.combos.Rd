@@ -21,7 +21,11 @@ Each defense and resistance is computed from the piece's +0 value with the game'
 Defaults to \code{"+0"}.}
 }
 \value{
-A \code{data.table} of all possible armor combinations
+A \code{data.table} with one row per combination of every piece at the selected upgrade levels;
+no filters apply. \code{HEAD}, \code{CHEST}, \code{HANDS}, \code{LEGS}; each defense and
+resistance, added up; \code{ARMOR_POISE}, the pieces' poise added up; \code{DURABILITY}, the
+lowest of the four; and \code{ARMOR_WEIGHT}, the armor's weight, added up in 32-bit floating
+point as the game does.
 }
 \description{
 Produces a table of every possible armor combination in Dark Souls.

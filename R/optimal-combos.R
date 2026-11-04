@@ -180,7 +180,31 @@ expand.named.metrics <- function(x, metric.names, arg.name){
 #' average.
 #'
 #' @return
-#' A \code{list} holding (1) the list of arguments which defined the table and (2) a \code{data.table} of optimal armor combinations
+#' A \code{list} holding (1) \code{args}, the arguments as validated and used: clamped and rounded
+#' where noted above, duplicates removed, an empty piece filter as its slot's "No ..." piece, and
+#' \code{weights} divided by their sum; and (2) \code{data}, a \code{data.table} with one row per
+#' combination, best first:
+#' \itemize{
+#'   \item \code{SCORE}: the score, with mean 0 and standard deviation 1 across every possible
+#'   combination (see \code{vignette("scoring")}).
+#'   \item \code{SCORE_QUALITY}: its exact rarity among every combination at the selected upgrade
+#'   levels, e.g. \code{"Top 1 in 40"}.
+#'   \item \code{HEAD}, \code{CHEST}, \code{HANDS}, \code{LEGS}: the pieces (\code{"No Head"} etc.
+#'   for an empty slot).
+#'   \item \code{PHYS_DEF} ... \code{CURSE_RES}: the set's totals at the selected upgrade levels.
+#'   \item \code{DURABILITY}: the lowest durability among the four pieces.
+#'   \item \code{ARMOR_POISE}: the pieces' poise added up. \code{TOTAL_POISE}: the same plus the
+#'   Wolf Ring's 40 when it's equipped.
+#'   \item \code{POISE_TIMER}: the poise recovery timer, in seconds: 5, less 10\% for each piece
+#'   with any poise (4.5 with one, about 3.28 with four).
+#'   \item \code{ARMOR_WEIGHT}: the armor's weight, added up in 32-bit floating point as the game
+#'   does.
+#'   \item \code{TOTAL_WEIGHT}: everything carried, weapons then armor, added up as the game does.
+#'   \item \code{EQUIP_LOAD}: the maximum equip load, with the rings and, when it's worn, the Mask
+#'   of the Father's bonus.
+#'   \item \code{PCT_LOAD}: \code{TOTAL_WEIGHT} divided by \code{EQUIP_LOAD} (0.25 is the Light
+#'   line, 0.5 Mid, 1 Fat).
+#' }
 #'
 #' @examples
 #' optimal.armor.combos <- get.optimal.armor.combos(endurance.level = 40, weapons = c(left.1 = "Grass Crest Shield", right.1 = "Longsword"), favor.ring = TRUE, movement = "Light", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
