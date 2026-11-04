@@ -18,6 +18,9 @@
 #' Points with no set (\code{NA}) are left out. The range is the curve's highest value less its
 #' lowest, and the width its last weight less its first.
 #'
+#' The rules were tuned on curves every 0.1 weight, \code{\link{get.armor.tradeoffs}}' default; on a
+#' coarser curve each step merges several, so more of them read as jumps.
+#'
 #' \strong{Jumps.} A step is a jump if it rises at least a share of the range, and is worth at least
 #' an amount of weight at the rate around it: its rise divided by the rate of the rest of the gain
 #' within 4.5 weight either side of it, leaving out any jumps already chosen. So a big step in a steep

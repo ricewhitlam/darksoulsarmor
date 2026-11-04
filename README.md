@@ -68,7 +68,7 @@ See `?get.optimal.armor.combos` for the full set of settings (which areas/classe
 `get.armor.tradeoffs()` finds the best value of one stat at each armor-weight limit, with the same settings as `get.optimal.armor.combos()`. For example, the lightest armor that reaches each PVE poise breakpoint with Mid movement:
 
 ```r
-curve <- get.armor.tradeoffs(metric = "POISE", weight.step = 0.1, endurance.level = 40, weapons = c(right.1 = "Great Club"), movement = "Mid", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
+curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, weapons = c(right.1 = "Great Club"), movement = "Mid", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 first <- sapply(c(21, 31, 46), function(poise) which(curve$data$BEST_VALUE >= poise)[1])
 curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 #>    ARMOR_WEIGHT_LIMIT BEST_VALUE         HEAD    CHEST            HANDS
@@ -83,7 +83,7 @@ curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 #> 3: Hollow Soldier Waistcloth
 ```
 
-`weight.step` sets the spacing of the limits (default 1), and `min.armor.weight`/`max.armor.weight` set the range; by default it runs from 0 to what the movement type allows. Among combinations tied on the stat, the best-scoring one is returned.
+`weight.step` sets the spacing of the limits (default 0.1), and `min.armor.weight`/`max.armor.weight` set the range; by default it runs from 0 to what the movement type allows. Among combinations tied on the stat, the best-scoring one is returned.
 
 `get.tradeoff.efficiency()` describes a curve in four kinds of piece, to show where extra weight pays off:
 
@@ -93,7 +93,7 @@ curve$data[first, .(ARMOR_WEIGHT_LIMIT, BEST_VALUE, HEAD, CHEST, HANDS, LEGS)]
 - **boundary points:** the steps where one line or flat gives way to the next.
 
 ```r
-curve <- get.armor.tradeoffs(metric = "CURSE_RES", weight.step = 0.1, endurance.level = 40, movement = "Fat", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
+curve <- get.armor.tradeoffs(metric = "CURSE_RES", endurance.level = 40, movement = "Fat", weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 efficiency <- get.tradeoff.efficiency(curve)
 efficiency$data[, .(TYPE, FROM, TO, GAIN, RATIO_TO_AVERAGE)]
 #>        TYPE  FROM    TO  GAIN RATIO_TO_AVERAGE

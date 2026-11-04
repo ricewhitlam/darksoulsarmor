@@ -37,7 +37,8 @@
 * `get.armor.tradeoffs()` finds the best value of one stat (the score, Poise,
   or one defense or resistance) at each armor-weight limit, with the same
   settings as `get.optimal.armor.combos()`. `weight.step`, `min.armor.weight`
-  and `max.armor.weight` set which limits are computed. Among combinations
+  and `max.armor.weight` set which limits are computed (every 0.1 by
+  default). Among combinations
   tied on the stat, the best-scoring one is returned.
 * `get.tradeoff.efficiency()` describes a trade-off curve as jumps (single
   steps that gain far more than the weight around them), flats (no gain),

@@ -29,7 +29,8 @@
 #' weight.step A length 1 positive \code{numeric}: the spacing of the armor-weight limits. Limits
 #' are the multiples of this size between \code{min.armor.weight} and \code{max.armor.weight},
 #' plus those two limits themselves. Armor weights are multiples of 0.1, so steps below 0.1 add
-#' points but no detail. Defaults to \code{1}.
+#' points but no detail, and \code{\link{get.tradeoff.efficiency}} is tuned for curves at 0.1.
+#' Defaults to \code{0.1}.
 #'
 #' @param
 #' min.armor.weight A length 1 non-negative \code{numeric}: the smallest armor-weight limit, no
@@ -56,7 +57,7 @@
 #' @examples
 #' poise.curve <- get.armor.tradeoffs(metric = "POISE", endurance.level = 40, movement = "Mid", weapons = c(right.1 = "Great Club"), weights = c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
 #'
-get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 1, min.armor.weight = 0, max.armor.weight = NULL, ...){
+get.armor.tradeoffs <- function(metric = "SCORE", weight.step = 0.1,min.armor.weight = 0, max.armor.weight = NULL, ...){
 
     metric.options <- c("SCORE", "POISE", METRICS[!is.na(weight.index)][order(weight.index), metric])
 
