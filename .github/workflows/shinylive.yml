@@ -27,7 +27,21 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      ## The whole history, to find when the version last changed
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      ## Stop before publishing if the package's code has changed since the version last did: that
+      ## code would never reach r-universe, so the site would pair it with the older package
+      - name: Check the package's code hasn't changed since the version last did
+        run: |
+          bumped=$(git log -1 --format=%H -G '^Version:' -- DESCRIPTION)
+          if ! git diff --quiet "$bumped" HEAD -- R src data NAMESPACE; then
+            echo "R/, src/, data/ or NAMESPACE changed since the version was last bumped ($(git log -1 --format='%h %s' "$bumped")):"
+            git diff --stat "$bumped" HEAD -- R src data NAMESPACE
+            echo "Bump the version in DESCRIPTION so r-universe rebuilds the package, then push again."
+            exit 1
+          fi
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
