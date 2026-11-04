@@ -45,22 +45,22 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
-      ## Read from the WebAssembly repository's own index (for webR's R 4.6), which r-universe's
-      ## summary API can lag behind; the index records the version, not the commit
-      - name: Wait for r-universe's WebAssembly build of this version
-        run: |
-          version=$(grep '^Version:' DESCRIPTION | sed 's/Version: *//')
-          for i in $(seq 1 120); do
-            built=$(curl -sfL https://ricewhitlam.r-universe.dev/bin/emscripten/contrib/4.6/PACKAGES \
-              | sed -n '/^Package: darksoulsarmor$/,/^$/p' | grep '^Version:' | sed 's/Version: *//')
-            if [ "$built" = "$version" ]; then exit 0; fi
-            sleep 60
-          done
-          echo "r-universe hasn't built version $version after 2 hours"; exit 1
       - name: Install shinylive and the package
         run: Rscript -e 'install.packages(c("shinylive", "darksoulsarmor"), repos = c("https://ricewhitlam.r-universe.dev", getOption("repos")))'
-      - name: Export the app
-        run: Rscript -e 'shinylive::export("inst/shiny", "_site")'
+      ## Export, then check which version of the package the site bundled: shinylive fetches
+      ## r-universe's WebAssembly build for whatever R version webR runs, so this checks what will
+      ## actually go live. Until r-universe has built this version, wait and export again.
+      - name: Export the app with r-universe's WebAssembly build of this version
+        run: |
+          version=$(grep '^Version:' DESCRIPTION | sed 's/Version: *//' | tr -d '\r')
+          for i in $(seq 1 24); do
+            rm -rf _site
+            Rscript -e 'shinylive::export("inst/shiny", "_site")'
+            if [ -f "_site/shinylive/webr/packages/darksoulsarmor/darksoulsarmor_${version}.tgz" ]; then exit 0; fi
+            echo "The bundled package isn't version $version yet; waiting for r-universe"
+            sleep 300
+          done
+          echo "r-universe hasn't built version $version after 2 hours"; exit 1
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
