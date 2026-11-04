@@ -1,6 +1,7 @@
 ## Publishes the app to GitHub Pages, running in the browser through Shinylive, on every push to
-## main (or by hand) - once r-universe has built the WebAssembly package for that same commit, so
-## the site never pairs new app files with an older package
+## main (or by hand) - once r-universe has built the WebAssembly package for that same version, so
+## the site never pairs new app files with an older package. r-universe rebuilds when the version
+## changes, so a change to the package's R or C++ code needs a version bump to reach the site.
 name: Deploy the app to GitHub Pages
 
 on:
@@ -30,15 +31,18 @@ jobs:
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
-      - name: Wait for r-universe's WebAssembly build of this commit
+      ## Read from the WebAssembly repository's own index (for webR's R 4.6), which r-universe's
+      ## summary API can lag behind; the index records the version, not the commit
+      - name: Wait for r-universe's WebAssembly build of this version
         run: |
+          version=$(grep '^Version:' DESCRIPTION | sed 's/Version: *//')
           for i in $(seq 1 120); do
-            built=$(curl -sfL https://ricewhitlam.r-universe.dev/api/packages/darksoulsarmor \
-              | jq -r '._binaries[] | select(.os == "wasm" and .status == "success") | .commit' | head -1)
-            if [ "$built" = "$GITHUB_SHA" ]; then exit 0; fi
+            built=$(curl -sfL https://ricewhitlam.r-universe.dev/bin/emscripten/contrib/4.6/PACKAGES \
+              | sed -n '/^Package: darksoulsarmor$/,/^$/p' | grep '^Version:' | sed 's/Version: *//')
+            if [ "$built" = "$version" ]; then exit 0; fi
             sleep 60
           done
-          echo "r-universe hasn't built $GITHUB_SHA after 2 hours"; exit 1
+          echo "r-universe hasn't built version $version after 2 hours"; exit 1
       - name: Install shinylive and the package
         run: Rscript -e 'install.packages(c("shinylive", "darksoulsarmor"), repos = c("https://ricewhitlam.r-universe.dev", getOption("repos")))'
       - name: Export the app
