@@ -93,7 +93,9 @@ constraint.inputs <- function(movement, weapons, endurance.level){
     )
 }
 no.weapons <- c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None")
-minima.inputs <- function(minimum.values, minima.ids){ setNames(as.list(minimum.values$minima), minima.ids) }
+## The Minimum Inputs dialog's boxes, under its module's prefix ("minima-")
+minimum.id <- function(stat){ paste0("minima-min", tolower(gsub("_", "", stat))) }
+minima.inputs <- function(minima){ setNames(as.list(minima$values$minima), minimum.id(darksoulsarmor:::METRICS$metric[order(darksoulsarmor:::METRICS$minima.index)])) }
 weight.inputs <- function(weight.values, weight.ids){ setNames(as.list(weight.values$weights), weight.ids) }
 
 test_that("submitting every modal unchanged after a refresh keeps the results current", {
@@ -105,11 +107,12 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         submit.modal(session, "upgrades-open", "upgrades-done", list(`upgrades-regular.level` = upgrades$values$regular.level, `upgrades-twinkling.level` = upgrades$values$twinkling.level), 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = rings$values$havel.ring, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), 1)
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs(constraint.values$movement, constraint.values$weapons, constraint.values$endurance.level), 1)
-        submit.modal(session, "minima", "dismiss_minimum_modal", minima.inputs(minimum.values, minima.ids), 1)
+        submit.modal(session, "minima-open", "minima-done", minima.inputs(minima), 1)
         submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
 
         expect_true(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))))
         expect_true(upgrades$unchanged())
+        expect_true(minima$unchanged())
         expect_true(rings$unchanged())
         expect_equal(output$refreshmessage, "")
     })
@@ -143,9 +146,9 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", constraint.values$weapons, constraint.values$endurance.level), click)
         check.edit("movement", "Mid")
 
-        values <- minima.inputs(minimum.values, minima.ids)
-        values$minphysdef <- 50
-        submit.modal(session, "minima", "dismiss_minimum_modal", values, click)
+        values <- minima.inputs(minima)
+        values[[minimum.id("PHYS_DEF")]] <- 50
+        submit.modal(session, "minima-open", "minima-done", values, click)
         check.edit("minima", c(50, rep(0, 11)))
         expect_true(all(armordata()$data$PHYS_DEF >= 50))
 
@@ -284,9 +287,9 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         session$setInputs(tradeoff_metric = "POISE", main_tabs = "Results")
         expect_error(output$download, "Refresh Armor Data")
 
-        values <- minima.inputs(minimum.values, minima.ids)
-        values[[metric.input.id("POISE", "minima")]] <- 30
-        submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        values <- minima.inputs(minima)
+        values[[minimum.id("POISE")]] <- 30
+        submit.modal(session, "minima-open", "minima-done", values, 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "Talisman", right.1 = "Claymore", left.2 = "Dagger", right.2 = "None"), 40), 1)
@@ -675,10 +678,10 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
 ## at the default 10 Endurance, the Light segment runs from 0 to 2.5 armor weight.
 test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        values <- minima.inputs(minimum.values, minima.ids)
-        values[[metric.input.id("POISE", "minima")]] <- 30
-        values[[metric.input.id("BLEED_RES", "minima")]] <- 20
-        submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        values <- minima.inputs(minima)
+        values[[minimum.id("POISE")]] <- 30
+        values[[minimum.id("BLEED_RES")]] <- 20
+        submit.modal(session, "minima-open", "minima-done", values, 1)
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "None", right.1 = "Zweihander", left.2 = "None", right.2 = "None"), 10), 1)
         zweihander <- c(right.1 = "Zweihander")
         session$setInputs(go = 1)
@@ -851,9 +854,9 @@ test_that("the Trade-offs tab shows where extra weight pays off", {
 
         ## Likewise when the curve starts with weights no set fits (here under a poise minimum), which
         ## plotly leaves off the chart: each box still takes the color of the piece its text names
-        values <- minima.inputs(minimum.values, minima.ids)
-        values[[metric.input.id("POISE", "minima")]] <- 30
-        submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
+        values <- minima.inputs(minima)
+        values[[minimum.id("POISE")]] <- 30
+        submit.modal(session, "minima-open", "minima-done", values, 1)
         session$setInputs(go = 2)
         session$setInputs(tradeoff_metric = "SCORE", main_tabs = "Trade-offs")
         result <- tradeoffdata()

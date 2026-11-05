@@ -18,7 +18,7 @@ bslib::page_sidebar(
                 upgrade.inputs.button("upgrades"),
                 ring.inputs.button("rings"),
                 shiny::actionButton(inputId = "constraints", label = "Load Inputs"),
-                shiny::actionButton(inputId = "minima", label = "Minimum Inputs"),
+                minimum.inputs.button("minima"),
                 shiny::actionButton(inputId = "weights", label = "Score Inputs"),
                 
                 shiny::hr(),

@@ -33,13 +33,12 @@ server <- function(input, output, session){
         shiny::reactiveValues(
             filter.values = TRUE,
             constraint.values = TRUE,
-            minimum.values = TRUE,
             weight.values = TRUE
         )
 
     shiny::observe({
         if(been.refreshed()){
-            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && upgrades$unchanged() && rings$unchanged()){
+            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && upgrades$unchanged() && minima$unchanged() && rings$unchanged()){
                 output$refreshmessage <- shiny::renderText("")
             } else{
                 output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
@@ -236,6 +235,7 @@ server <- function(input, output, session){
     ## The dialogs (R/), each compared with the last refresh's arguments once there's been one
     last.args <- shiny::reactive({ if(been.refreshed()) armordata()$args else NULL })
     upgrades <- upgrade.inputs.server("upgrades", last.args)
+    minima <- minimum.inputs.server("minima", last.args)
     rings <- ring.inputs.server("rings", last.args)
 
 
@@ -362,55 +362,9 @@ server <- function(input, output, session){
     ## values (X itself, per USE.NAMES) - harmless for R-side use, but Shiny serializes a named
     ## vector differently (jsonlite's keep_vec_names), which mangles the inputId sent to the
     ## client, so these must stay plain unnamed strings.
-    minima.ids <- unname(vapply(minima.metrics, metric.input.id, character(1), kind = "minima"))
     weight.metrics <- METRICS[!is.na(weight.index)][order(weight.index), metric]
     weight.ids <- unname(vapply(weight.metrics, metric.input.id, character(1), kind = "weight"))
 
-    minimum.values <- shiny::reactiveValues(minima = rep(0.0, 12))
-
-    minimum.input <- function(stat){
-        shinyWidgets::autonumericInput(
-            inputId = metric.input.id(stat, "minima"),
-            label = stat,
-            value = minimum.values$minima[minima.index.of(stat)],
-            align = "right",
-            decimalCharacter = ".",
-            digitGroupSeparator = ",",
-            decimalPlaces = ifelse(stat %in% c("POISE", "DURABILITY"), 0, 1),
-            maximumValue = 999,
-            minimumValue = 0
-        )
-    }
-
-    shiny::observeEvent(input$minima, {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Minimum Inputs",
-          footer = shiny::actionButton(inputId = "dismiss_minimum_modal", label = "Done"),
-          shiny::fluidRow(
-            shiny::column(width = 3, minimum.input("PHYS_DEF"), minimum.input("MAG_DEF"), minimum.input("BLEED_RES")),
-            shiny::column(width = 3, minimum.input("STRIKE_DEF"), minimum.input("FIRE_DEF"), minimum.input("POIS_RES")),
-            shiny::column(width = 3, minimum.input("SLASH_DEF"), minimum.input("LITNG_DEF"), minimum.input("CURSE_RES")),
-            shiny::column(width = 3, minimum.input("THRUST_DEF"), minimum.input("POISE"), minimum.input("DURABILITY"))
-          )
-        )
-      )
-    })
-
-    shiny::observeEvent(input$dismiss_minimum_modal, {
-
-        minima.inputs <- lapply(minima.ids, function(id){ input[[id]] })
-        if(all(vapply(minima.inputs, shiny::isTruthy, logical(1)))){
-            minimum.values$minima <- round(unlist(minima.inputs), 1)
-        }
-
-        if(been.refreshed()){
-            curr.vals <- armordata()$args
-            inputs.unchanged$minimum.values <- all(sapply(names(minimum.values), function(name){identical(curr.vals[[name]], minimum.values[[name]])}))
-        }
-        shiny::removeModal()
-
-    }, ignoreInit = TRUE)
 
 
     ## The score settings: the scale each stat is weighted in (stat.scale), whether the weights are
@@ -733,7 +687,7 @@ server <- function(input, output, session){
             havel.ring = rings$values$havel.ring,
             favor.ring = rings$values$favor.ring,
             wolf.ring = rings$values$wolf.ring,
-            minima = minimum.values$minima,
+            minima = minima$values$minima,
             weights = weight.values$weights,
             stat.scale = weight.values$stat.scale,
             weights.mode = weight.values$weights.mode
@@ -765,7 +719,6 @@ server <- function(input, output, session){
 
             inputs.unchanged$filter.values <- TRUE
             inputs.unchanged$constraint.values <- TRUE
-            inputs.unchanged$minimum.values <- TRUE
             inputs.unchanged$weight.values <- TRUE
 
             output$refreshmessage <- shiny::renderText("")
