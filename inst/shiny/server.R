@@ -29,10 +29,10 @@ server <- function(input, output, session){
             if(filters$unchanged() && upgrades$unchanged() && constraints$unchanged() && minima$unchanged() && rings$unchanged() && scores$unchanged()){
                 output$refreshmessage <- shiny::renderText("")
             } else{
-                output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
+                output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update the table and the graph")
             }
         } else{
-            output$refreshmessage <- shiny::renderText("Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results for both tabs")
+            output$refreshmessage <- shiny::renderText("Adjust settings in the sidebar and click 'Refresh Armor Data' to pull results for the table and the graph")
         }
     })
 
@@ -265,7 +265,7 @@ server <- function(input, output, session){
     ## The Trade-offs tab (R/tradeoffs.R), for the last refresh's settings while it's open
     tradeoffs <- tradeoffs.tab.server(
         "tradeoffs", last.args,
-        shown = shiny::reactive(identical(input$main_tabs, "Trade-offs")),
+        shown = shiny::reactive(identical(input$main_tabs, "graph")),
         show.links = show.armor.links,
         show.error = function(message){ output$errormessage <- shiny::renderText(message) }
     )
@@ -299,9 +299,9 @@ server <- function(input, output, session){
         )
     }
 
-    ## Everything the last refresh produced, in one workbook: the Results table, the Trade-offs table
-    ## for the current Maximize choice (computed now if the tab hasn't shown it since that
-    ## refresh), and the settings behind both
+    ## Everything the last refresh produced, in one workbook: the Top Scoring Combos table, the Best
+    ## Combo by Weight table for the current Maximize choice (computed now if the tab hasn't shown it
+    ## since that refresh), and the settings behind both
     output$download <- shiny::downloadHandler(
         ## Stamped with the time of the download (the server's clock), without colons for Windows
         filename = function(){paste0("ds_armor_data_", format(Sys.time(), "%Y-%m-%d_%H%M%S"), ".xlsx")},
@@ -312,8 +312,8 @@ server <- function(input, output, session){
             snapshot <- armordata()$args
             writexl::write_xlsx(
                 list(
-                    Results = armordata()$data,
-                    `Trade-offs` = tradeoffs$download.table(snapshot),
+                    `Top Scoring Combos` = armordata()$data,
+                    `Best Combo by Weight` = tradeoffs$download.table(snapshot),
                     Settings = settings.sheet(snapshot)
                 ),
                 file

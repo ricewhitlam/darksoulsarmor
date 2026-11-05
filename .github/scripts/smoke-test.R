@@ -1,7 +1,7 @@
 ## A smoke test of the app as exported by shinylive, run before the Pages workflow publishes it:
-## in headless Chrome, the app must start, refresh the Results table, draw the Trade-offs chart
-## and offer its download as an Excel workbook. Takes the exported site's directory (served here)
-## or a URL; exits with an error, naming the stage, if any of that fails.
+## in headless Chrome, the app must start, refresh the Top Scoring Combos table, draw the Best
+## Combo by Weight graph and offer its download as an Excel workbook. Takes the exported site's
+## directory (served here) or a URL; exits with an error, naming the stage, if any of that fails.
 ##
 ## Usage: Rscript .github/scripts/smoke-test.R <directory or URL>
 
@@ -44,15 +44,15 @@ later::run_now(2)
 
 invisible(js("w.Shiny.setInputValue('go', 1, {priority: 'event'}); return true;"))
 if(!wait.for("return d.querySelectorAll('#table tbody tr').length > 1 && !d.querySelector('#table td.dataTables_empty') && !d.querySelector('.shinybusy-modal');", 180)){
-    fail("Refresh didn't fill the Results table")
+    fail("Refresh didn't fill the Top Scoring Combos table")
 }
-message("Refresh filled the Results table")
+message("Refresh filled the Top Scoring Combos table")
 
-invisible(js("[...d.querySelectorAll('a')].find(a => a.textContent.trim() == 'Trade-offs').click(); return true;"))
+invisible(js("[...d.querySelectorAll('a')].find(a => a.textContent.trim() == 'Best Combo by Weight').click(); return true;"))
 if(!wait.for("return !!d.querySelector('#tradeoffs-plot .main-svg') && !d.querySelector('.shinybusy-modal');", 180)){
-    fail("the Trade-offs chart didn't draw")
+    fail("the Best Combo by Weight graph didn't draw")
 }
-message("The Trade-offs chart drew")
+message("The Best Combo by Weight graph drew")
 
 ## The download, fetched from inside the app's frame as the browser would
 download <- b$Runtime$evaluate(

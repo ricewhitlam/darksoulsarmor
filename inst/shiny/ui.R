@@ -61,14 +61,17 @@ bslib::page_sidebar(
         shiny::textOutput("errormessage"),
         shiny::textOutput("refreshmessage"),
 
+        ## Each tab's value (what input$main_tabs reports) is fixed, apart from its label
         bslib::navset_card_tab(
             id = "main_tabs",
             bslib::nav_panel(
-                "Results",
+                "Top Scoring Combos",
+                value = "table",
                 DT::dataTableOutput(outputId = "table")
             ),
             bslib::nav_panel(
-                "Trade-offs",
+                "Best Combo by Weight",
+                value = "graph",
                 tradeoffs.tab("tradeoffs")
             )
         )
