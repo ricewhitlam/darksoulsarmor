@@ -261,12 +261,16 @@ server <- function(input, output, session){
 
 
     ## The Trade-offs tab (R/tradeoffs.R), for the last refresh's settings while it's open
+    ## (Its tab stays chosen while the Equip Load page is showing, but it isn't open then)
     tradeoffs <- tradeoffs.tab.server(
         "tradeoffs", last.args,
-        shown = shiny::reactive(identical(input$main_tabs, "graph")),
+        shown = shiny::reactive(identical(input$main_tabs, "graph") && !identical(input$pages, "equipload")),
         show.links = show.armor.links,
         show.error = function(message){ output$errormessage <- shiny::renderText(message) }
     )
+
+    ## The Equip Load page (R/equipload.R): a calculator of its own, apart from the search
+    equipload <- equip.load.server("equipload")
 
 
     ## The settings behind a download (the last refresh's), one per row, under the app's own labels

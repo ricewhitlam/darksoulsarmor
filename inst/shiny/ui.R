@@ -82,6 +82,13 @@ bslib::page_navbar(
             )
         ),
 
+        ## A calculator for one setup's exact equip load, apart from the search (R/equipload.R)
+        bslib::nav_panel(
+            "Equip Load",
+            value = "equipload",
+            equip.load.page("equipload")
+        ),
+
         bslib::nav_spacer(),
         bslib::nav_item(shiny::actionLink(inputId = "guide", label = "User Guide")),
         bslib::nav_item(bslib::input_dark_mode(id = "mode", mode = "dark"))

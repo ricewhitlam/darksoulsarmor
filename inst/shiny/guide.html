@@ -74,6 +74,17 @@ Boundary points (diamonds) mark where one stretch gives way to the next, at the 
 Hover over a point for the piece it's in and its rate; its hover box takes the piece's color, and at a boundary point it also gives the rates on either side.
 These descriptions are heuristic: the rules behind them and their default settings were tuned by judgement to describe typical curves well, which is why the sensitivity can be adjusted. <br> <br>
 
+Equip Load Page: <br>
+A calculator for one setup, separate from the search: its inputs are its own, and 'Refresh Armor Data' doesn't affect it. Choose your Endurance, rings, the weapon in each of the four slots and your armor in the sidebar,
+then click 'Calculate'. Choosing the Mask of the Father as your head applies its equip load bonus. <br>
+It shows your equip load, total weight, equip percentage and movement type as the game computes them, with the same arithmetic on paper beside each. The game works in 32-bit floating point.
+It adds your weights one at a time, in a fixed order: left hand 1, right hand 1, left hand 2, right hand 2, then head, chest, hands and legs, whatever order you put them on in.
+Each sum is rounded, and the Ring of Favor and Protection's and the Mask of the Father's multipliers aren't exact either. So a setup exactly on a movement line on paper can land a hair over it in the game, or stay within it.
+When the game disagrees with paper, the page says so, and lists any arrangements of the same weapons across the four slots that the game would keep within the line. <br>
+'Step by step' shows the running total after each slot. 'Movement lines' shows each line on paper and in the game, with your total's distance from it.
+The equip percentage is your total divided by your equip load. The game decides your movement type by comparing your total with each line, not by this percentage. <br>
+'Random failing example' and 'Random succeeding example' fill in a random setup exactly on a line on paper, which the game puts over it or keeps within it, and calculate it. <br> <br>
+
 Miscellaneous notes: <br> <br>
 Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: <a href="http://darksouls.wikidot.com/stamina#toc3 " target="_blank">Stamina</a> <br> <br>
 Durability is aggregated by taking the minimum i.e. the total durability for a set is the lowest durability across each component of the set. <br> <br> 

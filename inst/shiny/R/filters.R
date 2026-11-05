@@ -9,12 +9,7 @@
 ## value can make one refresh hold gigabytes of results.
 MAX_TABLE_SIZE <- 100000
 
-## Each armor slot's pieces as the dialog lists them: "No <slot>" first (as "None" is for the
-## weapons), then the rest in the data's order
-HEAD.PIECES <- head.data.unupgraded[c(which(ARMOR == "No Head"), which(ARMOR != "No Head"))]
-CHEST.PIECES <- chest.data.unupgraded[c(which(ARMOR == "No Chest"), which(ARMOR != "No Chest"))]
-HANDS.PIECES <- hands.data.unupgraded[c(which(ARMOR == "No Hands"), which(ARMOR != "No Hands"))]
-LEGS.PIECES <- legs.data.unupgraded[c(which(ARMOR == "No Legs"), which(ARMOR != "No Legs"))]
+## (Each slot's pieces, as the dialog lists them, are HEAD.PIECES etc. in pieces.R)
 
 ## The sidebar's button
 filter.inputs.button <- function(id){

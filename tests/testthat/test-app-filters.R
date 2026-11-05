@@ -3,6 +3,7 @@
 ## those lists to poise, efficient or quiet armor; Done saves the choices (Max Table Size clamped,
 ## an empty slot as its "No <slot>" piece), and unchanged says whether the saved choices are the last
 ## refresh's
+source(system.file("shiny", "R", "pieces.R", package = "darksoulsarmor"), local = TRUE)
 source(system.file("shiny", "R", "filters.R", package = "darksoulsarmor"), local = TRUE)
 
 test_that("Filter Inputs saves its choices on Done and compares them with the last refresh", {

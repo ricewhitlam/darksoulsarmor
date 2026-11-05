@@ -253,7 +253,7 @@ test_that("the User Guide describes the current app", {
     })
     expect_length(modals, 1)
     guide <- modals[1]
-    for(text in c("The table and the graph (the 'Top Scoring Combos' and 'Best Combo by Weight' tabs) show the settings of the last refresh", "on sheets named 'Top Scoring Combos', 'Best Combo by Weight' and 'Settings'", "Best Combo by Weight Tab:", "saves an Excel workbook",
+    for(text in c("The table and the graph (the 'Top Scoring Combos' and 'Best Combo by Weight' tabs) show the settings of the last refresh", "on sheets named 'Top Scoring Combos', 'Best Combo by Weight' and 'Settings'", "Best Combo by Weight Tab:", "Equip Load Page:", "It adds your weights one at a time, in a fixed order", "lists any arrangements of the same weapons", "Random failing example", "saves an Excel workbook",
                   "'Movement' is used to specify", "Poop (no limit", "Score Inputs:", "Fat | Poop", "A minimum on the charted stat itself is ignored",
                   "Clicking on a row in the Top Scoring Combos table, or on a point or row in the Best Combo by Weight tab", "with the game's own upgrade rates, exactly as the game computes them", "The download holds the exact values", "Right Hand Weapon 1' through 'Left Hand Weapon 2' are the weapons", "given your equip load and weapons", "install.packages(\"darksoulsarmor\", repos = c(\"https://ricewhitlam.r-universe.dev\", \"https://cloud.r-project.org\"))",
                   "Each weapon's weight is shown beside its name, and the weapons' total weight under the dropdowns",
@@ -891,13 +891,14 @@ test_that("the bar and the tabs are labelled, and the graph's tab offers Jumps a
         expect_match(select, "<option value=\"some\" selected>Some</option>", fixed = TRUE)
         expect_match(select, "<option value=\"many\">Many</option>", fixed = TRUE)
     }
-    ## The page, then its tabs, by label, each with its fixed value (input$pages, input$main_tabs)
+    ## The pages, then the search page's tabs, by label, each with its fixed value (input$pages,
+    ## input$main_tabs)
     tabs <- regmatches(ui, gregexpr("<a [^>]*data-value=\"[^\"]*\"[^>]*>[^<]*</a>", ui))[[1]]
-    expect_identical(sub(".*data-value=\"([^\"]*)\".*", "\\1", tabs), c("optimization", "table", "graph"))
-    expect_identical(sub(".*>([^<]*)</a>$", "\\1", tabs), c("Armor Optimization", "Top Scoring Combos", "Best Combo by Weight"))
+    expect_identical(sub(".*data-value=\"([^\"]*)\".*", "\\1", tabs), c("optimization", "equipload", "table", "graph"))
+    expect_identical(sub(".*>([^<]*)</a>$", "\\1", tabs), c("Armor Optimization", "Equip Load", "Top Scoring Combos", "Best Combo by Weight"))
     ## The User Guide link and the light/dark switch, in the bar, after the pages
     bar <- regmatches(ui, regexpr("<ul[^>]*navbar-nav[\\s\\S]*?</ul>", ui, perl = TRUE))
     expect_match(bar, "id=\"guide\"[^>]*><span[^>]*>User Guide</span></a>")
     expect_match(bar, "<bslib-input-dark-mode[^>]*id=\"mode\"")
-    expect_lt(regexpr("Armor Optimization", bar, fixed = TRUE), regexpr("User Guide", bar, fixed = TRUE))
+    expect_lt(regexpr("Equip Load", bar, fixed = TRUE), regexpr("User Guide", bar, fixed = TRUE))
 })
