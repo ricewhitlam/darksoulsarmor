@@ -19,7 +19,7 @@ bslib::page_sidebar(
                 ring.inputs.button("rings"),
                 load.inputs.button("constraints"),
                 minimum.inputs.button("minima"),
-                shiny::actionButton(inputId = "weights", label = "Score Inputs"),
+                score.inputs.button("scores"),
                 
                 shiny::hr(),
 

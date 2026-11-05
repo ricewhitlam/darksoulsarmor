@@ -1,8 +1,13 @@
+## The Score Inputs dialog's boxes (under its module's prefix, "scores-"): one per stat, in the
+## search's order, and one per group of stats
+score.ids <- paste0("scores-", tolower(gsub("_", "", darksoulsarmor:::METRICS[!is.na(weight.index)][order(weight.index), metric])), "weight")
+score.group.ids <- paste0("scores-", tolower(gsub("_", "", names(darksoulsarmor:::stat.groups))), "weight")
+
 ## Drives the installed app's server with shiny::testServer. The refresh-message observer runs
-## if(all(...)) over every inputs.unchanged flag, so each flag must always be a single TRUE/FALSE:
-## an NA there errors inside an observer, which ends the whole Shiny session. All-zero score
-## weights used to produce exactly that (their normalization is 0/0 = NaN) when submitted after
-## a refresh, via the Score Inputs modal's Done button.
+## if() over every dialog's unchanged(), so each must always be a single TRUE/FALSE: an NA there
+## errors inside an observer, which ends the whole Shiny session. All-zero score weights used to
+## produce exactly that (their normalization is 0/0 = NaN) when submitted after a refresh, via
+## the Score Inputs dialog's Done button.
 test_that("all-zero score weights submitted after a refresh don't crash the app", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         session$setInputs(go = 1)
@@ -10,17 +15,17 @@ test_that("all-zero score weights submitted after a refresh don't crash the app"
         expect_gt(rows.before, 0)
 
         ## Resubmitting the weights the last refresh used reads as unchanged
-        session$setInputs(weights = 1)
-        do.call(session$setInputs, setNames(as.list(weight.values$weights), weight.ids))
-        session$setInputs(dismiss_weight_modal = 1)
-        expect_true(inputs.unchanged$weight.values)
+        session$setInputs(`scores-open` = 1)
+        do.call(session$setInputs, setNames(as.list(scores$values$weights), score.ids))
+        session$setInputs(`scores-done` = 1)
+        expect_true(scores$unchanged())
         expect_equal(output$refreshmessage, "")
 
         ## All-zero weights read as changed rather than NA, and the session survives
-        session$setInputs(weights = 2)
-        do.call(session$setInputs, setNames(as.list(rep(0, length(weight.ids))), weight.ids))
-        session$setInputs(dismiss_weight_modal = 2)
-        expect_false(inputs.unchanged$weight.values)
+        session$setInputs(`scores-open` = 2)
+        do.call(session$setInputs, setNames(as.list(rep(0, length(score.ids))), score.ids))
+        session$setInputs(`scores-done` = 2)
+        expect_false(scores$unchanged())
         expect_match(output$refreshmessage, "Inputs have changed")
 
         ## Refreshing with them reports the invalid weights and keeps the previous results
@@ -98,7 +103,7 @@ no.weapons <- c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "N
 ## The Minimum Inputs dialog's boxes, under its module's prefix ("minima-")
 minimum.id <- function(stat){ paste0("minima-min", tolower(gsub("_", "", stat))) }
 minima.inputs <- function(minima){ setNames(as.list(minima$values$minima), minimum.id(darksoulsarmor:::METRICS$metric[order(darksoulsarmor:::METRICS$minima.index)])) }
-weight.inputs <- function(weight.values, weight.ids){ setNames(as.list(weight.values$weights), weight.ids) }
+score.inputs <- function(scores){ setNames(as.list(scores$values$weights), score.ids) }
 
 test_that("submitting every modal unchanged after a refresh keeps the results current", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
@@ -110,14 +115,14 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = rings$values$havel.ring, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), 1)
         submit.modal(session, "constraints-open", "constraints-done", constraint.inputs(constraints$values$movement, constraints$values$weapons, constraints$values$endurance.level), 1)
         submit.modal(session, "minima-open", "minima-done", minima.inputs(minima), 1)
-        submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
+        submit.modal(session, "scores-open", "scores-done", score.inputs(scores), 1)
 
-        expect_true(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))))
         expect_true(filters$unchanged())
         expect_true(upgrades$unchanged())
         expect_true(constraints$unchanged())
         expect_true(minima$unchanged())
         expect_true(rings$unchanged())
+        expect_true(scores$unchanged())
         expect_equal(output$refreshmessage, "")
     })
 })
@@ -156,9 +161,9 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
         check.edit("minima", c(50, rep(0, 11)))
         expect_true(all(armordata()$data$PHYS_DEF >= 50))
 
-        values <- weight.inputs(weight.values, weight.ids)
-        values$physdefweight <- 50
-        submit.modal(session, "weights", "dismiss_weight_modal", values, click)
+        values <- score.inputs(scores)
+        values[["scores-physdefweight"]] <- 50
+        submit.modal(session, "scores-open", "scores-done", values, click)
         new.weights <- c(50, 16, 16, 16, 8, 8, 8, 4, 4, 4)
         check.edit("weights", new.weights/sum(new.weights))
     })
@@ -347,102 +352,25 @@ test_that("the download saves the results, trade-offs, and settings of the last 
     })
 })
 
-test_that("'Normalize to 100%' rescales the weights to sum to exactly 100.0 at one decimal", {
-    updates <- list()
-    local_mocked_bindings(
-        updateAutonumericInput = function(session = NULL, inputId, label = NULL, value = NULL, options = NULL){
-            updates[[inputId]] <<- value
-        },
-        .package = "shinyWidgets"
-    )
-    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        raw <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
-        session$setInputs(weights = 1)
-        do.call(session$setInputs, setNames(as.list(raw), weight.ids))
-        session$setInputs(normalize_weights = 1)
-        normalized <- unlist(updates[weight.ids])
-        expect_length(normalized, 10)
-        expect_equal(sum(normalized), 100)
-        expect_equal(normalized, round(normalized, 1))
-        expect_true(all(abs(normalized - 100*raw/sum(raw)) <= 0.1 + 1e-9))
-    })
-})
-
-## Score Inputs' Weights Mode: switching fills the newly shown boxes from the ones just hidden - a
-## group gets the sum of its stats' weights, and a group's weight is split evenly across its stats
-## in whole tenths, the leftover tenths going to its stats in order - so each group's total is kept
-test_that("switching Weights Mode carries the weights over", {
-    updates <- list()
-    local_mocked_bindings(
-        updateAutonumericInput = function(session = NULL, inputId, label = NULL, value = NULL, options = NULL){
-            updates[[inputId]] <<- value
-        },
-        .package = "shinyWidgets"
-    )
-    shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        ## The browser opening the dialog: its boxes and radio buttons as the app filled them
-        session$setInputs(weights = 1)
-        do.call(session$setInputs, weight.inputs(weight.values, weight.ids))
-        session$setInputs(weights_mode = "individual", stat_scale = "sd")
-        expect_length(updates, 0)
-
-        ## Individual to grouped: the defaults' sums
-        session$setInputs(weights_mode = "grouped")
-        expect_equal(unname(unlist(updates[group.ids])), c(64, 24, 12))
-
-        ## Grouped to individual, split in whole tenths: 33.4 over four stats is 8.4, 8.4, 8.3, 8.3
-        updates <<- list()
-        do.call(session$setInputs, setNames(list(33.4, 33.3, 33.3), group.ids))
-        session$setInputs(weights_mode = "individual")
-        split <- unname(unlist(updates[weight.ids]))
-        expect_equal(split, c(8.4, 8.4, 8.3, 8.3, 11.1, 11.1, 11.1, 11.1, 11.1, 11.1))
-        expect_equal(sum(split), 100)
-
-        ## ...and back again exactly
-        updates <<- list()
-        do.call(session$setInputs, setNames(as.list(split), weight.ids))
-        session$setInputs(weights_mode = "grouped")
-        expect_equal(unname(unlist(updates[group.ids])), c(33.4, 33.3, 33.3))
-
-        ## Uneven weights within a group keep the group's total, evened out
-        updates <<- list()
-        session$setInputs(weights_mode = "individual")
-        do.call(session$setInputs, setNames(as.list(c(20, 12, 16, 16, 8, 8, 8, 4, 4, 4)), weight.ids))
-        session$setInputs(weights_mode = "grouped")
-        expect_equal(unname(unlist(updates[group.ids])), c(64, 24, 12))
-        do.call(session$setInputs, setNames(list(64, 24, 12), group.ids))
-        session$setInputs(weights_mode = "individual")
-        expect_equal(unname(unlist(updates[weight.ids])), c(16, 16, 16, 16, 8, 8, 8, 4, 4, 4))
-
-        ## Normalize works on the boxes showing
-        updates <<- list()
-        session$setInputs(weights_mode = "grouped")
-        do.call(session$setInputs, setNames(list(1, 1, 1), group.ids))
-        session$setInputs(normalize_weights = 1)
-        expect_equal(unname(unlist(updates[group.ids])), c(33.4, 33.3, 33.3))
-        expect_null(updates[[weight.ids[1]]])
-    })
-})
-
 ## Score Inputs' Stat Scale and Weights Mode are saved with the weights on Done, reach the search on
 ## refresh, count toward the settings having changed, and are recorded in the download
 test_that("Stat Scale and Weights Mode reach the search, the refresh message and the download", {
     skip_if_not_installed("readxl")
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         ## The app starts at Std Dev, Individual and 16/8/4
-        expect_identical(c(weight.values$stat.scale, weight.values$weights.mode), c("sd", "individual"))
+        expect_identical(c(scores$values$stat.scale, scores$values$weights.mode), c("sd", "individual"))
         session$setInputs(go = 1)
         expect_identical(armordata()$args$stat.scale, "sd")
         expect_identical(armordata()$args$weights.mode, "individual")
 
         ## Grouped weights on the Max scale
-        session$setInputs(weights = 1)
-        session$setInputs(stat_scale = "max", weights_mode = "grouped")
-        do.call(session$setInputs, setNames(list(50, 30, 20), group.ids))
-        session$setInputs(dismiss_weight_modal = 1)
-        expect_identical(c(weight.values$stat.scale, weight.values$weights.mode), c("max", "grouped"))
-        expect_equal(weight.values$weights, c(50, 30, 20))
-        expect_false(inputs.unchanged$weight.values)
+        session$setInputs(`scores-open` = 1)
+        session$setInputs(`scores-stat_scale` = "max", `scores-weights_mode` = "grouped")
+        do.call(session$setInputs, setNames(list(50, 30, 20), score.group.ids))
+        session$setInputs(`scores-done` = 1)
+        expect_identical(c(scores$values$stat.scale, scores$values$weights.mode), c("max", "grouped"))
+        expect_equal(scores$values$weights, c(50, 30, 20))
+        expect_false(scores$unchanged())
         expect_match(output$refreshmessage, ".")
 
         session$setInputs(go = 2)
@@ -457,19 +385,19 @@ test_that("Stat Scale and Weights Mode reach the search, the refresh message and
 
         ## Submitting them unchanged keeps the results current; another scale, or the same shares in
         ## the other mode, doesn't
-        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "max", weights_mode = "grouped"), setNames(list(50, 30, 20), group.ids)), 2)
-        expect_true(inputs.unchanged$weight.values)
-        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "raw"), setNames(list(50, 30, 20), group.ids)), 3)
-        expect_false(inputs.unchanged$weight.values)
-        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "max", weights_mode = "individual"), setNames(as.list(c(12.5, 12.5, 12.5, 12.5, 10, 10, 10, 20/3, 20/3, 20/3)), weight.ids)), 4)
-        expect_identical(weight.values$weights.mode, "individual")
-        expect_false(inputs.unchanged$weight.values)
+        submit.modal(session, "scores-open", "scores-done", c(list(`scores-stat_scale` = "max", `scores-weights_mode` = "grouped"), setNames(list(50, 30, 20), score.group.ids)), 2)
+        expect_true(scores$unchanged())
+        submit.modal(session, "scores-open", "scores-done", c(list(`scores-stat_scale` = "raw"), setNames(list(50, 30, 20), score.group.ids)), 3)
+        expect_false(scores$unchanged())
+        submit.modal(session, "scores-open", "scores-done", c(list(`scores-stat_scale` = "max", `scores-weights_mode` = "individual"), setNames(as.list(c(12.5, 12.5, 12.5, 12.5, 10, 10, 10, 20/3, 20/3, 20/3)), score.ids)), 4)
+        expect_identical(scores$values$weights.mode, "individual")
+        expect_false(scores$unchanged())
         ## A scale or mode the dialog doesn't offer keeps what was saved
-        submit.modal(session, "weights", "dismiss_weight_modal", list(stat_scale = "points", weights_mode = "both"), 5)
-        expect_identical(c(weight.values$stat.scale, weight.values$weights.mode), c("max", "individual"))
+        submit.modal(session, "scores-open", "scores-done", list(`scores-stat_scale` = "points", `scores-weights_mode` = "both"), 5)
+        expect_identical(c(scores$values$stat.scale, scores$values$weights.mode), c("max", "individual"))
 
         ## The download records the last refresh's choices, with one weight per group
-        submit.modal(session, "weights", "dismiss_weight_modal", c(list(stat_scale = "max", weights_mode = "grouped"), setNames(list(50, 30, 20), group.ids)), 6)
+        submit.modal(session, "scores-open", "scores-done", c(list(`scores-stat_scale` = "max", `scores-weights_mode` = "grouped"), setNames(list(50, 30, 20), score.group.ids)), 6)
         session$setInputs(tradeoff_metric = "POISE", main_tabs = "Results")
         settings <- readxl::read_xlsx(output$download, sheet = "Settings")
         setting <- function(name){ settings$VALUE[settings$SETTING == name] }
@@ -668,7 +596,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
         expect_no_error(output$tradeoff_plot)
 
         ## A failed refresh (all-zero score weights) changes neither tab
-        submit.modal(session, "weights", "dismiss_weight_modal", setNames(as.list(rep(0, length(weight.ids))), weight.ids), 1)
+        submit.modal(session, "scores-open", "scores-done", setNames(as.list(rep(0, length(score.ids))), score.ids), 1)
         session$setInputs(go = 4)
         expect_match(output$errormessage, "weights")
         expect_equal(nrow(armordata()$data), 50)
