@@ -14,7 +14,7 @@ bslib::page_sidebar(
                 
                 shiny::hr(),
 
-                shiny::actionButton(inputId = "filters", label = "Filter Inputs"),
+                filter.inputs.button("filters"),
                 upgrade.inputs.button("upgrades"),
                 ring.inputs.button("rings"),
                 load.inputs.button("constraints"),

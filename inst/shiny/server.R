@@ -6,11 +6,6 @@ guide.html <- shiny::HTML(paste(readLines("guide.html", encoding = "UTF-8", warn
 server <- function(input, output, session){
 
 
-    ## Largest Max Table Size the app allows. The widget enforces it in the browser, but a client can
-    ## send any value (e.g. via Shiny.setInputValue), so the filter modal also clamps it server-side -
-    ## an unbounded value can make one refresh hold gigabytes of results.
-    MAX_TABLE_SIZE <- 100000
-
     output$mode_label <- shiny::renderText("Mode (Light or Dark)")
 
     shiny::observeEvent(input$guide, { 
@@ -31,13 +26,12 @@ server <- function(input, output, session){
 
     inputs.unchanged <- 
         shiny::reactiveValues(
-            filter.values = TRUE,
             weight.values = TRUE
         )
 
     shiny::observe({
         if(been.refreshed()){
-            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && upgrades$unchanged() && constraints$unchanged() && minima$unchanged() && rings$unchanged()){
+            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && filters$unchanged() && upgrades$unchanged() && constraints$unchanged() && minima$unchanged() && rings$unchanged()){
                 output$refreshmessage <- shiny::renderText("")
             } else{
                 output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
@@ -48,191 +42,9 @@ server <- function(input, output, session){
     })
 
 
-    filter.values <- 
-        shiny::reactiveValues(
-            max.table.size = 1000,
-            starting.class = classes[1], 
-            areas.completed = areas, 
-            upgrade.types = c("Regular", "Twinkling", "None"),
-            head.filter = head.data.unupgraded$ARMOR,
-            chest.filter = chest.data.unupgraded$ARMOR,
-            hands.filter = hands.data.unupgraded$ARMOR,
-            legs.filter = legs.data.unupgraded$ARMOR
-        )
-    
-    shiny::observeEvent(input$filters, { 
-        shiny::showModal( 
-            shiny::modalDialog( 
-                title = "Filter Inputs", 
-                footer = shiny::actionButton(inputId = "dismiss_filter_modal", label = "Done"), 
-                shiny::fluidRow(
-                    shinyWidgets::autonumericInput(
-                        inputId = "max.table.size",
-                        label = "Max Table Size",
-                        value = filter.values$max.table.size,
-                        align = "right",
-                        decimalCharacter = ".",
-                        digitGroupSeparator = ",",
-                        decimalPlaces = 0,
-                        maximumValue = MAX_TABLE_SIZE,
-                        minimumValue = 1
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "starting.class",
-                        label = "Starting Class",
-                        choices = classes,
-                        selected = filter.values$starting.class,
-                        multiple = FALSE,
-                        options = list(size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "areas.completed",
-                        label = "Areas Completed",
-                        choices = areas,
-                        selected = filter.values$areas.completed,
-                        multiple = TRUE,
-                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 19),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "upgrade.types",
-                        label = "Upgrades With",
-                        choices = c("Regular", "Twinkling", "None"),
-                        selected = filter.values$upgrade.types,
-                        multiple = TRUE,
-                        options = list(size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "head.filter",
-                        label = "Head",
-                        choices = head.data.unupgraded$ARMOR,
-                        selected = filter.values$head.filter,
-                        multiple = TRUE,
-                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "chest.filter",
-                        label = "Chest",
-                        choices = chest.data.unupgraded$ARMOR,
-                        selected = filter.values$chest.filter,
-                        multiple = TRUE,
-                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "hands.filter",
-                        label = "Hands",
-                        choices = hands.data.unupgraded$ARMOR,
-                        selected = filter.values$hands.filter,
-                        multiple = TRUE,
-                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "legs.filter",
-                        label = "Legs",
-                        choices = legs.data.unupgraded$ARMOR,
-                        selected = filter.values$legs.filter,
-                        multiple = TRUE,
-                        options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shiny::column(6, shiny::p(),
-                        shiny::actionButton(inputId = "poise_only", label = "Poise Armor Only"), shiny::p(), 
-                        shiny::actionButton(inputId = "stam_only", label = "Efficient Armor Only"), shiny::p(), 
-                        shiny::actionButton(inputId = "quiet_only", label = "Quiet Armor Only"), shiny::p()
-                    )
-                )
-            ) 
-        ) 
-    })
-
-    shiny::observeEvent(input$poise_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data.unupgraded[POISE > 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data.unupgraded[POISE > 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data.unupgraded[POISE > 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data.unupgraded[POISE > 0]$ARMOR])
-    })
-
-    shiny::observeEvent(input$stam_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data.unupgraded[STAM_MOD >= 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data.unupgraded[STAM_MOD >= 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data.unupgraded[STAM_MOD >= 0]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data.unupgraded[STAM_MOD >= 0]$ARMOR])
-    })
-
-    shiny::observeEvent(input$quiet_only, {
-        shinyWidgets::updatePickerInput(inputId = "head.filter", selected = input$head.filter[input$head.filter %in% head.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = input$chest.filter[input$chest.filter %in% chest.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = input$hands.filter[input$hands.filter %in% hands.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
-        shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = input$legs.filter[input$legs.filter %in% legs.data.unupgraded[SOUND_MOD <= 1]$ARMOR])
-    })
-
-    shiny::observeEvent(input$dismiss_filter_modal, {
-
-        if(shiny::isTruthy(input$max.table.size)){filter.values$max.table.size <- min(MAX_TABLE_SIZE, max(1, round(input$max.table.size, 0)))}
-        if(shiny::isTruthy(input$starting.class)){filter.values$starting.class <- input$starting.class}
-        if(shiny::isTruthy(input$areas.completed)){filter.values$areas.completed <- input$areas.completed} else if(length(input$areas.completed) == 0){filter.values$areas.completed <- character(0)}
-        if(shiny::isTruthy(input$upgrade.types)){filter.values$upgrade.types <- input$upgrade.types} else if(length(input$upgrade.types) == 0){filter.values$upgrade.types <- character(0)}
-        if(shiny::isTruthy(input$head.filter)){filter.values$head.filter <- input$head.filter} else if(length(input$head.filter) == 0){
-            filter.values$head.filter <- "No Head"
-            shinyWidgets::updatePickerInput(inputId = "head.filter", selected = "No Head")
-        }
-        if(shiny::isTruthy(input$chest.filter)){filter.values$chest.filter <- input$chest.filter} else if(length(input$chest.filter) == 0){
-            filter.values$chest.filter <- "No Chest"
-            shinyWidgets::updatePickerInput(inputId = "chest.filter", selected = "No Chest")
-        }
-        if(shiny::isTruthy(input$hands.filter)){filter.values$hands.filter <- input$hands.filter} else if(length(input$hands.filter) == 0){
-            filter.values$hands.filter <- "No Hands"
-            shinyWidgets::updatePickerInput(inputId = "hands.filter", selected = "No Hands")
-        }
-        if(shiny::isTruthy(input$legs.filter)){filter.values$legs.filter <- input$legs.filter} else if(length(input$legs.filter) == 0){
-            filter.values$legs.filter <- "No Legs"
-            shinyWidgets::updatePickerInput(inputId = "legs.filter", selected = "No Legs")
-        }
-
-        if(been.refreshed()){
-            curr.vals <- armordata()$args
-            inputs.unchanged$filter.values <- all(sapply(names(filter.values), function(name){identical(curr.vals[[name]], filter.values[[name]])}))
-        }
-        shiny::removeModal()
-        
-    }, ignoreInit = TRUE)
-
-
     ## The dialogs (R/), each compared with the last refresh's arguments once there's been one
     last.args <- shiny::reactive({ if(been.refreshed()) armordata()$args else NULL })
+    filters <- filter.inputs.server("filters", last.args)
     upgrades <- upgrade.inputs.server("upgrades", last.args)
     minima <- minimum.inputs.server("minima", last.args)
     constraints <- load.inputs.server("constraints", last.args)
@@ -582,13 +394,13 @@ server <- function(input, output, session){
     ## (both tabs then read them back from armordata()$args)
     current.settings <- function(){
         list(
-            starting.class = filter.values$starting.class,
-            areas.completed = filter.values$areas.completed,
-            upgrade.types = filter.values$upgrade.types,
-            head.filter = filter.values$head.filter,
-            chest.filter = filter.values$chest.filter,
-            hands.filter = filter.values$hands.filter,
-            legs.filter = filter.values$legs.filter,
+            starting.class = filters$values$starting.class,
+            areas.completed = filters$values$areas.completed,
+            upgrade.types = filters$values$upgrade.types,
+            head.filter = filters$values$head.filter,
+            chest.filter = filters$values$chest.filter,
+            hands.filter = filters$values$hands.filter,
+            legs.filter = filters$values$legs.filter,
             regular.level = upgrades$values$regular.level,
             twinkling.level = upgrades$values$twinkling.level,
             movement = constraints$values$movement,
@@ -619,7 +431,7 @@ server <- function(input, output, session){
             shinybusy::show_modal_spinner()
 
             armordata({
-                result <- do.call(get.optimal.armor.combos, c(list(max.table.size = filter.values$max.table.size), current.settings()))
+                result <- do.call(get.optimal.armor.combos, c(list(max.table.size = filters$values$max.table.size), current.settings()))
                 result$data[, c("HEAD", "CHEST", "HANDS", "LEGS") := lapply(.SD, as.factor), .SDcols = c("HEAD", "CHEST", "HANDS", "LEGS")]
                 result
             })
@@ -627,7 +439,6 @@ server <- function(input, output, session){
 
             been.refreshed(TRUE)
 
-            inputs.unchanged$filter.values <- TRUE
             inputs.unchanged$weight.values <- TRUE
 
             output$refreshmessage <- shiny::renderText("")

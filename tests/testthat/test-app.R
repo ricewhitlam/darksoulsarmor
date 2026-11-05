@@ -38,25 +38,25 @@ test_that("max.table.size is clamped to 1-100,000 on the server", {
         ## Opening the modal binds every filter widget, which sends its current value along with
         ## whatever the client chooses to send for max.table.size
         submit.max.table.size <- function(value, click){
-            session$setInputs(filters = click)
+            session$setInputs(`filters-open` = click)
             session$setInputs(
-                max.table.size = value,
-                starting.class = filter.values$starting.class,
-                areas.completed = filter.values$areas.completed,
-                upgrade.types = filter.values$upgrade.types,
-                head.filter = filter.values$head.filter,
-                chest.filter = filter.values$chest.filter,
-                hands.filter = filter.values$hands.filter,
-                legs.filter = filter.values$legs.filter
+                `filters-max.table.size` = value,
+                `filters-starting.class` = filters$values$starting.class,
+                `filters-areas.completed` = filters$values$areas.completed,
+                `filters-upgrade.types` = filters$values$upgrade.types,
+                `filters-head.filter` = filters$values$head.filter,
+                `filters-chest.filter` = filters$values$chest.filter,
+                `filters-hands.filter` = filters$values$hands.filter,
+                `filters-legs.filter` = filters$values$legs.filter
             )
-            session$setInputs(dismiss_filter_modal = click)
+            session$setInputs(`filters-done` = click)
         }
 
         submit.max.table.size(5e6, 1)
-        expect_equal(filter.values$max.table.size, 100000)
+        expect_equal(filters$values$max.table.size, 100000)
 
         submit.max.table.size(-5, 2)
-        expect_equal(filter.values$max.table.size, 1)
+        expect_equal(filters$values$max.table.size, 1)
 
         session$setInputs(go = 1)
         expect_equal(armordata()$args$max.table.size, 1)
@@ -75,12 +75,13 @@ submit.modal <- function(session, open.id, dismiss.id, values, click){
 }
 
 ## The current settings of each modal, as the browser would send them on opening it
-filter.inputs <- function(filter.values){
+## The Filter Inputs dialog's widgets, under its module's prefix ("filters-")
+filter.inputs <- function(filters){
     list(
-        max.table.size = filter.values$max.table.size, starting.class = filter.values$starting.class,
-        areas.completed = filter.values$areas.completed, upgrade.types = filter.values$upgrade.types,
-        head.filter = filter.values$head.filter, chest.filter = filter.values$chest.filter,
-        hands.filter = filter.values$hands.filter, legs.filter = filter.values$legs.filter
+        `filters-max.table.size` = filters$values$max.table.size, `filters-starting.class` = filters$values$starting.class,
+        `filters-areas.completed` = filters$values$areas.completed, `filters-upgrade.types` = filters$values$upgrade.types,
+        `filters-head.filter` = filters$values$head.filter, `filters-chest.filter` = filters$values$chest.filter,
+        `filters-hands.filter` = filters$values$hands.filter, `filters-legs.filter` = filters$values$legs.filter
     )
 }
 ## The Load Inputs modal's widgets (under its module's prefix, "constraints-"): movement, a dropdown per
@@ -104,7 +105,7 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         session$setInputs(go = 1)
         expect_equal(output$refreshmessage, "")
 
-        submit.modal(session, "filters", "dismiss_filter_modal", filter.inputs(filter.values), 1)
+        submit.modal(session, "filters-open", "filters-done", filter.inputs(filters), 1)
         submit.modal(session, "upgrades-open", "upgrades-done", list(`upgrades-regular.level` = upgrades$values$regular.level, `upgrades-twinkling.level` = upgrades$values$twinkling.level), 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = rings$values$havel.ring, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), 1)
         submit.modal(session, "constraints-open", "constraints-done", constraint.inputs(constraints$values$movement, constraints$values$weapons, constraints$values$endurance.level), 1)
@@ -112,6 +113,7 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
 
         expect_true(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))))
+        expect_true(filters$unchanged())
         expect_true(upgrades$unchanged())
         expect_true(constraints$unchanged())
         expect_true(minima$unchanged())
@@ -134,9 +136,9 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
             expect_equal(armordata()$args[[arg.name]], expected, info = arg.name)
         }
 
-        values <- filter.inputs(filter.values)
-        values$starting.class <- "Knight"
-        submit.modal(session, "filters", "dismiss_filter_modal", values, click)
+        values <- filter.inputs(filters)
+        values[["filters-starting.class"]] <- "Knight"
+        submit.modal(session, "filters-open", "filters-done", values, click)
         check.edit("starting.class", "Knight")
 
         submit.modal(session, "upgrades-open", "upgrades-done", list(`upgrades-regular.level` = "+5", `upgrades-twinkling.level` = upgrades$values$twinkling.level), click)
@@ -166,33 +168,33 @@ test_that("empty selections become 'No <slot>' and empty area/upgrade-type lists
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         session$setInputs(go = 1)
 
-        values <- filter.inputs(filter.values)
-        values$head.filter <- character(0)
-        values$chest.filter <- character(0)
-        values$hands.filter <- character(0)
-        values$legs.filter <- character(0)
-        submit.modal(session, "filters", "dismiss_filter_modal", values, 1)
+        values <- filter.inputs(filters)
+        values[["filters-head.filter"]] <- character(0)
+        values[["filters-chest.filter"]] <- character(0)
+        values[["filters-hands.filter"]] <- character(0)
+        values[["filters-legs.filter"]] <- character(0)
+        submit.modal(session, "filters-open", "filters-done", values, 1)
         session$setInputs(go = 2)
-        expect_equal(filter.values$head.filter, "No Head")
+        expect_equal(filters$values$head.filter, "No Head")
         expect_equal(nrow(armordata()$data), 1)
         expect_equal(as.character(unlist(armordata()$data[1, .(HEAD, CHEST, HANDS, LEGS)])), c("No Head", "No Chest", "No Hands", "No Legs"))
 
         ## No upgrade types: only the always-allowed "No <slot>" pieces remain
-        values <- filter.inputs(filter.values)
-        values$head.filter <- head.data.unupgraded$ARMOR
-        values$chest.filter <- chest.data.unupgraded$ARMOR
-        values$hands.filter <- hands.data.unupgraded$ARMOR
-        values$legs.filter <- legs.data.unupgraded$ARMOR
-        values$upgrade.types <- character(0)
-        submit.modal(session, "filters", "dismiss_filter_modal", values, 2)
+        values <- filter.inputs(filters)
+        values[["filters-head.filter"]] <- head.data.unupgraded$ARMOR
+        values[["filters-chest.filter"]] <- chest.data.unupgraded$ARMOR
+        values[["filters-hands.filter"]] <- hands.data.unupgraded$ARMOR
+        values[["filters-legs.filter"]] <- legs.data.unupgraded$ARMOR
+        values[["filters-upgrade.types"]] <- character(0)
+        submit.modal(session, "filters-open", "filters-done", values, 2)
         session$setInputs(go = 3)
         expect_equal(armordata()$args$upgrade.types, character(0))
         expect_equal(nrow(armordata()$data), 1)
 
         ## No areas completed: only the starting class's pieces and always-available pieces remain
-        values$upgrade.types <- c("Regular", "Twinkling", "None")
-        values$areas.completed <- character(0)
-        submit.modal(session, "filters", "dismiss_filter_modal", values, 3)
+        values[["filters-upgrade.types"]] <- c("Regular", "Twinkling", "None")
+        values[["filters-areas.completed"]] <- character(0)
+        submit.modal(session, "filters-open", "filters-done", values, 3)
         session$setInputs(go = 4)
         expect_equal(armordata()$args$areas.completed, character(0))
         expect_gt(nrow(armordata()$data), 0)
@@ -217,9 +219,9 @@ test_that("row links, the results table, the download, and the User Guide all wo
         expect_match(output$tabhead$html, head.link, fixed = TRUE)
 
         ## A "No Head" row: its link is "N/A", so no head link is shown
-        values <- filter.inputs(filter.values)
-        values$head.filter <- character(0)
-        submit.modal(session, "filters", "dismiss_filter_modal", values, 1)
+        values <- filter.inputs(filters)
+        values[["filters-head.filter"]] <- character(0)
+        submit.modal(session, "filters-open", "filters-done", values, 1)
         session$setInputs(go = 2)
         expect_no_error(session$setInputs(table_rows_selected = 2))
         expect_match(output$tabchest$html, "Chest: ", fixed = TRUE)
@@ -264,11 +266,11 @@ test_that("the app keeps exact values and shows them at display precision", {
         session$setInputs(go = 1)
         strike <- armordata()$data$STRIKE_DEF
         expect_false(all(strike == round(strike, 1)))
-        filters <- jsonlite::fromJSON(output$table, simplifyVector = FALSE)$x$filterHTML
-        scales <- as.numeric(sub('data-scale="([0-9]+)"', "\\1", regmatches(filters, gregexpr('data-scale="[0-9]+"', filters))[[1]]))
+        column.filters <- jsonlite::fromJSON(output$table, simplifyVector = FALSE)$x$filterHTML
+        scales <- as.numeric(sub('data-scale="([0-9]+)"', "\\1", regmatches(column.filters, gregexpr('data-scale="[0-9]+"', column.filters))[[1]]))
         expect_gt(length(scales), 0)
         expect_true(all(scales <= 4))
-        bounds <- sub('data-(min|max)="([^"]*)"', "\\2", regmatches(filters, gregexpr('data-(min|max)="[^"]*"', filters))[[1]])
+        bounds <- sub('data-(min|max)="([^"]*)"', "\\2", regmatches(column.filters, gregexpr('data-(min|max)="[^"]*"', column.filters))[[1]])
         expect_false(any(grepl("[.][0-9]{5,}", bounds)))
 
         session$setInputs(tradeoff_metric = "STRIKE_DEF", main_tabs = "Trade-offs")
@@ -293,7 +295,7 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         values[[minimum.id("POISE")]] <- 30
         submit.modal(session, "minima-open", "minima-done", values, 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE), 1)
-        submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
+        submit.modal(session, "filters-open", "filters-done", utils::modifyList(filter.inputs(filters), list(`filters-max.table.size` = 200)), 1)
         submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Light", c(left.1 = "Talisman", right.1 = "Claymore", left.2 = "Dagger", right.2 = "None"), 40), 1)
         session$setInputs(go = 1)
         ## An unsaved edit afterwards isn't part of the download
@@ -655,7 +657,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
         curve <- tradeoffdata()$data
         expect_equal(tradeoffdata()$selected.movement, "Light")
         submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Fat", constraints$values$weapons, constraints$values$endurance.level), 1)
-        submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 50)), 1)
+        submit.modal(session, "filters-open", "filters-done", utils::modifyList(filter.inputs(filters), list(`filters-max.table.size` = 50)), 1)
         session$setInputs(go = 3)
         expect_equal(output$errormessage, "")
         expect_equal(nrow(armordata()$data), 50)
@@ -724,7 +726,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
 test_that("Trade-offs points kept light by the Mask of the Father say so", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
         submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40), 1)
-        submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(head.filter = "Mask of the Father")), 1)
+        submit.modal(session, "filters-open", "filters-done", utils::modifyList(filter.inputs(filters), list(`filters-head.filter` = "Mask of the Father")), 1)
         session$setInputs(go = 1)
         session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
         result <- tradeoffdata()
