@@ -34,6 +34,14 @@ test_that("Filter Inputs saves its choices on Done and compares them with the la
         for(id in c(names(defaults), "poise_only", "stam_only", "quiet_only")){
             expect_match(modals[1], sprintf('id="%s"', session$ns(id)), fixed = TRUE, info = id)
         }
+        ## Each piece's weight beside its name, as for the weapons; none beside "No <slot>"
+        for(piece in c("Mask of the Father", "Havel's Armor", "Gold-Hemmed Black Gloves", "Giant Leggings")){
+            weight <- rbind(head.data.unupgraded, chest.data.unupgraded, hands.data.unupgraded, legs.data.unupgraded)[ARMOR == piece, WEIGHT]
+            expect_match(modals[1], sprintf('<option[^>]*data-subtext="%.1f"[^>]*>%s</option>', weight, piece), info = piece)
+        }
+        for(none in c("No Head", "No Chest", "No Hands", "No Legs")){
+            expect_match(modals[1], sprintf('<option[^>]*data-subtext=""[^>]*>%s</option>', none), info = none)
+        }
 
         ## The quick filters keep only the chosen pieces with the property
         send(defaults)
