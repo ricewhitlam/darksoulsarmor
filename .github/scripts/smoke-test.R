@@ -49,7 +49,7 @@ if(!wait.for("return d.querySelectorAll('#table tbody tr').length > 1 && !d.quer
 message("Refresh filled the Results table")
 
 invisible(js("[...d.querySelectorAll('a')].find(a => a.textContent.trim() == 'Trade-offs').click(); return true;"))
-if(!wait.for("return !!d.querySelector('#tradeoff_plot .main-svg') && !d.querySelector('.shinybusy-modal');", 180)){
+if(!wait.for("return !!d.querySelector('#tradeoffs-plot .main-svg') && !d.querySelector('.shinybusy-modal');", 180)){
     fail("the Trade-offs chart didn't draw")
 }
 message("The Trade-offs chart drew")

@@ -69,39 +69,7 @@ bslib::page_sidebar(
             ),
             bslib::nav_panel(
                 "Trade-offs",
-                shiny::fluidRow(
-                    shiny::column(
-                        4,
-                        shiny::selectInput(
-                            inputId = "tradeoff_metric",
-                            label = "Maximize",
-                            choices = c(
-                                "Score" = "SCORE", "Poise" = "POISE",
-                                "Physical Defense" = "PHYS_DEF", "Strike Defense" = "STRIKE_DEF", "Slash Defense" = "SLASH_DEF", "Thrust Defense" = "THRUST_DEF",
-                                "Magic Defense" = "MAG_DEF", "Fire Defense" = "FIRE_DEF", "Lightning Defense" = "LITNG_DEF",
-                                "Bleed Resistance" = "BLEED_RES", "Poison Resistance" = "POIS_RES", "Curse Resistance" = "CURSE_RES"
-                            )
-                        )
-                    ),
-                    shiny::column(
-                        2,
-                        shiny::selectInput(inputId = "tradeoff_jumps", label = "Jumps", choices = c("Few" = "few", "Some" = "some", "Many" = "many"), selected = "some")
-                    ),
-                    shiny::column(
-                        2,
-                        shiny::selectInput(inputId = "tradeoff_flats", label = "Flats", choices = c("Few" = "few", "Some" = "some", "Many" = "many"), selected = "some")
-                    )
-                ),
-                shiny::helpText(
-                    "For every armor weight, the most of the chosen stat any armor set can reach, using the settings of the last refresh.",
-                    "Vertical lines mark where your movement type changes (the selected movement type's line is solid). Shaded bands are stretches of steady",
-                    "gain: green ones buy more of the stat per unit of armor weight than the curve's average, purple ones less. Hatched areas are flats, where",
-                    "more weight buys nothing. Dark blue rises are jumps, single steps that gain far more than the weight around them, labelled with their gain.",
-                    "Diamonds mark where one stretch gives way to the next. Jumps and Flats set the sensitivity at which these features are identified. Hover",
-                    "over a point for its set, its movement type and the stretch it's in; click a point or a table row for its links."
-                ),
-                plotly::plotlyOutput(outputId = "tradeoff_plot"),
-                DT::dataTableOutput(outputId = "tradeoff_table")
+                tradeoffs.tab("tradeoffs")
             )
         )
 
