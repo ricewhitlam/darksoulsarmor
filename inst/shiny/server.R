@@ -1,4 +1,8 @@
 
+## The User Guide (guide.html, beside this file), read once as the app loads - Shiny loads server.R
+## from the app's own folder, here and in the browser version alike
+guide.html <- shiny::HTML(paste(readLines("guide.html", encoding = "UTF-8", warn = FALSE), collapse = "\n"))
+
 server <- function(input, output, session){
 
 
@@ -16,115 +20,7 @@ server <- function(input, output, session){
                 easyClose = TRUE,
                 footer = NULL,
                 size = "l",
-                shiny::HTML(paste0("
-
-                    To use the app, adjust inputs in the sidebar at left and then click 'Refresh Armor Data'. Both tabs, Results and Trade-offs, show the settings of the last refresh;
-                    if you change a setting afterwards, a message says so until you refresh again. <br>
-                    'Download Armor Data' saves an Excel workbook of the last refresh: the Results table, the Trade-offs table for the stat currently chosen in that tab, and the settings behind both. <br> <br>
-
-                    Filter Inputs: <br>  
-                    'Max Table Size' is used to specify how large the created table can be and is used to avoid unnecessary slowness - it cannot be set higher than 100,000. <br> 
-                    'Starting Class' is used to specify the character's starting class. This indicates that the associated armor set is available. <br>  
-                    'Areas Completed' is used to specify which areas have been completed. This loosely indicates which armor pieces are available. 
-                    Please note: the tool will not infer that one area has been completed because another later area has been completed.
-                    For example, indicating that Anor Londo has been completed will not result in Sens Fortress being assumed complete. <br>  
-                    'Upgrades With' is used to specify which upgrade materials to consider. For example, only armor pieces that upgrade with twinkling titanite could be considered. <br>  
-                    'Head' is used to specify which head armor pieces can be included in the created table - 'Chest', 'Hands' and 'Legs' are used similarly. <br> 
-                    'Poise Armor Only' filters the current selections in 'Head', 'Chest', 'Hands', and 'Legs' down to only those entries with positive Poise. 
-                    Each equipped armor piece with positive Poise reduces the Poise cooldown timer. <br> 
-                    'Efficient Armor Only' filters the current selections in 'Head', 'Chest', 'Hands', and 'Legs' down to only those entries which do not penalize Stamina recovery. <br>
-                    'Quiet Armor Only' filters the current selections in 'Chest' down to only those entries which are quiet. This helps with stealth, 
-                    since enemies detect the player via sound, as explained here: ", 
-                    shiny::tags$a("How Enemies Detect You in Dark Souls: Part 1 - Sound", href = "https://www.youtube.com/watch?v=mdL75pAvt8I", target = "_blank"), " <br> <br>
-
-                    Upgrade Inputs: <br>  
-                    'Armor Level (Regular)' is used to specify the upgrade level of armor pieces ascended via regular titanite. Options are +0 thru +10. <br>  
-                    'Armor Level (Twinkling)' is used to specify the upgrade level of armor pieces ascended via twinkling titanite. Options are +0 thru +5. <br>  
-                    Every upgrade level is computed from each piece's +0 values with the game's own upgrade rates, exactly as the game computes them.
-                    The app shows values rounded to one decimal; the game rounds an occasional exact tie (such as 9.25) the other way, so a value can differ from the game's own display by 0.1.
-                    The download holds the exact values. <br> <br>
-
-                    Ring Inputs: <br>  
-                    'Havel's Ring', 'Ring of Favor', and 'Wolf Ring' are used to specify whether the player has the relevant ring equipped.
-                    The app will allow all three to be selected, but this is obviously not possible in game. <br>  
-                    Havel's Ring and the Ring of Favor both boost equip load which is helpful when trying to quicken movement.
-                    The Wolf Ring gives 40 poise and is immensely helpful in hitting key poise breakpoints. These are 21/46/61 for PVE and 31/61 for PVP, as explained here: ", 
-                    shiny::tags$a("Dark Souls Dissected #13 - Poise Mechanics (and glitches!)", href = "https://www.youtube.com/watch?v=pwffSOSzcAM", target = "_blank"), " . <br> <br>
-
-                    Load Inputs: <br>  
-                    'Movement' is used to specify the heaviest movement type the character may have: Light (armor and other equipment at or below 25% of equip load, for a light roll),
-                    Mid (at or below 50%, mid roll), Fat (at or below 100%, fat roll), or Poop (no limit: over 100%, the character can't roll and walks slowly). <br>
-                    'Endurance Level' is used to specify the character's current level in the Endurance stat - Endurance affects equip load. <br>
-                    'Right Hand Weapon 1' through 'Left Hand Weapon 2' are the weapons, shields, catalysts, talismans and bows in the four weapon slots.
-                    Each weapon's weight is shown beside its name, and the weapons' total weight under the dropdowns. Only their weight is used, and rings and ammunition weigh nothing,
-                    so together with your armor they are everything you carry. They're chosen per slot because the game adds up equipment weight one item at a time, in slot order, with limited precision.
-                    A set weighing exactly 25.0% on paper can still give a mid roll, and with two or more talismans equipped, which slot holds what can make the difference. The app checks movement exactly as the game does. <br> <br>
-
-                    Minimum Inputs: <br>  
-                    Here, minima may be specified for a set of relevant metrics. Only combinations which achieve or exceed the specified minima will be considered. <br> <br>
-
-                    Score Inputs: <br>
-                    Here, weights may be specified for a set of relevant metrics. 'Stat Scale' sets what one unit of each stat counts as before it is weighted: its standard deviation across every armor combination (Std Dev),
-                    its highest value across every armor combination (Max), or one unit with no adjustment (Raw). 'Weights Mode' sets whether there is one weight per stat (Individual) or one per group of stats (Grouped):
-                    physical defenses, elemental defenses and resistances, each counting as the average of its stats. Switching modes carries the weights over: a group gets the sum of its stats' weights, and a group's weight is split evenly across its stats. <br>
-                    A score for each armor combination is calculated as c_1*x_1+...+c_n*x_n, where each x_i is a stat and each c_i is its weight per unit of that stat.
-                    It is then shifted and scaled so that it has mean 0 and variance 1 across every possible armor combination. This value is presented as 'SCORE'. 'SCORE_QUALITY' describes how rare that score is among every possible armor combination at the selected upgrade levels, such as 'Top 1 in 40' or 'Bottom 1 in 40'.
-                    It is an exact count, not an estimate: 'Top 1 in 40' means 1 in every 40 combinations at those upgrade levels scores at least as well (ties included), regardless of the filters chosen. Combinations in the bottom half read 'Bottom 1 in N' instead, counting those that score at most as well.
-                    SCORE is global within the same weights, Stat Scale and Weights Mode: direct comparisons can be made across different inputs, including different upgrade levels. SCORE_QUALITY is relative to the selected upgrade levels. <br> <br>
-
-                    Trade-offs Tab: <br>
-                    For every armor weight, from 0 up to the heaviest possible armor, every 0.1, the chart shows the most of the chosen stat ('Maximize': the score, Poise, or a single defense or resistance)
-                    that any armor set can reach without weighing more. It uses the settings of the last refresh (filters, upgrade levels, rings, load, and minima).
-                    Among sets tied on the chosen stat, the best-scoring one is shown. This shows what each extra unit of armor weight buys; for example, the lightest armor that reaches a Poise breakpoint
-                    (drawn as dotted red lines when charting Poise). <br>
-                    Vertical lines mark the armor weights at which your movement type changes (Light | Mid, Mid | Fat, Fat | Poop), given your equip load and weapons.
-                    The line for the movement type chosen in 'Load Inputs' is solid, and each set's movement type is shown with it. Each set's movement type is checked exactly as the game checks it,
-                    including the Mask of the Father's equip load bonus, so just past a line a set wearing the Mask can still have the lighter movement type. <br>
-                    A minimum on the charted stat itself is ignored, since it would only cut the curve off below it. It's drawn as a dashed blue line instead. Every other minimum still applies. <br>
-                    The chart is computed when the tab is opened after a refresh, which takes a few seconds. Hover anywhere above or below a point to see its set and movement type.
-                    Click there, or click a row of the table below the chart, for the pieces' links. <br>
-                    The chart splits the curve into pieces, to show where extra armor weight pays off: <br>
-                    Lines (shaded bands) are stretches where the stat rises steadily. Each is colored by how much of the stat it buys per unit of armor weight compared with the curve's average
-                    (its total gain divided by its total weight). Green bands buy more, purple ones buy less, and grey ones are about average. <br>
-                    Flats (grey hatching) are stretches where more weight buys nothing. <br>
-                    Jumps (dark blue rises, labelled with their gain) are single steps of 0.1 that gain far more than the curve gains over the weight around them. <br>
-                    Boundary points (diamonds) mark where one stretch gives way to the next, at the step where the rate changes. <br>
-                    'Jumps' and 'Flats' set the sensitivity at which these features are identified: Few picks out only the most prominent, Many finds smaller ones too.
-                    Hover over a point for the piece it's in and its rate; its hover box takes the piece's color, and at a boundary point it also gives the rates on either side.
-                    These descriptions are heuristic: the rules behind them and their default settings were tuned by judgement to describe typical curves well, which is why the sensitivity can be adjusted. <br> <br>
-
-                    Miscellaneous notes: <br> <br>
-                    Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: ",
-                    shiny::tags$a("Stamina", href = "http://darksouls.wikidot.com/stamina#toc3 ", target = "_blank"), " <br> <br>
-                    Durability is aggregated by taking the minimum i.e. the total durability for a set is the lowest durability across each component of the set. <br> <br> 
-                    The impact to equip load of Mask of the Father (x1.05) is accounted for, but the impact to magic defense of Crown of Dusk (x0.7) is not. <br> <br>
-                    Clicking on a row in the Results table, or on a point or row in the Trade-offs tab, will produce a set of links to the Dark Souls Wikidot site for the relevant armor pieces. <br> <br>",
-                    "If maximizing Physical Defenses, Elemental Defenses, or Resistances, the following non-armor items are useful: <br>",
-                    shiny::tags$a("Ring of Steel Protection", href = "http://darksouls.wikidot.com/ring-of-steel-protection", target = "_blank"), " (+50 to all Physical Defenses) <br>",
-                    shiny::tags$a("Spell Stoneplate Ring", href = "http://darksouls.wikidot.com/spell-stoneplate-ring", target = "_blank"), " (+50 Magic Defense) <br>",
-                    shiny::tags$a("Flame Stoneplate Ring", href = "http://darksouls.wikidot.com/flame-stoneplate-ring", target = "_blank"), " (+50 Fire Defense) <br>",
-                    shiny::tags$a("Thunder Stoneplate Ring", href = "http://darksouls.wikidot.com/thunder-stoneplate-ring", target = "_blank"), " (+50 Lightning Defense) <br>",
-                    shiny::tags$a("Speckled Stoneplate Ring", href = "http://darksouls.wikidot.com/speckled-stoneplate-ring", target = "_blank"), " (+25 to all Elemental Defenses)  <br>",
-                    shiny::tags$a("Poisonbite Ring", href = "http://darksouls.wikidot.com/poisonbite-ring", target = "_blank"), " (x4 Unarmored Poison Resistance) <br>",
-                    shiny::tags$a("Bloodbite Ring", href = "http://darksouls.wikidot.com/bloodbite-ring", target = "_blank"), " (x4 Unarmored Bleed Resistance) <br>",
-                    shiny::tags$a("Cursebite Ring", href = "http://darksouls.wikidot.com/cursebite-ring", target = "_blank"), " (x4 Unarmored Curse Resistance) <br>",
-                    shiny::tags$a("Gargoyle's Halberd", href = "http://darksouls.wikidot.com/gargoyle-halberd/", target = "_blank"), " (x1.25 Unarm Pois/Bleed Res) <br>",
-                    shiny::tags$a("Gargoyle Tail Axe", href = "http://darksouls.wikidot.com/gargoyle-tail-axe", target = "_blank"), " (x2 Unarm Pois/Bleed Res) <br>",
-                    shiny::tags$a("Bloodshield", href = "http://darksouls.wikidot.com/bloodshield", target = "_blank"), " (x1.5 Unarm Pois/Bleed/Curse Res) <br>",
-                    shiny::tags$a("Humanity", href = "http://darksouls.wikidot.com/humanity", target = "_blank"), " (Boosts all Defenses and Curse Res, see Wiki) <br> <br>",
-                    "
-                    The improvements to magic defense of the Spell Stoneplate Ring and Speckled Stoneplate Ring apply after the reduction of Crown of Dusk. <br> <br>
-                    In general, Toxic Resistance is the same as Poison Resistance, with the exception of the Poisonbite Ring: it does not improve Toxic Resistance. <br> <br>
-                    To explain Unarmored Resistance: if base Bleed Resistance is X, Armor Bleed Resistance is Y, and the Bloodbite Ring and Gargoyle Tail Axe are equipped, then final Bleed Resistance is X*4*2+Y. <br> <br>
-                    Links to the Wikidot site have been included in various parts of this app. 
-                    However, over the course of this app's creation, I have found multiple inaccuracies there (no disrespect intended towards all the great folks who have taken the time and energy to contribute).
-                    Do not be surprised if it contradicts the information here. <br> <br>
-
-                    This app is also available as an R package - here is the link to the codebase on GitHub: ",
-                    shiny::tags$a("https://github.com/ricewhitlam/darksoulsarmor", href = "https://github.com/ricewhitlam/darksoulsarmor", target = "_blank"),
-                    ". To install the R package, run the following command in the R terminal: install.packages(", '"', "darksoulsarmor", '"', ", repos = c(", '"', "https://ricewhitlam.r-universe.dev", '"', ", ", '"', "https://cloud.r-project.org", '"', "))
-
-                "))
+                guide.html
             ) 
         ) 
     }) 
