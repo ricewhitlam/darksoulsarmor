@@ -59,7 +59,45 @@ test_that("the breakdown sets the game against paper", {
     expect_equal(favor$steps$GAME_TOTAL, rep(0, 8))
     ## The text shown: paper with at least one decimal, the game to 7
     expect_identical(c(paper.text(84), paper.text(88.2), paper.text(22.05)), c("84.0", "88.2", "22.05"))
-    expect_identical(game.text(float32(21.0000019)), "21.0000019")
+    ## A game value exactly: its paper value plus or minus the exact difference, in lowest terms
+    expect_identical(exact.text(float32(21) + 2^-19, 21), "21.0 + 1/524288")
+    expect_identical(exact.text(float32(31.5) - 2^-19, 31.5), "31.5 - 1/524288")
+    expect_identical(exact.text(float32(37.5), 37.5), "exactly 37.5")
+    ## 33 Endurance with the Ring of Favor: the load and its Mid threshold, exactly half of it
+    load <- darksoulsarmor:::equip.load(33, FALSE, TRUE, FALSE)
+    expect_identical(exact.text(load, 87.6), "87.6 + 1/163840")
+    expect_identical(exact.text(darksoulsarmor:::movement.line(load, "Mid"), 43.8), "43.8 + 1/327680")
+})
+
+test_that("each exact text puts back the game's value exactly", {
+    set.seed(3)
+    paper <- round(runif(200, 0, 300), 1)
+    game <- float32(paper)
+    for(i in seq_along(game)){
+        text <- exact.text(game[i], paper[i])
+        if(game[i] == paper[i]){
+            expect_identical(text, paste("exactly", paper.text(paper[i])))
+            next
+        }
+        parts <- regmatches(text, regexec("^([0-9.]+) ([+-]) ([0-9]+)/([0-9]+)$", text))[[1]]
+        expect_length(parts, 5)
+        ## In integers: game x denominator x 10^6 == paper x 10^6 x denominator +/- numerator x 10^6
+        n <- as.numeric(parts[4]); d <- as.numeric(parts[5]); sign <- if(parts[3] == "+") 1 else -1
+        expect_identical(game[i]*d*1e6, round(paper[i]*1e6)*d + sign*n*1e6, info = text)
+    }
+})
+
+test_that("the Movement box gives the distances, on paper, to the thresholds either side", {
+    ## Thresholds 21, 42 and 84 (an equip load of 84), at totals in each movement type
+    distances <- function(movement, total){
+        movement.distances(list(movement.paper = movement, total.paper = total, lines = data.table::data.table(PAPER_LINE = c(21, 42, 84))))
+    }
+    expect_identical(distances("Light", 18.7), "2.3 under Mid")
+    expect_identical(distances("Mid", 35), c("14.0 over Light", "7.0 under Fat"))
+    expect_identical(distances("Fat", 50.6), c("8.6 over Mid", "33.4 under Poop"))
+    expect_identical(distances("Poop", 89.1), "5.1 over Fat")
+    ## Exactly on a type's own threshold: nothing to spare before the next
+    expect_identical(distances("Mid", 42), c("21.0 over Light", "0.0 under Fat"))
 })
 
 test_that("only the order tips P1 over: its arrangements that agree with paper include P3's", {
@@ -102,6 +140,18 @@ test_that("the random examples are exactly on a line on paper, and over it or wi
     expect_true(s$head %in% HEAD.PIECES$ARMOR && s$chest %in% CHEST.PIECES$ARMOR && s$hands %in% HANDS.PIECES$ARMOR && s$legs %in% LEGS.PIECES$ARMOR)
 })
 
+test_that("the sidebar's examples sit under their heading, apart from Calculate", {
+    page <- as.character(equip.load.page("equipload"))
+    heading <- regexpr("Random Floating-Point Examples at Exact Thresholds", page, fixed = TRUE)
+    over <- regexpr('id="equipload-random_over"[^>]*><span[^>]*>Tips Over<', page)
+    within <- regexpr('id="equipload-random_within"[^>]*><span[^>]*>Stays Within<', page)
+    calculate <- regexpr('id="equipload-calculate"', page, fixed = TRUE)
+    expect_true(all(c(heading, over, within, calculate) > 0))
+    expect_true(heading < over && over < within && within < calculate)
+    ## A divider between the examples and Calculate
+    expect_match(substr(page, within, calculate), "<hr/>", fixed = TRUE)
+})
+
 test_that("the page calculates on Calculate, flags changed inputs, and fills in examples", {
     updates <- list()
     local_mocked_bindings(updatePickerInput = function(session = NULL, inputId, selected = NULL, ...){ updates[[inputId]] <<- selected }, .package = "shinyWidgets")
@@ -118,8 +168,12 @@ test_that("the page calculates on Calculate, flags changed inputs, and fills in 
         expect_equal(output$message, "")
         expect_equal(session$returned$breakdown()$movement.game, "Mid")
         expect_match(output$readout$html, "The game disagrees with paper", fixed = TRUE)
+        expect_match(output$readout$html, "computes in IEEE 754 single-precision (32-bit) floating point", fixed = TRUE)
+        expect_match(output$readout$html, "its total, 41.7 + 3/655360, is over its Light threshold, 41.7 + 1/1310720, so it gives Mid", fixed = TRUE)
+        ## The Movement box: the game's type, paper's, and paper's distances (exactly on the Light threshold)
+        expect_match(output$readout$html, "on paper: Light", fixed = TRUE)
+        expect_match(output$readout$html, "0.0 under Mid", fixed = TRUE)
         expect_match(output$steps, "Smough&#39;s Armor|Smough's Armor")
-        expect_match(output$lines, "41.7")
 
         ## A changed input is flagged until the next Calculate
         session$setInputs(hands = "Cleric Gauntlets")
@@ -145,16 +199,15 @@ test_that("the page calculates on Calculate, flags changed inputs, and fills in 
         expect_false(is.na(session$returned$breakdown()$on.line))
         expect_identical(updates$head, example$head)
         expect_identical(updates$weapon.right.1, example$weapons[["right.1"]])
-        expect_match(output$readout$html, "Exactly on the", fixed = TRUE)
-        ## Its total is exactly on the line in the game too, shown unsigned; the other lines signed
         b <- session$returned$breakdown()
-        cells <- trimws(gsub("</?td>", "", regmatches(output$lines, gregexpr("<td>[^<]*</td>", output$lines))[[1]]))
-        table <- matrix(cells, ncol = 5, byrow = TRUE)
-        expect_identical(table[, 1], c("Light", "Mid", "Fat"))
-        distance <- table[, 4]
-        gap <- b$total.game - b$lines$GAME_LINE
-        expect_identical(distance[gap == 0], rep("0.0000000", sum(gap == 0)))
-        expect_true(all(grepl("^[+-][0-9]", distance[gap != 0])))
+        expect_match(output$readout$html, sprintf("Exactly on the %s threshold", b$on.line), fixed = TRUE)
+        expect_match(output$readout$html, "In IEEE 754 single precision (32-bit), the game&#39;s total|In IEEE 754 single precision \\(32-bit\\), the game's total")
+        ## Exactly on its type's own threshold: no room before the next type
+        if(b$on.line != "Fat"){
+            expect_match(output$readout$html, sprintf("0.0 under %s", c(Light = "Mid", Mid = "Fat")[[b$on.line]]), fixed = TRUE)
+        }
+        ## The thresholds table is gone: the Movement box carries the distances
+        expect_false(grepl("Movement thresholds", output$readout$html, fixed = TRUE))
         ## Once the browser has set the inputs, nothing is flagged
         do.call(session$setInputs, list(endurance = example$endurance, havel.ring = example$havel.ring, favor.ring = example$favor.ring,
             weapon.right.1 = example$weapons[["right.1"]], weapon.right.2 = example$weapons[["right.2"]], weapon.left.1 = example$weapons[["left.1"]], weapon.left.2 = example$weapons[["left.2"]],

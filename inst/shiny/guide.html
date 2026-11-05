@@ -60,7 +60,7 @@ Among sets tied on the chosen stat, the best-scoring one is shown. This shows wh
 (drawn as dotted red lines when charting Poise). <br>
 Vertical lines mark the armor weights at which your movement type changes (Light | Mid, Mid | Fat, Fat | Poop), given your equip load and weapons.
 The line for the movement type chosen in 'Load Inputs' is solid, and each set's movement type is shown with it. Each set's movement type is checked exactly as the game checks it,
-including the Mask of the Father's equip load bonus, so just past a line a set wearing the Mask can still have the lighter movement type. <br>
+including the Mask of the Father's equip load bonus, so just past a threshold a set wearing the Mask can still have the lighter movement type. <br>
 A minimum on the charted stat itself is ignored, since it would only cut the curve off below it. It's drawn as a dashed blue line instead. Every other minimum still applies. <br>
 The chart is computed when the tab is opened after a refresh, which takes a few seconds. Hover anywhere above or below a point to see its set and movement type.
 Click there, or click a row of the table below the chart, for the pieces' links. <br>
@@ -77,13 +77,16 @@ These descriptions are heuristic: the rules behind them and their default settin
 Equip Load Page: <br>
 A calculator for one setup, separate from the search: its inputs are its own, and 'Refresh Armor Data' doesn't affect it. Choose your Endurance, rings, the weapon in each of the four slots and your armor in the sidebar,
 then click 'Calculate'. Choosing the Mask of the Father as your head applies its equip load bonus. <br>
-It shows your equip load, total weight, equip percentage and movement type as the game computes them, with the same arithmetic on paper beside each. The game works in 32-bit floating point.
+It shows your equip load, total weight, equip percentage and movement type as the game computes them, with the same arithmetic on paper beside each.
+The game computes in IEEE 754 single-precision (32-bit) floating point, so its values carry small precision errors.
+The game's values are shown exactly, as the paper value plus or minus the exact difference (e.g. 20.7 + 7/2621440).
 It adds your weights one at a time, in a fixed order: left hand 1, right hand 1, left hand 2, right hand 2, then head, chest, hands and legs, whatever order you put them on in.
-Each sum is rounded, and the Ring of Favor and Protection's and the Mask of the Father's multipliers aren't exact either. So a setup exactly on a movement line on paper can land a hair over it in the game, or stay within it.
-When the game disagrees with paper, the page says so, and lists any arrangements of the same weapons across the four slots that the game would keep within the line. <br>
-'Step by step' shows the running total after each slot. 'Movement lines' shows each line on paper and in the game, with your total's distance from it.
-The equip percentage is your total divided by your equip load. The game decides your movement type by comparing your total with each line, not by this percentage. <br>
-'Random failing example' and 'Random succeeding example' fill in a random setup exactly on a line on paper, which the game puts over it or keeps within it, and calculate it. <br> <br>
+So a setup exactly on a movement threshold on paper can land a hair over it in the game, or stay within it.
+When the game disagrees with paper, the page says so, and lists any arrangements of the same weapons across the four slots that the game would keep within the threshold. <br>
+Under your movement type, the Movement box shows how far your total is, on paper, from the thresholds either side: how much over the lighter type's threshold, and how much room is left before the heavier type's.
+'Step by step' shows the running total after each slot.
+The equip percentage is your total divided by your equip load. The game decides your movement type by comparing your total with each threshold, not by this percentage. <br>
+'Random Floating-Point Examples at Exact Thresholds': 'Tips Over' and 'Stays Within' fill in a random setup exactly on a threshold on paper, which the game puts over it or keeps within it, and calculate it. <br> <br>
 
 Miscellaneous notes: <br> <br>
 Some armor pieces reduce stamina regeneration speed, as does being above 50% load or 100% load. Information on this can be found here: <a href="http://darksouls.wikidot.com/stamina#toc3 " target="_blank">Stamina</a> <br> <br>

@@ -1,10 +1,11 @@
 
 ## The Equip Load page, as a Shiny module: a calculator for one setup - Endurance, rings, weapons and
 ## armor - showing its equip load, weight, equip percentage and movement type exactly as the game
-## computes them (R/equip-load.R: 32-bit floating point, the weights added one at a time in the
-## game's slot order), beside the same arithmetic on paper. Its inputs are its own: nothing else in
-## the app reads or changes them, and it doesn't follow 'Refresh Armor Data'. Two buttons fill in a
-## random setup exactly on a line on paper, that the game puts over it or keeps within it.
+## computes them (R/equip-load.R: IEEE 754 single-precision floating point, the weights added one at
+## a time in the game's slot order), beside the same arithmetic on paper. Its inputs are its own:
+## nothing else in the app reads or changes them, and it doesn't follow 'Refresh Armor Data'. Two
+## buttons fill in a random setup exactly on a movement threshold on paper, that the game puts over
+## it or keeps within it.
 
 float32 <- darksoulsarmor:::float32
 
@@ -17,10 +18,31 @@ EQUIP.MOVEMENTS <- c("Light", "Mid", "Fat")
 ## A value on paper, rid of double-precision noise: every paper value here (weights in tenths, the
 ## rates 1.5, 1.2 and 1.05) has at most 6 decimals
 paper.value <- function(x){ round(x, 6) }
-## As shown: a paper value with at least one decimal (84.0, 88.2, 22.05); a game value to 7 decimals,
-## where 32-bit drift shows (21.0000019)
+## As shown: a paper value with at least one decimal (84.0, 88.2, 22.05)
 paper.text <- function(x){ format(paper.value(x), nsmall = 1, digits = 12, scientific = FALSE) }
-game.text <- function(x){ sprintf("%.7f", x) }
+
+## A game value, exactly, against its paper value: "exactly 21.0", or the paper value plus or minus
+## the exact difference as a fraction in lowest terms ("21.0 + 1/524288", "43.8 + 1/327680"). A
+## single-precision value is exactly a whole number over a power of 2, and a paper value (at most 6
+## decimals) a whole number over 10^6, so the difference is exact integer arithmetic - every number
+## involved stays well within what a double holds exactly (2^53).
+exact.text <- function(game, paper){
+    vapply(seq_along(game), function(i){
+        g <- game[i]
+        p <- paper.value(paper[i])
+        k <- 0
+        while(g*2^k != round(g*2^k)){ k <- k + 1 }
+        numerator <- g*2^k*1e6 - round(p*1e6)*2^k
+        denominator <- 2^k*1e6
+        if(numerator == 0){
+            return(paste("exactly", paper.text(p)))
+        }
+        gcd <- function(a, b){ while(b != 0){ r <- a %% b; a <- b; b <- r }; a }
+        common <- gcd(abs(numerator), denominator)
+        fraction <- sprintf("%.0f/%.0f", abs(numerator)/common, denominator/common)
+        paste(paper.text(p), if(numerator > 0) "+" else "-", fraction)
+    }, character(1))
+}
 
 ## Each item's listed weight: a weapon's ("None" weighs nothing), a piece's ("No Head" etc. weigh 0)
 weapon.weight.of <- function(weapon){ if(weapon == "None") 0 else weapon.data$WEIGHT[match(weapon, weapon.data$WEAPON)] }
@@ -69,6 +91,21 @@ equip.load.breakdown <- function(setup){
         movement.game = darksoulsarmor:::movement.type(total.game, load.game),
         ## The line the total is exactly on, on paper (if any)
         on.line = if(any(total.paper == lines$PAPER_LINE)) EQUIP.MOVEMENTS[which(total.paper == lines$PAPER_LINE)[1]] else NA_character_
+    )
+}
+
+## How far the total is, on paper, from the thresholds either side of its movement type on paper:
+## how much over the lighter type's threshold, and how much room before the heavier type's, one
+## line each (e.g. "14.0 over Light", "7.0 under Fat"). Paper values hold everywhere but exactly on
+## a threshold: every weight is in tenths, and single precision only ever moves a total or threshold
+## by millionths.
+movement.distances <- function(breakdown){
+    movements <- c(EQUIP.MOVEMENTS, "Poop")
+    i <- match(breakdown$movement.paper, movements)
+    thresholds <- breakdown$lines$PAPER_LINE
+    c(
+        if(i > 1) sprintf("%s over %s", paper.text(breakdown$total.paper - thresholds[i - 1]), movements[i - 1]),
+        if(i < 4) sprintf("%s under %s", paper.text(thresholds[i] - breakdown$total.paper), movements[i + 1])
     )
 }
 
@@ -228,21 +265,16 @@ equip.load.page <- function(id){
             piece.input("hands", "Hands", HANDS.PIECES, "No Hands"),
             piece.input("legs", "Legs", LEGS.PIECES, "No Legs"),
             shiny::hr(),
+            ## The random examples fill in the inputs above (and calculate); Calculate takes them as set.
+            ## Their heading is styled as the inputs' labels are.
+            shiny::tags$label(class = "control-label", "Random Floating-Point Examples at Exact Thresholds"),
+            shiny::actionButton(inputId = ns("random_over"), label = "Tips Over"),
+            shiny::actionButton(inputId = ns("random_within"), label = "Stays Within"),
+            shiny::hr(),
             shiny::actionButton(inputId = ns("calculate"), label = "Calculate")
         ),
         shiny::div(style = "color: red; font-size: 20px; font-weight: bold;", shiny::textOutput(outputId = ns("message"))),
-        shiny::uiOutput(outputId = ns("readout")),
-        bslib::card(
-            bslib::card_header("Try it: examples right on a threshold"),
-            shiny::p(
-                "Most players never notice, but the game adds weights in 32-bit floating point, so a setup exactly on a movement line on paper",
-                "can land a hair over it - or stay within it. These fill in a random setup exactly on a line on paper and calculate it."
-            ),
-            shiny::div(
-                shiny::actionButton(inputId = ns("random_over"), label = "Random failing example"),
-                shiny::actionButton(inputId = ns("random_within"), label = "Random succeeding example")
-            )
-        )
+        shiny::uiOutput(outputId = ns("readout"))
     )
 }
 
@@ -307,19 +339,20 @@ equip.load.server <- function(id){
             equip.load.breakdown(calculated())
         })
 
-        ## The readout: the four headline values, a note when the game and paper disagree or the total
-        ## is exactly on a line, then the step-by-step weights and the movement lines
+        ## The readout: the four headline values (the movement type with its distances from the
+        ## thresholds either side), a note when the game and paper disagree or the total is exactly on
+        ## a threshold, then the step-by-step weights
         output$readout <- shiny::renderUI({
             b <- breakdown()
-            line.of <- function(movement){ b$lines[MOVEMENT == movement] }
+            threshold.of <- function(movement){ b$lines[MOVEMENT == movement] }
             note <- NULL
             if(b$movement.game != b$movement.paper){
-                line <- line.of(b$movement.paper)
+                threshold <- threshold.of(b$movement.paper)
                 note <- bslib::card(
                     bslib::card_header("The game disagrees with paper"),
                     shiny::p(sprintf(
-                        "On paper your total, %s, is within the %s line, %s. But the game works in 32-bit floating point: it adds your weights one at a time in a fixed order (left hand 1, right hand 1, left hand 2, right hand 2, then head, chest, hands, legs), rounding each sum, and its equip load's multipliers aren't exact either. Its total, %s, is over its %s line, %s, so it gives %s.",
-                        paper.text(b$total.paper), b$movement.paper, paper.text(line$PAPER_LINE), game.text(b$total.game), b$movement.paper, game.text(line$GAME_LINE), b$movement.game
+                        "On paper your total, %s, is within the %s threshold, %s. But the game computes in IEEE 754 single-precision (32-bit) floating point, adding your weights one at a time in a fixed order (left hand 1, right hand 1, left hand 2, right hand 2, then head, chest, hands, legs), and its equip load the same way. At that precision, its total, %s, is over its %s threshold, %s, so it gives %s.",
+                        paper.text(b$total.paper), b$movement.paper, paper.text(threshold$PAPER_LINE), exact.text(b$total.game, b$total.paper), b$movement.paper, exact.text(threshold$GAME_LINE, threshold$PAPER_LINE), b$movement.game
                     )),
                     if(nrow(arrangements()) > 0){
                         shiny::tagList(
@@ -331,33 +364,31 @@ equip.load.server <- function(id){
                     }
                 )
             } else if(!is.na(b$on.line)){
-                line <- line.of(b$on.line)
+                threshold <- threshold.of(b$on.line)
                 note <- bslib::card(
-                    bslib::card_header(sprintf("Exactly on the %s line", b$on.line)),
+                    bslib::card_header(sprintf("Exactly on the %s threshold", b$on.line)),
                     shiny::p(sprintf(
-                        "On paper your total, %s, is exactly the %s line. The game, adding up in 32-bit floating point, agrees: its total, %s, is within its line, %s.",
-                        paper.text(b$total.paper), b$on.line, game.text(b$total.game), game.text(line$GAME_LINE)
+                        "On paper your total, %s, is exactly the %s threshold. In IEEE 754 single precision (32-bit), the game's total, %s, is within its threshold, %s.",
+                        paper.text(b$total.paper), b$on.line, exact.text(b$total.game, b$total.paper), exact.text(threshold$GAME_LINE, threshold$PAPER_LINE)
                     ))
                 )
             }
             shiny::tagList(
                 bslib::layout_column_wrap(
                     width = 1/4,
-                    bslib::value_box(title = "Equip load", value = paper.text(b$load.paper), shiny::p(paste("in the game:", game.text(b$load.game)))),
-                    bslib::value_box(title = "Weight", value = paper.text(b$total.paper), shiny::p(paste("in the game:", game.text(b$total.game)))),
+                    bslib::value_box(title = "Equip load", value = paper.text(b$load.paper), shiny::p(paste("in the game:", exact.text(b$load.game, b$load.paper))),
+                                     if(b$mask) shiny::p("with the Mask of the Father's bonus")),
+                    bslib::value_box(title = "Weight", value = paper.text(b$total.paper), shiny::p(paste("in the game:", exact.text(b$total.game, b$total.paper)))),
                     bslib::value_box(title = "Equip percentage", value = sprintf("%.2f%%", 100*b$total.paper/b$load.paper),
                                      shiny::p(sprintf("from the game's values: %.7f%%", 100*b$total.game/b$load.game))),
                     bslib::value_box(title = "Movement", value = b$movement.game,
-                                     shiny::p(if(b$movement.game == b$movement.paper) "the same on paper" else paste("on paper:", b$movement.paper)))
+                                     shiny::p(if(b$movement.game == b$movement.paper) "the same on paper" else paste("on paper:", b$movement.paper)),
+                                     shiny::p(lapply(movement.distances(b), shiny::div)))
                 ),
                 note,
                 bslib::card(
                     bslib::card_header("Step by step, in the order the game adds the weights"),
                     shiny::tableOutput(outputId = session$ns("steps"))
-                ),
-                bslib::card(
-                    bslib::card_header(if(b$mask) "Movement lines (with the Mask of the Father's bonus)" else "Movement lines"),
-                    shiny::tableOutput(outputId = session$ns("lines"))
                 )
             )
         })
@@ -375,20 +406,7 @@ equip.load.server <- function(id){
                 SLOT, ITEM,
                 WEIGHT = ifelse(ITEM == "None" | ITEM %in% c("No Head", "No Chest", "No Hands", "No Legs"), "", sprintf("%.1f", WEIGHT)),
                 PAPER_TOTAL = vapply(PAPER_TOTAL, paper.text, character(1)),
-                GAME_TOTAL = game.text(GAME_TOTAL)
-            )]
-        })
-
-        ## Each movement type's line, on paper and in the game, and the game's total against it
-        output$lines <- shiny::renderTable({
-            b <- breakdown()
-            b$lines[, .(
-                MOVEMENT,
-                LINE = vapply(PAPER_LINE, paper.text, character(1)),
-                GAME_LINE = game.text(GAME_LINE),
-                ## Signed, but a total exactly on the line is simply 0
-                GAME_TOTAL_VS_LINE = ifelse(b$total.game == GAME_LINE, game.text(0), sprintf("%+.7f", b$total.game - GAME_LINE)),
-                WITHIN = ifelse(b$total.game <= GAME_LINE, "Yes", "No")
+                GAME_TOTAL = exact.text(GAME_TOTAL, PAPER_TOTAL)
             )]
         })
 
