@@ -32,7 +32,6 @@ server <- function(input, output, session){
     inputs.unchanged <- 
         shiny::reactiveValues(
             filter.values = TRUE,
-            upgrade.values = TRUE,
             constraint.values = TRUE,
             minimum.values = TRUE,
             weight.values = TRUE
@@ -40,7 +39,7 @@ server <- function(input, output, session){
 
     shiny::observe({
         if(been.refreshed()){
-            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && rings$unchanged()){
+            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && upgrades$unchanged() && rings$unchanged()){
                 output$refreshmessage <- shiny::renderText("")
             } else{
                 output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
@@ -234,65 +233,9 @@ server <- function(input, output, session){
     }, ignoreInit = TRUE)
 
 
-    upgrade.values <- 
-        shiny::reactiveValues(
-            regular.level = "+0", 
-            twinkling.level = "+0"
-        )
-    
-    shiny::observeEvent(input$upgrades, { 
-        shiny::showModal( 
-            shiny::modalDialog( 
-                title = "Upgrade Inputs", 
-                footer = shiny::actionButton(inputId = "dismiss_upgrade_modal", label = "Done"), 
-                shiny::fluidRow(
-                    shinyWidgets::pickerInput(
-                        inputId = "regular.level",
-                        label = "Armor Level (Regular)",
-                        choices = c("+0", "+1", "+2", "+3", "+4", "+5", "+6", "+7", "+8", "+9", "+10"),
-                        selected = upgrade.values$regular.level,
-                        multiple = FALSE,
-                        options = list(size = 11),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    ),
-                    shinyWidgets::pickerInput(
-                        inputId = "twinkling.level",
-                        label = "Armor Level (Twinkling)",
-                        choices = c("+0", "+1", "+2", "+3", "+4", "+5"),
-                        selected = upgrade.values$twinkling.level,
-                        multiple = FALSE,
-                        options = list(size = 10),
-                        choicesOpt = NULL,
-                        width = NULL,
-                        inline = FALSE,
-                        stateInput = TRUE,
-                        autocomplete = FALSE
-                    )
-                )
-            ) 
-        ) 
-    })
-
-    shiny::observeEvent(input$dismiss_upgrade_modal, {
-
-        if(shiny::isTruthy(input$regular.level)){upgrade.values$regular.level <- input$regular.level}
-        if(shiny::isTruthy(input$twinkling.level)){upgrade.values$twinkling.level <- input$twinkling.level}
-
-        if(been.refreshed()){
-            curr.vals <- armordata()$args
-            inputs.unchanged$upgrade.values <- all(sapply(names(upgrade.values), function(name){identical(curr.vals[[name]], upgrade.values[[name]])}))
-        }
-        shiny::removeModal()
-        
-    }, ignoreInit = TRUE)
-
-
-    ## Ring Inputs (R/rings.R), compared with the last refresh's arguments once there's been one
+    ## The dialogs (R/), each compared with the last refresh's arguments once there's been one
     last.args <- shiny::reactive({ if(been.refreshed()) armordata()$args else NULL })
+    upgrades <- upgrade.inputs.server("upgrades", last.args)
     rings <- ring.inputs.server("rings", last.args)
 
 
@@ -782,8 +725,8 @@ server <- function(input, output, session){
             chest.filter = filter.values$chest.filter,
             hands.filter = filter.values$hands.filter,
             legs.filter = filter.values$legs.filter,
-            regular.level = upgrade.values$regular.level,
-            twinkling.level = upgrade.values$twinkling.level,
+            regular.level = upgrades$values$regular.level,
+            twinkling.level = upgrades$values$twinkling.level,
             movement = constraint.values$movement,
             weapons = constraint.values$weapons,
             endurance.level = constraint.values$endurance.level,
@@ -821,7 +764,6 @@ server <- function(input, output, session){
             been.refreshed(TRUE)
 
             inputs.unchanged$filter.values <- TRUE
-            inputs.unchanged$upgrade.values <- TRUE
             inputs.unchanged$constraint.values <- TRUE
             inputs.unchanged$minimum.values <- TRUE
             inputs.unchanged$weight.values <- TRUE

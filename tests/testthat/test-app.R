@@ -102,13 +102,14 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         expect_equal(output$refreshmessage, "")
 
         submit.modal(session, "filters", "dismiss_filter_modal", filter.inputs(filter.values), 1)
-        submit.modal(session, "upgrades", "dismiss_upgrade_modal", list(regular.level = upgrade.values$regular.level, twinkling.level = upgrade.values$twinkling.level), 1)
+        submit.modal(session, "upgrades-open", "upgrades-done", list(`upgrades-regular.level` = upgrades$values$regular.level, `upgrades-twinkling.level` = upgrades$values$twinkling.level), 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = rings$values$havel.ring, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), 1)
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs(constraint.values$movement, constraint.values$weapons, constraint.values$endurance.level), 1)
         submit.modal(session, "minima", "dismiss_minimum_modal", minima.inputs(minimum.values, minima.ids), 1)
         submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
 
         expect_true(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))))
+        expect_true(upgrades$unchanged())
         expect_true(rings$unchanged())
         expect_equal(output$refreshmessage, "")
     })
@@ -133,7 +134,7 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
         submit.modal(session, "filters", "dismiss_filter_modal", values, click)
         check.edit("starting.class", "Knight")
 
-        submit.modal(session, "upgrades", "dismiss_upgrade_modal", list(regular.level = "+5", twinkling.level = upgrade.values$twinkling.level), click)
+        submit.modal(session, "upgrades-open", "upgrades-done", list(`upgrades-regular.level` = "+5", `upgrades-twinkling.level` = upgrades$values$twinkling.level), click)
         check.edit("regular.level", "+5")
 
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = TRUE, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), click)
