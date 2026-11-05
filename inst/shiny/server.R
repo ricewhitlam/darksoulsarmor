@@ -33,7 +33,6 @@ server <- function(input, output, session){
         shiny::reactiveValues(
             filter.values = TRUE,
             upgrade.values = TRUE,
-            ring.values = TRUE,
             constraint.values = TRUE,
             minimum.values = TRUE,
             weight.values = TRUE
@@ -41,7 +40,7 @@ server <- function(input, output, session){
 
     shiny::observe({
         if(been.refreshed()){
-            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged)))){
+            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && rings$unchanged()){
                 output$refreshmessage <- shiny::renderText("")
             } else{
                 output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
@@ -292,40 +291,9 @@ server <- function(input, output, session){
     }, ignoreInit = TRUE)
 
 
-    ring.values <- 
-        shiny::reactiveValues(
-            havel.ring = FALSE,
-            favor.ring = FALSE,
-            wolf.ring = FALSE
-        )
-    
-    shiny::observeEvent(input$rings, { 
-        shiny::showModal( 
-            shiny::modalDialog( 
-                title = "Ring Inputs", 
-                footer = shiny::actionButton(inputId = "dismiss_ring_modal", label = "Done"), 
-                shiny::fluidRow(
-                    bslib::input_switch(id = "havel.ring", label = "Havel's Ring (+50% Eq Load)", value = ring.values$havel.ring, width = NULL),
-                    bslib::input_switch(id = "favor.ring", label = "Ring of Favor (+20% Eq Load)", value = ring.values$favor.ring, width = NULL),
-                    bslib::input_switch(id = "wolf.ring", label = "Wolf Ring (+40 Poise)", value = ring.values$wolf.ring, width = NULL)
-                )
-            ) 
-        ) 
-    })
-
-    shiny::observeEvent(input$dismiss_ring_modal, {
-
-        if(shiny::isTruthy(input$havel.ring)){ring.values$havel.ring <- input$havel.ring} else if(length(input$havel.ring) == 1){if(!is.na(input$havel.ring) && is.logical(input$havel.ring)){ring.values$havel.ring <- input$havel.ring}}
-        if(shiny::isTruthy(input$favor.ring)){ring.values$favor.ring <- input$favor.ring} else if(length(input$favor.ring) == 1){if(!is.na(input$favor.ring) && is.logical(input$favor.ring)){ring.values$favor.ring <- input$favor.ring}}
-        if(shiny::isTruthy(input$wolf.ring)){ring.values$wolf.ring <- input$wolf.ring} else if(length(input$wolf.ring) == 1){if(!is.na(input$wolf.ring) && is.logical(input$wolf.ring)){ring.values$wolf.ring <- input$wolf.ring}}
-
-        if(been.refreshed()){
-            curr.vals <- armordata()$args
-            inputs.unchanged$ring.values <- all(sapply(names(ring.values), function(name){identical(curr.vals[[name]], ring.values[[name]])}))
-        }
-        shiny::removeModal()
-        
-    }, ignoreInit = TRUE)
+    ## Ring Inputs (R/rings.R), compared with the last refresh's arguments once there's been one
+    last.args <- shiny::reactive({ if(been.refreshed()) armordata()$args else NULL })
+    rings <- ring.inputs.server("rings", last.args)
 
 
     constraint.values <- 
@@ -819,9 +787,9 @@ server <- function(input, output, session){
             movement = constraint.values$movement,
             weapons = constraint.values$weapons,
             endurance.level = constraint.values$endurance.level,
-            havel.ring = ring.values$havel.ring,
-            favor.ring = ring.values$favor.ring,
-            wolf.ring = ring.values$wolf.ring,
+            havel.ring = rings$values$havel.ring,
+            favor.ring = rings$values$favor.ring,
+            wolf.ring = rings$values$wolf.ring,
             minima = minimum.values$minima,
             weights = weight.values$weights,
             stat.scale = weight.values$stat.scale,
@@ -854,7 +822,6 @@ server <- function(input, output, session){
 
             inputs.unchanged$filter.values <- TRUE
             inputs.unchanged$upgrade.values <- TRUE
-            inputs.unchanged$ring.values <- TRUE
             inputs.unchanged$constraint.values <- TRUE
             inputs.unchanged$minimum.values <- TRUE
             inputs.unchanged$weight.values <- TRUE

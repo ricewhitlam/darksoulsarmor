@@ -103,12 +103,13 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
 
         submit.modal(session, "filters", "dismiss_filter_modal", filter.inputs(filter.values), 1)
         submit.modal(session, "upgrades", "dismiss_upgrade_modal", list(regular.level = upgrade.values$regular.level, twinkling.level = upgrade.values$twinkling.level), 1)
-        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = ring.values$havel.ring, favor.ring = ring.values$favor.ring, wolf.ring = ring.values$wolf.ring), 1)
+        submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = rings$values$havel.ring, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), 1)
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs(constraint.values$movement, constraint.values$weapons, constraint.values$endurance.level), 1)
         submit.modal(session, "minima", "dismiss_minimum_modal", minima.inputs(minimum.values, minima.ids), 1)
         submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
 
         expect_true(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))))
+        expect_true(rings$unchanged())
         expect_equal(output$refreshmessage, "")
     })
 })
@@ -135,7 +136,7 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
         submit.modal(session, "upgrades", "dismiss_upgrade_modal", list(regular.level = "+5", twinkling.level = upgrade.values$twinkling.level), click)
         check.edit("regular.level", "+5")
 
-        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = TRUE, favor.ring = ring.values$favor.ring, wolf.ring = ring.values$wolf.ring), click)
+        submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = TRUE, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), click)
         check.edit("havel.ring", TRUE)
 
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", constraint.values$weapons, constraint.values$endurance.level), click)
@@ -285,7 +286,7 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         values <- minima.inputs(minimum.values, minima.ids)
         values[[metric.input.id("POISE", "minima")]] <- 30
         submit.modal(session, "minima", "dismiss_minimum_modal", values, 1)
-        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE), 1)
+        submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
         submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "Talisman", right.1 = "Claymore", left.2 = "Dagger", right.2 = "None"), 40), 1)
         session$setInputs(go = 1)
@@ -543,9 +544,9 @@ test_that("the Trade-offs tab stitches per-movement-class curves over every armo
         session$setInputs(constraints = 1)
         do.call(session$setInputs, constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40))
         session$setInputs(dismiss_constraint_modal = 1)
-        session$setInputs(rings = 1)
-        session$setInputs(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE)
-        session$setInputs(dismiss_ring_modal = 1)
+        session$setInputs(`rings-open` = 1)
+        session$setInputs(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE)
+        session$setInputs(`rings-done` = 1)
 
         session$setInputs(go = 1)
         session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
@@ -630,7 +631,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
 
         ## An unsaved edit flags both tabs as stale, and charts computed meanwhile still use the
         ## last refresh's settings
-        submit.modal(session, "rings", "dismiss_ring_modal", list(havel.ring = FALSE, favor.ring = FALSE, wolf.ring = TRUE), 1)
+        submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE), 1)
         expect_equal(output$refreshmessage, "Inputs have changed - click 'Refresh Armor Data' to update both tabs")
         session$setInputs(tradeoff_metric = "SCORE")
         session$setInputs(tradeoff_metric = "POISE")
@@ -935,7 +936,12 @@ test_that("the Trade-offs tab's Jumps and Flats choices redescribe the curve", {
 
 ## The tab's choices, beside Maximize: Few, Some (chosen) or Many
 test_that("the Trade-offs tab offers Jumps and Flats choices", {
-    ui <- as.character(source(system.file("shiny", "ui.R", package = "darksoulsarmor"), local = new.env())$value)
+    ## As Shiny builds it: the app's R/ folder first, then ui.R
+    app.env <- new.env()
+    for(file in list.files(system.file("shiny", "R", package = "darksoulsarmor"), full.names = TRUE)){
+        source(file, local = app.env)
+    }
+    ui <- as.character(source(system.file("shiny", "ui.R", package = "darksoulsarmor"), local = app.env)$value)
     for(id in c("tradeoff_jumps", "tradeoff_flats")){
         select <- regmatches(ui, regexpr(sprintf("<select id=\"%s\"[\\s\\S]*?</select>", id), ui, perl = TRUE))
         expect_length(select, 1)
