@@ -32,13 +32,12 @@ server <- function(input, output, session){
     inputs.unchanged <- 
         shiny::reactiveValues(
             filter.values = TRUE,
-            constraint.values = TRUE,
             weight.values = TRUE
         )
 
     shiny::observe({
         if(been.refreshed()){
-            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && upgrades$unchanged() && minima$unchanged() && rings$unchanged()){
+            if(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))) && upgrades$unchanged() && constraints$unchanged() && minima$unchanged() && rings$unchanged()){
                 output$refreshmessage <- shiny::renderText("")
             } else{
                 output$refreshmessage <- shiny::renderText("Inputs have changed - click 'Refresh Armor Data' to update both tabs")
@@ -236,97 +235,8 @@ server <- function(input, output, session){
     last.args <- shiny::reactive({ if(been.refreshed()) armordata()$args else NULL })
     upgrades <- upgrade.inputs.server("upgrades", last.args)
     minima <- minimum.inputs.server("minima", last.args)
+    constraints <- load.inputs.server("constraints", last.args)
     rings <- ring.inputs.server("rings", last.args)
-
-
-    constraint.values <- 
-        shiny::reactiveValues(
-            movement = "Light",
-            weapons = c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None"),
-            endurance.level = 10
-        )
-
-    ## One dropdown per weapon slot, each weapon's weight beside its name (in the list and once chosen)
-    weapon.input <- function(slot, label){
-        shinyWidgets::pickerInput(
-            inputId = paste0("weapon.", slot),
-            label = label,
-            choices = c("None", weapon.data$WEAPON),
-            selected = constraint.values$weapons[[slot]],
-            multiple = FALSE,
-            options = list(`live-search` = TRUE, size = 10, `show-subtext` = TRUE),
-            choicesOpt = list(subtext = c("", sprintf("%.1f", weapon.data$WEIGHT))),
-            width = NULL,
-            inline = FALSE,
-            stateInput = TRUE,
-            autocomplete = FALSE
-        )
-    }
-    
-    shiny::observeEvent(input$constraints, { 
-        shiny::showModal( 
-            shiny::modalDialog( 
-                title = "Load Inputs", 
-                footer = shiny::actionButton(inputId = "dismiss_constraint_modal", label = "Done"), 
-                shiny::fluidRow(
-                    shiny::radioButtons(
-                        inputId = "movement",
-                        label = "Movement",
-                        choices = c("Light", "Mid", "Fat", "Poop"),
-                        selected = constraint.values$movement,
-                        inline = TRUE,
-                        width = NULL,
-                        choiceNames = NULL,
-                        choiceValues = NULL
-                    ),
-                    shinyWidgets::autonumericInput(
-                        inputId = "endurance.level",
-                        label = "Endurance Level",
-                        value = constraint.values$endurance.level,
-                        align = "right",
-                        decimalCharacter = ".",
-                        digitGroupSeparator = ",",
-                        decimalPlaces = 0,
-                        maximumValue = 99,
-                        minimumValue = 0
-                    ),
-                    weapon.input("right.1", "Right Hand Weapon 1"),
-                    weapon.input("right.2", "Right Hand Weapon 2"),
-                    weapon.input("left.1", "Left Hand Weapon 1"),
-                    weapon.input("left.2", "Left Hand Weapon 2"),
-                    shiny::helpText(shiny::textOutput(outputId = "weapon_summary", inline = TRUE))
-                )
-            )
-        )
-    })
-
-    ## Under the weapon dropdowns, as they're changed: the weapons' total weight
-    output$weapon_summary <- shiny::renderText({
-        weapons <- constraint.values$weapons
-        for(slot in names(weapons)){
-            chosen <- input[[paste0("weapon.", slot)]]
-            if(shiny::isTruthy(chosen)){
-                weapons[[slot]] <- chosen
-            }
-        }
-        sprintf("Weapons: %.1f in total", weapons.weight(weapons))
-    })
-
-    shiny::observeEvent(input$dismiss_constraint_modal, {
-
-        if(shiny::isTruthy(input$movement)){constraint.values$movement <- input$movement}
-        if(shiny::isTruthy(input$weapon.left.1) && shiny::isTruthy(input$weapon.right.1) && shiny::isTruthy(input$weapon.left.2) && shiny::isTruthy(input$weapon.right.2)){
-            constraint.values$weapons <- c(left.1 = input$weapon.left.1, right.1 = input$weapon.right.1, left.2 = input$weapon.left.2, right.2 = input$weapon.right.2)
-        }
-        if(shiny::isTruthy(input$endurance.level)){constraint.values$endurance.level <- round(input$endurance.level, 0)}
-
-        if(been.refreshed()){
-            curr.vals <- armordata()$args
-            inputs.unchanged$constraint.values <- all(sapply(names(constraint.values), function(name){identical(curr.vals[[name]], constraint.values[[name]])}))
-        }
-        shiny::removeModal()
-        
-    }, ignoreInit = TRUE)
 
 
     ## The minima/weights modal inputs below are built from darksoulsarmor:::METRICS (see
@@ -681,9 +591,9 @@ server <- function(input, output, session){
             legs.filter = filter.values$legs.filter,
             regular.level = upgrades$values$regular.level,
             twinkling.level = upgrades$values$twinkling.level,
-            movement = constraint.values$movement,
-            weapons = constraint.values$weapons,
-            endurance.level = constraint.values$endurance.level,
+            movement = constraints$values$movement,
+            weapons = constraints$values$weapons,
+            endurance.level = constraints$values$endurance.level,
             havel.ring = rings$values$havel.ring,
             favor.ring = rings$values$favor.ring,
             wolf.ring = rings$values$wolf.ring,
@@ -718,7 +628,6 @@ server <- function(input, output, session){
             been.refreshed(TRUE)
 
             inputs.unchanged$filter.values <- TRUE
-            inputs.unchanged$constraint.values <- TRUE
             inputs.unchanged$weight.values <- TRUE
 
             output$refreshmessage <- shiny::renderText("")

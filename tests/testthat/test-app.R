@@ -83,13 +83,14 @@ filter.inputs <- function(filter.values){
         hands.filter = filter.values$hands.filter, legs.filter = filter.values$legs.filter
     )
 }
-## The Load Inputs modal's widgets: movement, a dropdown per weapon slot, and Endurance
+## The Load Inputs modal's widgets (under its module's prefix, "constraints-"): movement, a dropdown per
+## weapon slot, and Endurance
 constraint.inputs <- function(movement, weapons, endurance.level){
     list(
-        movement = movement,
-        weapon.left.1 = weapons[["left.1"]], weapon.right.1 = weapons[["right.1"]],
-        weapon.left.2 = weapons[["left.2"]], weapon.right.2 = weapons[["right.2"]],
-        endurance.level = endurance.level
+        `constraints-movement` = movement,
+        `constraints-weapon.left.1` = weapons[["left.1"]], `constraints-weapon.right.1` = weapons[["right.1"]],
+        `constraints-weapon.left.2` = weapons[["left.2"]], `constraints-weapon.right.2` = weapons[["right.2"]],
+        `constraints-endurance.level` = endurance.level
     )
 }
 no.weapons <- c(left.1 = "None", right.1 = "None", left.2 = "None", right.2 = "None")
@@ -106,12 +107,13 @@ test_that("submitting every modal unchanged after a refresh keeps the results cu
         submit.modal(session, "filters", "dismiss_filter_modal", filter.inputs(filter.values), 1)
         submit.modal(session, "upgrades-open", "upgrades-done", list(`upgrades-regular.level` = upgrades$values$regular.level, `upgrades-twinkling.level` = upgrades$values$twinkling.level), 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = rings$values$havel.ring, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), 1)
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs(constraint.values$movement, constraint.values$weapons, constraint.values$endurance.level), 1)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs(constraints$values$movement, constraints$values$weapons, constraints$values$endurance.level), 1)
         submit.modal(session, "minima-open", "minima-done", minima.inputs(minima), 1)
         submit.modal(session, "weights", "dismiss_weight_modal", weight.inputs(weight.values, weight.ids), 1)
 
         expect_true(all(unlist(shiny::reactiveValuesToList(inputs.unchanged))))
         expect_true(upgrades$unchanged())
+        expect_true(constraints$unchanged())
         expect_true(minima$unchanged())
         expect_true(rings$unchanged())
         expect_equal(output$refreshmessage, "")
@@ -143,7 +145,7 @@ test_that("an edit in each modal is flagged, then applied by the next refresh", 
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = TRUE, `rings-favor.ring` = rings$values$favor.ring, `rings-wolf.ring` = rings$values$wolf.ring), click)
         check.edit("havel.ring", TRUE)
 
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", constraint.values$weapons, constraint.values$endurance.level), click)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Mid", constraints$values$weapons, constraints$values$endurance.level), click)
         check.edit("movement", "Mid")
 
         values <- minima.inputs(minima)
@@ -292,10 +294,10 @@ test_that("the download saves the results, trade-offs, and settings of the last 
         submit.modal(session, "minima-open", "minima-done", values, 1)
         submit.modal(session, "rings-open", "rings-done", list(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 200)), 1)
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "Talisman", right.1 = "Claymore", left.2 = "Dagger", right.2 = "None"), 40), 1)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Light", c(left.1 = "Talisman", right.1 = "Claymore", left.2 = "Dagger", right.2 = "None"), 40), 1)
         session$setInputs(go = 1)
         ## An unsaved edit afterwards isn't part of the download
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", no.weapons, 10), 1)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Mid", no.weapons, 10), 1)
 
         ## The Trade-offs tab was never opened, so the download computes the curve (and keeps it)
         expect_null(tradeoffdata())
@@ -488,7 +490,7 @@ test_that("the Load Inputs modal shows the weapons' weights and their total", {
         .package = "shiny"
     )
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        session$setInputs(constraints = 1)
+        session$setInputs(`constraints-open` = 1)
         expect_length(modals, 1)
         expect_match(modals[1], 'data-show-subtext="true"', fixed = TRUE)
         for(weapon in c("Claymore", "Talisman", "Dagger", "Zweihander")){
@@ -498,14 +500,14 @@ test_that("the Load Inputs modal shows the weapons' weights and their total", {
         expect_match(modals[1], "weapon_summary", fixed = TRUE)
 
         ## The saved weapons (none), then the ones chosen, before Done
-        expect_equal(output$weapon_summary, "Weapons: 0.0 in total")
-        session$setInputs(weapon.right.1 = "Claymore", weapon.left.1 = "Talisman")
-        expect_equal(output$weapon_summary, "Weapons: 6.3 in total")
-        session$setInputs(weapon.right.2 = "Smough's Hammer", weapon.left.2 = "Dagger")
-        expect_equal(output$weapon_summary, "Weapons: 34.8 in total")
+        expect_equal(output[["constraints-weapon_summary"]], "Weapons: 0.0 in total")
+        session$setInputs(`constraints-weapon.right.1` = "Claymore", `constraints-weapon.left.1` = "Talisman")
+        expect_equal(output[["constraints-weapon_summary"]], "Weapons: 6.3 in total")
+        session$setInputs(`constraints-weapon.right.2` = "Smough's Hammer", `constraints-weapon.left.2` = "Dagger")
+        expect_equal(output[["constraints-weapon_summary"]], "Weapons: 34.8 in total")
         ## Done saves them; reopening shows the same total
-        session$setInputs(dismiss_constraint_modal = 1, constraints = 2)
-        expect_equal(output$weapon_summary, "Weapons: 34.8 in total")
+        session$setInputs(`constraints-done` = 1, `constraints-open` = 2)
+        expect_equal(output[["constraints-weapon_summary"]], "Weapons: 34.8 in total")
     })
 })
 
@@ -545,9 +547,9 @@ test_that("a warning during refresh doesn't abort it, and is shown as a notifica
 ## heaviest possible armor (52.5), so there's no Poop segment.
 test_that("the Trade-offs tab stitches per-movement-class curves over every armor weight", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        session$setInputs(constraints = 1)
+        session$setInputs(`constraints-open` = 1)
         do.call(session$setInputs, constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40))
-        session$setInputs(dismiss_constraint_modal = 1)
+        session$setInputs(`constraints-done` = 1)
         session$setInputs(`rings-open` = 1)
         session$setInputs(`rings-havel.ring` = FALSE, `rings-favor.ring` = FALSE, `rings-wolf.ring` = TRUE)
         session$setInputs(`rings-done` = 1)
@@ -652,7 +654,7 @@ test_that("the Trade-offs chart follows the last refresh, not unsaved settings",
         ## A refresh changing only the movement type and the table size keeps the curve
         curve <- tradeoffdata()$data
         expect_equal(tradeoffdata()$selected.movement, "Light")
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Fat", constraint.values$weapons, constraint.values$endurance.level), 1)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Fat", constraints$values$weapons, constraints$values$endurance.level), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(max.table.size = 50)), 1)
         session$setInputs(go = 3)
         expect_equal(output$errormessage, "")
@@ -682,7 +684,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
         values[[minimum.id("POISE")]] <- 30
         values[[minimum.id("BLEED_RES")]] <- 20
         submit.modal(session, "minima-open", "minima-done", values, 1)
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Light", c(left.1 = "None", right.1 = "Zweihander", left.2 = "None", right.2 = "None"), 10), 1)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Light", c(left.1 = "None", right.1 = "Zweihander", left.2 = "None", right.2 = "None"), 10), 1)
         zweihander <- c(right.1 = "Zweihander")
         session$setInputs(go = 1)
         expect_equal(armordata()$args$minima[minima.index.of("POISE")], 30)
@@ -721,7 +723,7 @@ test_that("the Trade-offs chart ignores only the charted stat's own minimum", {
 ## hover.
 test_that("Trade-offs points kept light by the Mask of the Father say so", {
     shiny::testServer(system.file("shiny", package = "darksoulsarmor"), {
-        submit.modal(session, "constraints", "dismiss_constraint_modal", constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40), 1)
+        submit.modal(session, "constraints-open", "constraints-done", constraint.inputs("Mid", c(left.1 = "None", right.1 = "Great Club", left.2 = "None", right.2 = "None"), 40), 1)
         submit.modal(session, "filters", "dismiss_filter_modal", utils::modifyList(filter.inputs(filter.values), list(head.filter = "Mask of the Father")), 1)
         session$setInputs(go = 1)
         session$setInputs(tradeoff_metric = "POISE", main_tabs = "Trade-offs")
