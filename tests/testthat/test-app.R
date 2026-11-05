@@ -875,8 +875,9 @@ test_that("the Trade-offs tab's Jumps and Flats choices redescribe the curve", {
     })
 })
 
-## The tabs' labels and values; the graph tab's choices, beside Maximize: Few, Some (chosen) or Many
-test_that("the tabs are labelled, and the graph's tab offers Jumps and Flats choices", {
+## The bar's pages and links, the tabs' labels and values; the graph tab's choices, beside Maximize:
+## Few, Some (chosen) or Many
+test_that("the bar and the tabs are labelled, and the graph's tab offers Jumps and Flats choices", {
     ## As Shiny builds it: the app's R/ folder first, then ui.R
     app.env <- new.env()
     for(file in list.files(system.file("shiny", "R", package = "darksoulsarmor"), full.names = TRUE)){
@@ -890,8 +891,13 @@ test_that("the tabs are labelled, and the graph's tab offers Jumps and Flats cho
         expect_match(select, "<option value=\"some\" selected>Some</option>", fixed = TRUE)
         expect_match(select, "<option value=\"many\">Many</option>", fixed = TRUE)
     }
-    ## The tabs, by label, each with the fixed value the server checks (input$main_tabs)
+    ## The page, then its tabs, by label, each with its fixed value (input$pages, input$main_tabs)
     tabs <- regmatches(ui, gregexpr("<a [^>]*data-value=\"[^\"]*\"[^>]*>[^<]*</a>", ui))[[1]]
-    expect_identical(sub(".*data-value=\"([^\"]*)\".*", "\\1", tabs), c("table", "graph"))
-    expect_identical(sub(".*>([^<]*)</a>$", "\\1", tabs), c("Top Scoring Combos", "Best Combo by Weight"))
+    expect_identical(sub(".*data-value=\"([^\"]*)\".*", "\\1", tabs), c("optimization", "table", "graph"))
+    expect_identical(sub(".*>([^<]*)</a>$", "\\1", tabs), c("Armor Optimization", "Top Scoring Combos", "Best Combo by Weight"))
+    ## The User Guide link and the light/dark switch, in the bar, after the pages
+    bar <- regmatches(ui, regexpr("<ul[^>]*navbar-nav[\\s\\S]*?</ul>", ui, perl = TRUE))
+    expect_match(bar, "id=\"guide\"[^>]*><span[^>]*>User Guide</span></a>")
+    expect_match(bar, "<bslib-input-dark-mode[^>]*id=\"mode\"")
+    expect_lt(regexpr("Armor Optimization", bar, fixed = TRUE), regexpr("User Guide", bar, fixed = TRUE))
 })

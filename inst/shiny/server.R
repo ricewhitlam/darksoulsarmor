@@ -6,8 +6,6 @@ guide.html <- shiny::HTML(paste(readLines("guide.html", encoding = "UTF-8", warn
 server <- function(input, output, session){
 
 
-    output$mode_label <- shiny::renderText("Mode (Light or Dark)")
-
     shiny::observeEvent(input$guide, { 
         shiny::showModal( 
             shiny::modalDialog( 
