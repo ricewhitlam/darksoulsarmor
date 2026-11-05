@@ -9,6 +9,13 @@
 ## value can make one refresh hold gigabytes of results.
 MAX_TABLE_SIZE <- 100000
 
+## Each armor slot's pieces as the dialog lists them: "No <slot>" first (as "None" is for the
+## weapons), then the rest in the data's order
+HEAD.PIECES <- head.data.unupgraded[c(which(ARMOR == "No Head"), which(ARMOR != "No Head"))]
+CHEST.PIECES <- chest.data.unupgraded[c(which(ARMOR == "No Chest"), which(ARMOR != "No Chest"))]
+HANDS.PIECES <- hands.data.unupgraded[c(which(ARMOR == "No Hands"), which(ARMOR != "No Hands"))]
+LEGS.PIECES <- legs.data.unupgraded[c(which(ARMOR == "No Legs"), which(ARMOR != "No Legs"))]
+
 ## The sidebar's button
 filter.inputs.button <- function(id){
     shiny::actionButton(inputId = shiny::NS(id, "open"), label = "Filter Inputs")
@@ -91,11 +98,11 @@ filter.inputs.server <- function(id, last.args){
                         shinyWidgets::pickerInput(
                             inputId = session$ns("head.filter"),
                             label = "Head",
-                            choices = head.data.unupgraded$ARMOR,
+                            choices = HEAD.PIECES$ARMOR,
                             selected = values$head.filter,
                             multiple = TRUE,
                             options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10, `show-subtext` = TRUE),
-                            choicesOpt = list(subtext = ifelse(head.data.unupgraded$ARMOR == "No Head", "", sprintf("%.1f", head.data.unupgraded$WEIGHT))),
+                            choicesOpt = list(subtext = ifelse(HEAD.PIECES$ARMOR == "No Head", "", sprintf("%.1f", HEAD.PIECES$WEIGHT))),
                             width = NULL,
                             inline = FALSE,
                             stateInput = TRUE,
@@ -104,11 +111,11 @@ filter.inputs.server <- function(id, last.args){
                         shinyWidgets::pickerInput(
                             inputId = session$ns("chest.filter"),
                             label = "Chest",
-                            choices = chest.data.unupgraded$ARMOR,
+                            choices = CHEST.PIECES$ARMOR,
                             selected = values$chest.filter,
                             multiple = TRUE,
                             options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10, `show-subtext` = TRUE),
-                            choicesOpt = list(subtext = ifelse(chest.data.unupgraded$ARMOR == "No Chest", "", sprintf("%.1f", chest.data.unupgraded$WEIGHT))),
+                            choicesOpt = list(subtext = ifelse(CHEST.PIECES$ARMOR == "No Chest", "", sprintf("%.1f", CHEST.PIECES$WEIGHT))),
                             width = NULL,
                             inline = FALSE,
                             stateInput = TRUE,
@@ -117,11 +124,11 @@ filter.inputs.server <- function(id, last.args){
                         shinyWidgets::pickerInput(
                             inputId = session$ns("hands.filter"),
                             label = "Hands",
-                            choices = hands.data.unupgraded$ARMOR,
+                            choices = HANDS.PIECES$ARMOR,
                             selected = values$hands.filter,
                             multiple = TRUE,
                             options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10, `show-subtext` = TRUE),
-                            choicesOpt = list(subtext = ifelse(hands.data.unupgraded$ARMOR == "No Hands", "", sprintf("%.1f", hands.data.unupgraded$WEIGHT))),
+                            choicesOpt = list(subtext = ifelse(HANDS.PIECES$ARMOR == "No Hands", "", sprintf("%.1f", HANDS.PIECES$WEIGHT))),
                             width = NULL,
                             inline = FALSE,
                             stateInput = TRUE,
@@ -130,11 +137,11 @@ filter.inputs.server <- function(id, last.args){
                         shinyWidgets::pickerInput(
                             inputId = session$ns("legs.filter"),
                             label = "Legs",
-                            choices = legs.data.unupgraded$ARMOR,
+                            choices = LEGS.PIECES$ARMOR,
                             selected = values$legs.filter,
                             multiple = TRUE,
                             options = list(`actions-box` = TRUE, `live-search` = TRUE, size = 10, `show-subtext` = TRUE),
-                            choicesOpt = list(subtext = ifelse(legs.data.unupgraded$ARMOR == "No Legs", "", sprintf("%.1f", legs.data.unupgraded$WEIGHT))),
+                            choicesOpt = list(subtext = ifelse(LEGS.PIECES$ARMOR == "No Legs", "", sprintf("%.1f", LEGS.PIECES$WEIGHT))),
                             width = NULL,
                             inline = FALSE,
                             stateInput = TRUE,

@@ -42,6 +42,13 @@ test_that("Filter Inputs saves its choices on Done and compares them with the la
         for(none in c("No Head", "No Chest", "No Hands", "No Legs")){
             expect_match(modals[1], sprintf('<option[^>]*data-subtext=""[^>]*>%s</option>', none), info = none)
         }
+        ## Each slot's list starts with its "No <slot>", then every other piece in the data's order
+        for(slot in list(list("head.filter", "No Head", head.data.unupgraded), list("chest.filter", "No Chest", chest.data.unupgraded),
+                         list("hands.filter", "No Hands", hands.data.unupgraded), list("legs.filter", "No Legs", legs.data.unupgraded))){
+            select <- regmatches(modals[1], regexpr(sprintf('<select[^>]* id="%s"[\\s\\S]*?</select>', session$ns(slot[[1]])), modals[1], perl = TRUE))
+            listed <- gsub("&#39;", "'", sub('.*value="([^"]*)".*', "\\1", regmatches(select, gregexpr("<option[^>]*>", select))[[1]]), fixed = TRUE)
+            expect_identical(listed, c(slot[[2]], setdiff(slot[[3]]$ARMOR, slot[[2]])), info = slot[[2]])
+        }
 
         ## The quick filters keep only the chosen pieces with the property
         send(defaults)
